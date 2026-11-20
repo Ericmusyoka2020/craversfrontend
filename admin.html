@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Portal | Wariara Cars Central Rift</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    button:disabled { opacity: 0.65; cursor: not-allowed; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen">
+  <header class="bg-slate-900 text-white px-6 h-16 flex items-center justify-between">
+    <div class="font-extrabold">Wariara Cars Central Rift — <span class="text-amber-400">Admin Portal</span></div>
+    <span class="text-xs text-slate-400">Restricted Moderation Console</span>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-6">
+    <div id="admin-gate" class="bg-white max-w-md mx-auto rounded-2xl border p-6 shadow-sm">
+      <h1 class="text-xl font-extrabold mb-2">Admin Access</h1>
+      <p class="text-xs text-slate-500 mb-4">Enter your <code class="bg-slate-100 px-1 py-0.5 rounded">ADMIN_SECRET</code> configured on your Render API server.</p>
+      <input id="admin-key-input" type="password" placeholder="Admin Secret Key" class="w-full border rounded-lg px-3 py-2 text-sm mb-3" />
+      <button type="button" onclick="unlockAdmin(this)" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg text-sm">Open Admin Portal</button>
+    </div>
+
+    <div id="admin-panel" class="hidden space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap gap-2 text-sm font-bold">
+          <button type="button" onclick="tab('posts')" id="t-posts" class="px-4 py-2 rounded-lg bg-emerald-600 text-white">Posts & Expiry</button>
+          <button type="button" onclick="tab('payments')" id="t-payments" class="px-4 py-2 rounded-lg bg-white border">Payment Notifications</button>
+          <button type="button" onclick="tab('users')" id="t-users" class="px-4 py-2 rounded-lg bg-white border">Accounts & Suspensions</button>
+          <button type="button" onclick="tab('config')" id="t-config" class="px-4 py-2 rounded-lg bg-white border">Priority Price, Plans & Catalog</button>
+        </div>
+        <button type="button" onclick="lockAdmin()" class="text-xs text-slate-500 hover:text-red-600 font-semibold">Lock Portal</button>
+      </div>
+
+      <div id="sec-posts" class="space-y-3">
+        <div class="flex flex-wrap gap-2 text-xs font-bold bg-white p-3 rounded-xl border">
+          <button type="button" onclick="setPostFilter('all')" id="pf-all" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white">All Posts</button>
+          <button type="button" onclick="setPostFilter('expired')" id="pf-expired" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200">Expired Posts (70d)</button>
+          <button type="button" onclick="setPostFilter('pending_approval')" id="pf-pending_approval" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">Pending Approval</button>
+          <button type="button" onclick="setPostFilter('active')" id="pf-active" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">Active</button>
+        </div>
+        <div id="admin-posts-list" class="space-y-3"></div>
+      </div>
+
+      <div id="sec-payments" class="hidden bg-white rounded-xl border p-5 space-y-3">
+        <h3 class="font-extrabold text-base">Payment Notifications (Who Paid & What For)</h3>
+        <div id="payment-notifs-list" class="divide-y text-sm"></div>
+      </div>
+
+      <div id="sec-users" class="hidden bg-white rounded-xl border p-5 overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="border-b uppercase text-slate-400">
+            <tr>
+              <th class="py-2 pr-3">Account</th>
+              <th class="py-2 pr-3">WhatsApp / Call / Email</th>
+              <th class="py-2 pr-3">Free / Credits</th>
+              <th class="py-2 pr-3">Purchased</th>
+              <th class="py-2 pr-3">Status & Appeal</th>
+              <th class="py-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-rows" class="divide-y"></tbody>
+        </table>
+      </div>
+
+      <div id="sec-config" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div class="bg-white rounded-xl border p-5">
+          <h3 class="font-bold mb-2">Priority Price (Max 20/Day)</h3>
+          <p class="text-xs text-slate-500 mb-3">Minimum daily fee to enter the 20 sponsored slots; higher payments appear higher on top.</p>
+          <input id="cfg-prio" type="number" class="w-full border rounded-lg px-3 py-2 text-sm mb-2" />
+          <button type="button" onclick="savePrio(this)" class="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-lg">Save Priority Fee</button>
+        </div>
+
+        <div class="bg-white rounded-xl border p-5">
+          <h3 class="font-bold mb-2">Post Plans (e.g. 10 = 200, 25 = 500)</h3>
+          <div id="plans-edit" class="space-y-2 mb-3"></div>
+          <div class="grid grid-cols-3 gap-1.5 text-xs">
+            <input id="np-name" placeholder="Name" class="border rounded px-2 py-1" />
+            <input id="np-cnt" type="number" placeholder="Posts" class="border rounded px-2 py-1" />
+            <input id="np-prc" type="number" placeholder="KES" class="border rounded px-2 py-1" />
+          </div>
+          <button type="button" onclick="addPlan(this)" class="mt-2 bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg">+ Add Plan</button>
+        </div>
+
+        <div class="bg-white rounded-xl border p-5">
+          <h3 class="font-bold mb-2">Add Brand, Model & Body Type</h3>
+          <div class="space-y-2 text-xs">
+            <select id="c-vt" class="w-full border rounded px-2 py-1.5 bg-white">
+              <option>Car</option><option>Truck</option><option>Bike</option>
+            </select>
+            <input id="c-br" placeholder="Brand (e.g. Toyota, Audi)" class="w-full border rounded px-2 py-1.5" />
+            <input id="c-mo" placeholder="Model (e.g. Harrier, A4)" class="w-full border rounded px-2 py-1.5" />
+            <input id="c-bo" placeholder="Body Type (e.g. SUV, Saloon)" class="w-full border rounded px-2 py-1.5" />
+            <button type="button" onclick="addCat(this)" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg">Add Brand/Model/Body</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = window.WARIARA_API_BASE || "https://carscrawers.onrender.com";
+    const apiUrl = (path) => `${API_BASE}${path}`;
+    let key = localStorage.getItem("wariara_admin_key") || "";
+    let cachedOverview = null;
+    let postFilter = "all";
+
+    async function runWithButtonLock(btn, fn) {
+      const prevText = btn ? btn.textContent : "";
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Processing...";
+      }
+      try {
+        return await fn();
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = prevText;
+        }
+      }
+    }
+
+    async function adminFetch(path, options = {}) {
+      const headers = {
+        ...(options.headers || {}),
+        "x-admin-key": key,
+      };
+      if (options.body && !headers["Content-Type"]) {
+        headers["Content-Type"] = "application/json";
+      }
+      const res = await fetch(apiUrl(path), { ...options, headers });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err = new Error(data.error || `Admin request failed (${res.status})`);
+        err.status = res.status;
+        throw err;
+      }
+      return data;
+    }
+
+    async function unlockAdmin(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        key = document.getElementById("admin-key-input").value.trim();
+        localStorage.setItem("wariara_admin_key", key);
+        await loadAdmin();
+      });
+    }
+
+    function lockAdmin() {
+      key = "";
+      localStorage.removeItem("wariara_admin_key");
+      document.getElementById("admin-panel").classList.add("hidden");
+      document.getElementById("admin-gate").classList.remove("hidden");
+    }
+
+    function tab(t) {
+      ["posts", "payments", "users", "config"].forEach((x) => {
+        document.getElementById(`sec-${x}`).classList.toggle("hidden", x !== t);
+        document.getElementById(`t-${x}`).className = x === t
+          ? "px-4 py-2 rounded-lg bg-emerald-600 text-white"
+          : "px-4 py-2 rounded-lg bg-white border";
+      });
+    }
+
+    function setPostFilter(f) {
+      postFilter = f;
+      renderAdminPosts();
+    }
+
+    function renderAdminPosts() {
+      if (!cachedOverview) return;
+      const list = postFilter === "all"
+        ? cachedOverview.listings
+        : cachedOverview.listings.filter((l) => l.status === postFilter);
+
+      document.getElementById("admin-posts-list").innerHTML = list.map((l) => {
+        const remainingBadge = l.days_remaining !== null
+          ? `<span class="text-xs font-bold px-2 py-0.5 rounded ${l.days_remaining === 0 ? "bg-red-100 text-red-800" : "bg-emerald-50 text-emerald-800"}">${l.days_remaining} days remaining (70d)</span>`
+          : `<span class="text-xs text-slate-400">Free post</span>`;
+
+        return `
+          <div class="bg-white rounded-xl border ${l.status === "reported_suspended" ? "border-red-400" : l.status === "expired" ? "border-amber-300" : ""} p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <img src="${l.cover_photo || ""}" class="w-20 h-16 object-cover rounded-lg bg-slate-100" />
+              <div>
+                <div class="font-bold flex flex-wrap items-center gap-1.5">
+                  <span>${l.title}</span>
+                  <span class="text-xs px-2 py-0.5 rounded bg-slate-100 uppercase">${l.status}</span>
+                  ${remainingBadge}
+                </div>
+                <div class="text-xs text-slate-500">KES ${Number(l.price_kes).toLocaleString()} · Seller: <strong>${l.seller_name}</strong> (${l.whatsapp_phone})</div>
+                ${l.report_reason ? `<div class="text-xs text-red-700 font-bold mt-0.5">Report Reason: ${l.report_reason}</div>` : ""}
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-1.5 text-xs font-bold">
+              ${l.status === "pending_approval" ? `<button type="button" onclick="modPost('${l.id}','approve', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Approve</button>` : ""}
+              ${l.status === "reported_suspended" ? `
+                <button type="button" onclick="modPost('${l.id}','mark_safe', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Mark Safe (Restore)</button>
+                <button type="button" onclick="modPost('${l.id}','mark_unsafe', this)" class="bg-red-600 text-white px-3 py-1.5 rounded-lg">Mark Unsafe</button>
+              ` : ""}
+              ${l.status === "active" ? `<button type="button" onclick="modPost('${l.id}','pause', this)" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg">Pause Post</button>` : ""}
+              ${l.status === "paused" ? `<button type="button" onclick="modPost('${l.id}','unpause', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Unpause</button>` : ""}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function loadAdmin() {
+      if (!key) return;
+      try {
+        const d = await adminFetch("/api/admin/overview");
+        cachedOverview = d;
+        document.getElementById("admin-gate").classList.add("hidden");
+        document.getElementById("admin-panel").classList.remove("hidden");
+
+        renderAdminPosts();
+
+        document.getElementById("payment-notifs-list").innerHTML =
+          (d.paymentNotifications || []).length === 0
+            ? `<div class="py-4 text-slate-500 text-xs">No confirmed payments yet.</div>`
+            : d.paymentNotifications.map((n) => `
+                <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <div class="font-bold text-slate-900">${n.payer_name} <span class="text-xs font-normal text-slate-500">(${n.payer_phone || n.payer_email || ""})</span></div>
+                    <div class="text-xs text-slate-600">Paid for: <strong>${n.purpose}</strong> · Ref: ${n.payment_ref || "-"}</div>
+                  </div>
+                  <div class="text-right">
+                    <span class="font-black text-emerald-700">KES ${Number(n.amount_kes).toLocaleString()}</span>
+                    <div class="text-[11px] text-slate-400">${n.created_at || ""}</div>
+                  </div>
+                </div>
+              `).join("");
+
+        document.getElementById("users-rows").innerHTML = d.users.map((u) => `
+          <tr>
+            <td class="py-2.5 pr-3"><strong>${u.name}</strong><div class="text-slate-400">${u.role} · ${u.town}</div></td>
+            <td class="py-2.5 pr-3">${u.email}<div>WA: ${u.whatsapp_phone} | Call: ${u.call_phone}</div></td>
+            <td class="py-2.5 pr-3">Free: <strong>${u.free_posts_used}/6</strong><div>Credits: <strong>${u.paid_post_credits}</strong></div></td>
+            <td class="py-2.5 pr-3"><strong>${u.total_purchased_posts}</strong> posts (KES ${Number(u.total_spent_kes).toLocaleString()})</td>
+            <td class="py-2.5 pr-3">
+              ${u.is_suspended ? `<span class="text-red-700 font-bold">SUSPENDED</span> (${u.suspension_reason || ""})` : `<span class="text-emerald-700 font-bold">Active</span>`}
+              ${u.appeal_status === "pending" ? `<div class="bg-amber-50 border p-1.5 rounded mt-1">Appeal: ${u.appeal_text}</div>` : ""}
+            </td>
+            <td class="py-2.5 space-y-1">
+              <button type="button" onclick="gift('${u.id}','${u.name}', this)" class="block w-full bg-emerald-600 text-white font-bold px-2 py-1 rounded">Gift Posts</button>
+              ${u.is_suspended
+                ? `<button type="button" onclick="susp('${u.id}',false, this)" class="block w-full bg-slate-900 text-white font-bold px-2 py-1 rounded">Restore</button>`
+                : `<button type="button" onclick="susp('${u.id}',true, this)" class="block w-full bg-red-600 text-white font-bold px-2 py-1 rounded">Suspend</button>`}
+            </td>
+          </tr>
+        `).join("");
+
+        document.getElementById("cfg-prio").value = d.settings.base_priority_price_kes || 300;
+        document.getElementById("plans-edit").innerHTML = d.plans.map((p) => `
+          <div class="grid grid-cols-4 gap-1.5 text-xs">
+            <input id="pn-${p.id}" value="${p.name}" class="border rounded px-2 py-1" />
+            <input id="pc-${p.id}" type="number" value="${p.post_count}" class="border rounded px-2 py-1" />
+            <input id="pp-${p.id}" type="number" value="${p.price_kes}" class="border rounded px-2 py-1" />
+            <button type="button" onclick="updPlan('${p.id}', this)" class="bg-emerald-600 text-white font-bold rounded">Save</button>
+          </div>
+        `).join("");
+      } catch {
+        lockAdmin();
+      }
+    }
+
+    async function modPost(id, action, btn = null) {
+      await runWithButtonLock(btn, async () => {
+        await adminFetch(`/api/admin/listings/${id}/moderate`, { method: "POST", body: JSON.stringify({ action }) });
+        await loadAdmin();
+      });
+    }
+
+    async function gift(id, name, btn = null) {
+      const posts_count = Number(prompt(`Gift how many posts to ${name}?`, "5"));
+      if (!posts_count) return;
+      await runWithButtonLock(btn, async () => {
+        await adminFetch(`/api/admin/users/${id}/gift-posts`, { method: "POST", body: JSON.stringify({ posts_count }) });
+        await loadAdmin();
+      });
+    }
+
+    async function susp(id, suspend, btn = null) {
+      const reason = suspend ? prompt("Reason (e.g. Scamming / irregular activity):", "Scamming / irregular activity") : null;
+      if (suspend && !reason) return;
+      await runWithButtonLock(btn, async () => {
+        await adminFetch(`/api/admin/users/${id}/suspension`, { method: "POST", body: JSON.stringify({ suspend, reason }) });
+        await loadAdmin();
+      });
+    }
+
+    async function savePrio(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        await adminFetch("/api/admin/settings", { method: "POST", body: JSON.stringify({ base_priority_price_kes: Number(document.getElementById("cfg-prio").value) }) });
+        alert("Saved.");
+      });
+    }
+
+    async function updPlan(id, btn = null) {
+      await runWithButtonLock(btn, async () => {
+        await adminFetch(`/api/admin/plans/${id}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            name: document.getElementById(`pn-${id}`).value,
+            post_count: Number(document.getElementById(`pc-${id}`).value),
+            price_kes: Number(document.getElementById(`pp-${id}`).value),
+          }),
+        });
+        alert("Plan updated.");
+      });
+    }
+
+    async function addPlan(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        await adminFetch("/api/admin/plans", {
+          method: "POST",
+          body: JSON.stringify({
+            name: document.getElementById("np-name").value,
+            post_count: Number(document.getElementById("np-cnt").value),
+            price_kes: Number(document.getElementById("np-prc").value),
+          }),
+        });
+        await loadAdmin();
+      });
+    }
+
+    async function addCat(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        await adminFetch("/api/admin/catalog", {
+          method: "POST",
+          body: JSON.stringify({
+            vehicle_type: document.getElementById("c-vt").value,
+            brand: document.getElementById("c-br").value,
+            model: document.getElementById("c-mo").value,
+            body_type: document.getElementById("c-bo").value,
+          }),
+        });
+        alert("Added.");
+      });
+    }
+
+    if (key) loadAdmin();
+  </script>
+</body>
+</html>
