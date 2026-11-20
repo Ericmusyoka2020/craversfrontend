@@ -29,7 +29,7 @@
           <button type="button" onclick="tab('posts')" id="t-posts" class="px-4 py-2 rounded-lg bg-emerald-600 text-white">Posts & Expiry</button>
           <button type="button" onclick="tab('payments')" id="t-payments" class="px-4 py-2 rounded-lg bg-white border">Payment Notifications</button>
           <button type="button" onclick="tab('users')" id="t-users" class="px-4 py-2 rounded-lg bg-white border">Accounts & Suspensions</button>
-          <button type="button" onclick="tab('config')" id="t-config" class="px-4 py-2 rounded-lg bg-white border">Priority Price, Plans & Catalog</button>
+          <button type="button" onclick="tab('config')" id="t-config" class="px-4 py-2 rounded-lg bg-white border">Priority Plans, Post Plans & Catalog</button>
         </div>
         <button type="button" onclick="lockAdmin()" class="text-xs text-slate-500 hover:text-red-600 font-semibold">Lock Portal</button>
       </div>
@@ -40,6 +40,7 @@
           <button type="button" onclick="setPostFilter('expired')" id="pf-expired" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200">Expired Posts (70d)</button>
           <button type="button" onclick="setPostFilter('pending_approval')" id="pf-pending_approval" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">Pending Approval</button>
           <button type="button" onclick="setPostFilter('active')" id="pf-active" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">Active</button>
+          <button type="button" onclick="setPostFilter('sold')" id="pf-sold" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200">Sold</button>
         </div>
         <div id="admin-posts-list" class="space-y-3"></div>
       </div>
@@ -67,10 +68,15 @@
 
       <div id="sec-config" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div class="bg-white rounded-xl border p-5">
-          <h3 class="font-bold mb-2">Priority Price (Max 20/Day)</h3>
-          <p class="text-xs text-slate-500 mb-3">Minimum daily fee to enter the 20 sponsored slots; higher payments appear higher on top.</p>
-          <input id="cfg-prio" type="number" class="w-full border rounded-lg px-3 py-2 text-sm mb-2" />
-          <button type="button" onclick="savePrio(this)" class="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-lg">Save Priority Fee</button>
+          <h3 class="font-bold mb-2">Sponsored Priority Plans</h3>
+          <p class="text-xs text-slate-500 mb-3">Set a price and duration for each plan. There is no daily sponsored-post limit.</p>
+          <div id="priority-plans-edit" class="space-y-2 mb-3"></div>
+          <div class="grid grid-cols-3 gap-1.5 text-xs">
+            <input id="npp-name" placeholder="Plan name" class="border rounded px-2 py-1" />
+            <input id="npp-hours" type="number" min="1" placeholder="Hours" class="border rounded px-2 py-1" />
+            <input id="npp-price" type="number" min="1" placeholder="KES" class="border rounded px-2 py-1" />
+          </div>
+          <button type="button" onclick="addPriorityPlan(this)" class="mt-2 bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg">+ Add Priority Plan</button>
         </div>
 
         <div class="bg-white rounded-xl border p-5">
@@ -100,12 +106,35 @@
     </div>
   </main>
 
+  <div id="listing-edit-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+    <form onsubmit="saveAdminListing(event, this.querySelector('button[type=submit]'))" class="bg-white rounded-2xl p-5 w-full max-w-xl space-y-3">
+      <h2 class="text-lg font-extrabold">Edit Listing</h2>
+      <input id="edit-listing-id" type="hidden" />
+      <label class="block text-xs font-bold">Title<input id="edit-listing-title" required class="mt-1 w-full border rounded-lg px-3 py-2 text-sm" /></label>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block text-xs font-bold">Price (KES; 0 = contact seller)<input id="edit-listing-price" type="number" min="0" class="mt-1 w-full border rounded-lg px-3 py-2 text-sm" /></label>
+        <label class="block text-xs font-bold">Town<input id="edit-listing-town" class="mt-1 w-full border rounded-lg px-3 py-2 text-sm" /></label>
+      </div>
+      <label class="block text-xs font-bold">Description<textarea id="edit-listing-description" required rows="4" class="mt-1 w-full border rounded-lg px-3 py-2 text-sm"></textarea></label>
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="closeListingEditor()" class="px-4 py-2 border rounded-lg text-sm font-bold">Cancel</button>
+        <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold">Save Listing</button>
+      </div>
+    </form>
+  </div>
+
   <script>
     const API_BASE = window.WARIARA_API_BASE || "https://carscrawers.onrender.com";
     const apiUrl = (path) => `${API_BASE}${path}`;
     let key = localStorage.getItem("wariara_admin_key") || "";
     let cachedOverview = null;
     let postFilter = "all";
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      })[char]);
+    }
 
     async function runWithButtonLock(btn, fn) {
       const prevText = btn ? btn.textContent : "";
@@ -180,6 +209,9 @@
         const remainingBadge = l.days_remaining !== null
           ? `<span class="text-xs font-bold px-2 py-0.5 rounded ${l.days_remaining === 0 ? "bg-red-100 text-red-800" : "bg-emerald-50 text-emerald-800"}">${l.days_remaining} days remaining (70d)</span>`
           : `<span class="text-xs text-slate-400">Free post</span>`;
+        const priorityBadge = l.is_prioritized
+          ? `<span class="text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900">Sponsored: ${escapeHtml(l.priority_plan_name || "Priority")} · ${l.priority_remaining_hours}h left · ends ${new Date(l.priority_expires_at).toLocaleString()}</span>`
+          : "";
 
         return `
           <div class="bg-white rounded-xl border ${l.status === "reported_suspended" ? "border-red-400" : l.status === "expired" ? "border-amber-300" : ""} p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -187,16 +219,21 @@
               <img src="${l.cover_photo || ""}" class="w-20 h-16 object-cover rounded-lg bg-slate-100" />
               <div>
                 <div class="font-bold flex flex-wrap items-center gap-1.5">
-                  <span>${l.title}</span>
+                  <span>${escapeHtml(l.title)}</span>
                   <span class="text-xs px-2 py-0.5 rounded bg-slate-100 uppercase">${l.status}</span>
                   ${remainingBadge}
+                  ${priorityBadge}
                 </div>
-                <div class="text-xs text-slate-500">KES ${Number(l.price_kes).toLocaleString()} · Seller: <strong>${l.seller_name}</strong> (${l.whatsapp_phone})</div>
-                ${l.report_reason ? `<div class="text-xs text-red-700 font-bold mt-0.5">Report Reason: ${l.report_reason}</div>` : ""}
+                <div class="text-xs text-slate-500">${Number(l.price_kes) ? `KES ${Number(l.price_kes).toLocaleString()}` : "Contact for price"} · Seller: <strong>${escapeHtml(l.seller_name)}</strong> (${escapeHtml(l.whatsapp_phone)})</div>
+                ${l.report_reason ? `<div class="text-xs text-red-700 font-bold mt-0.5">Report Reason: ${escapeHtml(l.report_reason)}</div>` : ""}
               </div>
             </div>
             <div class="flex flex-wrap gap-1.5 text-xs font-bold">
-              ${l.status === "pending_approval" ? `<button type="button" onclick="modPost('${l.id}','approve', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Approve</button>` : ""}
+              <button type="button" onclick="openListingEditor('${l.id}')" class="bg-sky-700 text-white px-3 py-1.5 rounded-lg">Edit</button>
+              ${l.status === "pending_approval" ? `
+                <button type="button" onclick="modPost('${l.id}','approve', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Approve</button>
+                <button type="button" onclick="modPost('${l.id}','reject', this)" class="bg-red-600 text-white px-3 py-1.5 rounded-lg">Reject</button>
+              ` : ""}
               ${l.status === "reported_suspended" ? `
                 <button type="button" onclick="modPost('${l.id}','mark_safe', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Mark Safe (Restore)</button>
                 <button type="button" onclick="modPost('${l.id}','mark_unsafe', this)" class="bg-red-600 text-white px-3 py-1.5 rounded-lg">Mark Unsafe</button>
@@ -235,18 +272,31 @@
                 </div>
               `).join("");
 
+        const dealerships = d.users.filter((u) => u.role === "dealer" && !u.is_suspended);
         document.getElementById("users-rows").innerHTML = d.users.map((u) => `
           <tr>
-            <td class="py-2.5 pr-3"><strong>${u.name}</strong><div class="text-slate-400">${u.role} · ${u.town}</div></td>
-            <td class="py-2.5 pr-3">${u.email}<div>WA: ${u.whatsapp_phone} | Call: ${u.call_phone}</div></td>
+            <td class="py-2.5 pr-3"><strong>${escapeHtml(u.name)}</strong><div class="text-slate-400">${u.agent_of ? "Agent for " + escapeHtml(d.users.find((dealer) => dealer.id === u.agent_of)?.name || "dealership") : escapeHtml(u.role)} · ${escapeHtml(u.town)}</div></td>
+            <td class="py-2.5 pr-3">${escapeHtml(u.email)}<div>WA: ${escapeHtml(u.whatsapp_phone)} | Call: ${escapeHtml(u.call_phone)}</div></td>
             <td class="py-2.5 pr-3">Free: <strong>${u.free_posts_used}/6</strong><div>Credits: <strong>${u.paid_post_credits}</strong></div></td>
             <td class="py-2.5 pr-3"><strong>${u.total_purchased_posts}</strong> posts (KES ${Number(u.total_spent_kes).toLocaleString()})</td>
             <td class="py-2.5 pr-3">
-              ${u.is_suspended ? `<span class="text-red-700 font-bold">SUSPENDED</span> (${u.suspension_reason || ""})` : `<span class="text-emerald-700 font-bold">Active</span>`}
-              ${u.appeal_status === "pending" ? `<div class="bg-amber-50 border p-1.5 rounded mt-1">Appeal: ${u.appeal_text}</div>` : ""}
+              ${u.is_suspended ? `<span class="text-red-700 font-bold">SUSPENDED</span> (${escapeHtml(u.suspension_reason)})` : `<span class="text-emerald-700 font-bold">Active</span>`}
+              ${u.appeal_status === "pending" ? `<div class="bg-amber-50 border p-1.5 rounded mt-1">Appeal: ${escapeHtml(u.appeal_text)}</div>` : ""}
             </td>
             <td class="py-2.5 space-y-1">
-              <button type="button" onclick="gift('${u.id}','${u.name}', this)" class="block w-full bg-emerald-600 text-white font-bold px-2 py-1 rounded">Gift Posts</button>
+              <select id="um-role-${u.id}" class="block w-full border rounded px-2 py-1 text-[11px]">
+                <option value="private" ${!u.agent_of && u.role === "private" ? "selected" : ""}>Private</option>
+                <option value="dealer" ${!u.agent_of && u.role === "dealer" ? "selected" : ""}>Dealership</option>
+                <option value="agent" ${u.agent_of ? "selected" : ""}>Agent</option>
+              </select>
+              <select id="um-agent-${u.id}" class="block w-full border rounded px-2 py-1 text-[11px]">
+                <option value="">Select dealership for agent</option>
+                ${dealerships.map((dealer) => `<option value="${dealer.id}" ${u.agent_of === dealer.id ? "selected" : ""}>${escapeHtml(dealer.name)}</option>`).join("")}
+              </select>
+              <input id="um-name-${u.id}" value="${escapeHtml(u.name)}" aria-label="Account name" class="block w-full border rounded px-2 py-1 text-[11px]" />
+              <input id="um-town-${u.id}" value="${escapeHtml(u.town)}" aria-label="Town" class="block w-full border rounded px-2 py-1 text-[11px]" />
+              <button type="button" onclick="saveUserProfile('${u.id}', this)" class="block w-full bg-sky-700 text-white font-bold px-2 py-1 rounded">Save Account</button>
+              <button type="button" onclick="gift('${u.id}', this)" class="block w-full bg-emerald-600 text-white font-bold px-2 py-1 rounded">Gift Posts</button>
               ${u.is_suspended
                 ? `<button type="button" onclick="susp('${u.id}',false, this)" class="block w-full bg-slate-900 text-white font-bold px-2 py-1 rounded">Restore</button>`
                 : `<button type="button" onclick="susp('${u.id}',true, this)" class="block w-full bg-red-600 text-white font-bold px-2 py-1 rounded">Suspend</button>`}
@@ -254,18 +304,63 @@
           </tr>
         `).join("");
 
-        document.getElementById("cfg-prio").value = d.settings.base_priority_price_kes || 300;
+        document.getElementById("priority-plans-edit").innerHTML = (d.priorityPlans || []).map((p) => `
+          <div class="grid grid-cols-4 gap-1.5 text-xs">
+            <input id="ppn-${p.id}" value="${escapeHtml(p.name)}" class="border rounded px-2 py-1" aria-label="Priority plan name" />
+            <input id="pph-${p.id}" type="number" min="1" value="${p.duration_hours}" class="border rounded px-2 py-1" aria-label="Duration hours" />
+            <input id="ppp-${p.id}" type="number" min="1" value="${p.price_kes}" class="border rounded px-2 py-1" aria-label="Plan price" />
+            <div class="flex gap-1"><button type="button" onclick="savePriorityPlan('${p.id}', this)" class="bg-emerald-600 text-white font-bold rounded px-2">Save</button><button type="button" onclick="deletePriorityPlan('${p.id}', this)" class="bg-red-600 text-white font-bold rounded px-2">Delete</button></div>
+          </div>
+        `).join("");
         document.getElementById("plans-edit").innerHTML = d.plans.map((p) => `
           <div class="grid grid-cols-4 gap-1.5 text-xs">
-            <input id="pn-${p.id}" value="${p.name}" class="border rounded px-2 py-1" />
+            <input id="pn-${p.id}" value="${escapeHtml(p.name)}" class="border rounded px-2 py-1" />
             <input id="pc-${p.id}" type="number" value="${p.post_count}" class="border rounded px-2 py-1" />
             <input id="pp-${p.id}" type="number" value="${p.price_kes}" class="border rounded px-2 py-1" />
             <button type="button" onclick="updPlan('${p.id}', this)" class="bg-emerald-600 text-white font-bold rounded">Save</button>
           </div>
         `).join("");
-      } catch {
-        lockAdmin();
+      } catch (err) {
+        if (err.status === 401) lockAdmin();
+        alert(err.message);
       }
+    }
+
+    function openListingEditor(id) {
+      const listing = cachedOverview?.listings.find((item) => item.id === id);
+      if (!listing) return alert("Listing is no longer available. Refresh and try again.");
+      document.getElementById("edit-listing-id").value = id;
+      document.getElementById("edit-listing-title").value = listing.title || "";
+      document.getElementById("edit-listing-price").value = Number(listing.price_kes) || "";
+      document.getElementById("edit-listing-town").value = listing.town || "";
+      document.getElementById("edit-listing-description").value = listing.description || "";
+      document.getElementById("listing-edit-modal").classList.remove("hidden");
+    }
+
+    function closeListingEditor() {
+      document.getElementById("listing-edit-modal").classList.add("hidden");
+    }
+
+    async function saveAdminListing(event, btn = null) {
+      event.preventDefault();
+      const id = document.getElementById("edit-listing-id").value;
+      await runWithButtonLock(btn, async () => {
+        try {
+          await adminFetch(`/api/admin/listings/${id}`, {
+            method: "PUT",
+            body: JSON.stringify({
+              title: document.getElementById("edit-listing-title").value,
+              price_kes: Number(document.getElementById("edit-listing-price").value) || 0,
+              town: document.getElementById("edit-listing-town").value,
+              description: document.getElementById("edit-listing-description").value,
+            }),
+          });
+          closeListingEditor();
+          await loadAdmin();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
     }
 
     async function modPost(id, action, btn = null) {
@@ -275,12 +370,39 @@
       });
     }
 
-    async function gift(id, name, btn = null) {
+    async function gift(id, btn = null) {
+      const name = cachedOverview?.users.find((user) => user.id === id)?.name || "this seller";
       const posts_count = Number(prompt(`Gift how many posts to ${name}?`, "5"));
       if (!posts_count) return;
       await runWithButtonLock(btn, async () => {
-        await adminFetch(`/api/admin/users/${id}/gift-posts`, { method: "POST", body: JSON.stringify({ posts_count }) });
-        await loadAdmin();
+        try {
+          await adminFetch(`/api/admin/users/${id}/gift-posts`, { method: "POST", body: JSON.stringify({ posts_count }) });
+          await loadAdmin();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    }
+
+    async function saveUserProfile(id, btn = null) {
+      const accountType = document.getElementById(`um-role-${id}`).value;
+      const agentOf = document.getElementById(`um-agent-${id}`).value;
+      if (accountType === "agent" && !agentOf) return alert("Select a dealership for this agent.");
+      await runWithButtonLock(btn, async () => {
+        try {
+          await adminFetch(`/api/admin/users/${id}/profile`, {
+            method: "PUT",
+            body: JSON.stringify({
+              name: document.getElementById(`um-name-${id}`).value,
+              town: document.getElementById(`um-town-${id}`).value,
+              role: accountType === "dealer" ? "dealer" : "private",
+              agent_of: accountType === "agent" ? agentOf : null,
+            }),
+          });
+          await loadAdmin();
+        } catch (err) {
+          alert(err.message);
+        }
       });
     }
 
@@ -293,10 +415,54 @@
       });
     }
 
-    async function savePrio(btn = null) {
+    async function savePriorityPlan(id, btn = null) {
       await runWithButtonLock(btn, async () => {
-        await adminFetch("/api/admin/settings", { method: "POST", body: JSON.stringify({ base_priority_price_kes: Number(document.getElementById("cfg-prio").value) }) });
-        alert("Saved.");
+        try {
+          await adminFetch(`/api/admin/priority-plans/${id}`, {
+            method: "PUT",
+            body: JSON.stringify({
+              name: document.getElementById(`ppn-${id}`).value,
+              duration_hours: Number(document.getElementById(`pph-${id}`).value),
+              price_kes: Number(document.getElementById(`ppp-${id}`).value),
+            }),
+          });
+          await loadAdmin();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    }
+
+    async function addPriorityPlan(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        try {
+          await adminFetch("/api/admin/priority-plans", {
+            method: "POST",
+            body: JSON.stringify({
+              name: document.getElementById("npp-name").value,
+              duration_hours: Number(document.getElementById("npp-hours").value),
+              price_kes: Number(document.getElementById("npp-price").value),
+            }),
+          });
+          document.getElementById("npp-name").value = "";
+          document.getElementById("npp-hours").value = "";
+          document.getElementById("npp-price").value = "";
+          await loadAdmin();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    }
+
+    async function deletePriorityPlan(id, btn = null) {
+      if (!confirm("Delete this priority plan? Existing sponsored posts will keep their current end time.")) return;
+      await runWithButtonLock(btn, async () => {
+        try {
+          await adminFetch(`/api/admin/priority-plans/${id}`, { method: "DELETE" });
+          await loadAdmin();
+        } catch (err) {
+          alert(err.message);
+        }
       });
     }
 
