@@ -5,12 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wariara Cars Central Rift | Buy & Sell Cars, Trucks, Bikes & Spare Parts</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif; }
     .card-lift { transition: transform 0.15s ease, box-shadow 0.15s ease; }
     .card-lift:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08); }
     button:disabled { opacity: 0.65; cursor: not-allowed; }
+    @media (max-width: 639px) {
+      main { padding-top: 0.5rem !important; }
+      #page-market > div:first-child { padding: 0.75rem; margin-bottom: 0.5rem; }
+      #page-market h1 { font-size: 1.15rem; }
+      #page-market .market-intro { display: none; }
+      .mobile-hidden-filters { display: none !important; }
+      body.show-market-filters #quick-makes { display: flex !important; }
+      body.show-market-filters #budget-buttons { display: flex !important; }
+      body.show-market-filters #market-search-fields { display: grid !important; }
+      body.show-market-filters #motor-filters:not(.hidden),
+      body.show-market-filters #part-filters:not(.hidden) { display: grid !important; }
+      body.show-market-filters #market-filter-actions { display: flex !important; }
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
@@ -32,6 +44,7 @@
           <button type="button" onclick="switchPage('market', 'part')" class="hover:text-emerald-700">Spare Parts</button>
           <button type="button" onclick="switchPage('dealers')" class="hover:text-emerald-700">Dealer</button>
           <button type="button" onclick="openSellerWorkspace()" class="hover:text-emerald-700">My Posts</button>
+          <a href="market.html" class="hover:text-emerald-700">Market Data</a>
           <a href="terms.html" class="hover:text-emerald-700">Terms & Conditions</a>
         </nav>
       </div>
@@ -48,7 +61,7 @@
 
     <!-- QUICK SELLER & INFO BUTTON BAR (MOBILE & DESKTOP COMPATIBLE) -->
     <div class="border-t border-slate-100 bg-slate-50 px-4 sm:px-6 py-2">
-      <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2 text-xs font-bold">
+      <div class="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs font-bold">
         <button type="button" onclick="startSellingForCategory('motor', this)" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap">
           Sell Your Car
         </button>
@@ -61,6 +74,9 @@
         <button type="button" onclick="openInfoModal('advertise')" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
           Advertise With Us
         </button>
+        <a href="market.html" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
+          Market Data
+        </a>
         <button type="button" onclick="openInfoModal('faq')" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
           FAQ
         </button>
@@ -79,11 +95,11 @@
     <!-- PAGE 1: PUBLIC MARKETPLACE -->
     <section id="page-market">
       <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 mb-6 shadow-sm">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2 sm:mb-4">
           <div>
             <h1 class="text-xl sm:text-3xl font-extrabold text-slate-900">Wariara Cars Central Rift</h1>
-            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Approved listings only — search by car, spare part, or seller name and contact directly.
+            <p class="market-intro text-xs sm:text-sm text-slate-500 mt-0.5">
+              Available listings searchable by car, spare part, or seller name.
             </p>
           </div>
           <div class="inline-flex rounded-xl bg-slate-100 p-1 self-start">
@@ -92,9 +108,15 @@
           </div>
         </div>
 
-        <div id="quick-makes" class="flex flex-wrap gap-2 mb-3"></div>
+        <div class="sm:hidden flex gap-2 mb-2">
+          <input id="f-q-mobile" type="search" placeholder="Search cars, parts, sellers..." class="min-w-0 flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm" />
+          <button type="button" onclick="searchMobile()" class="bg-emerald-600 text-white font-bold text-sm px-3 rounded-lg">Search</button>
+          <button type="button" onclick="toggleMobileFilters()" class="border border-slate-300 font-bold text-sm px-3 rounded-lg">Filters</button>
+        </div>
 
-        <div class="flex flex-wrap gap-2 mb-4 text-xs">
+        <div id="quick-makes" class="mobile-hidden-filters flex flex-wrap gap-2 mb-3"></div>
+
+        <div id="budget-buttons" class="mobile-hidden-filters flex flex-wrap gap-2 mb-4 text-xs">
           <button type="button" onclick="setBudget('', '')" class="px-3 py-1.5 rounded-full border border-slate-200 hover:border-emerald-600 font-medium">All Prices</button>
           <button type="button" onclick="setBudget('', 500000)" class="px-3 py-1.5 rounded-full border border-slate-200 hover:border-emerald-600 font-medium">Under 500K</button>
           <button type="button" onclick="setBudget('', 1000000)" class="px-3 py-1.5 rounded-full border border-slate-200 hover:border-emerald-600 font-medium">Under 1M</button>
@@ -102,7 +124,7 @@
           <button type="button" onclick="setBudget(2500000, '')" class="px-3 py-1.5 rounded-full border border-slate-200 hover:border-emerald-600 font-medium">Above 2.5M</button>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2.5">
+        <div id="market-search-fields" class="mobile-hidden-filters grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2.5">
           <input id="f-q" type="text" placeholder="Search keyword..." class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-600" />
           <input id="f-seller" type="text" placeholder="Search seller name..." class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-600" />
           <select id="f-town" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
@@ -122,7 +144,7 @@
           <input id="f-max-p" type="number" placeholder="Max KES" class="border border-slate-300 rounded-lg px-3 py-2 text-sm" />
         </div>
 
-        <div id="motor-filters" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mt-2.5 text-xs">
+        <div id="motor-filters" class="mobile-hidden-filters grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mt-2.5 text-xs">
           <select id="f-vtype" class="border border-slate-200 rounded-lg px-2 py-2 bg-slate-50">
             <option value="">Type: All</option><option>Car</option><option>Truck</option><option>Bike</option>
           </select>
@@ -147,7 +169,7 @@
           <input id="f-min-yr" type="number" placeholder="Year From" class="border border-slate-200 rounded-lg px-2 py-2 bg-slate-50" />
         </div>
 
-        <div id="part-filters" class="hidden grid-cols-2 sm:grid-cols-3 gap-2 mt-2.5 text-xs">
+        <div id="part-filters" class="mobile-hidden-filters hidden grid-cols-2 sm:grid-cols-3 gap-2 mt-2.5 text-xs">
           <select id="f-pcond" class="border border-slate-200 rounded-lg px-2 py-2 bg-slate-50">
             <option value="">Condition: All</option><option>Used</option><option>New</option><option>Refurbished</option>
           </select>
@@ -157,7 +179,7 @@
           <input id="f-pyr" type="number" placeholder="Vehicle Year" class="border border-slate-200 rounded-lg px-2 py-2 bg-slate-50" />
         </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-slate-100">
+        <div id="market-filter-actions" class="mobile-hidden-filters flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-slate-100">
           <div class="flex flex-wrap items-center gap-2">
             <button type="button" onclick="loadListings(this)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-lg">Filter</button>
             <button type="button" onclick="resetAllFilters()" class="text-sm text-slate-500 hover:text-slate-800 px-2 py-2">Reset</button>
@@ -166,7 +188,7 @@
           <div class="flex items-center gap-2 text-sm">
             <label for="f-sort" class="text-slate-500">Sort:</label>
             <select id="f-sort" onchange="loadListings()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white font-medium">
-              <option value="featured">Sponsored Top 20 & Fair Feed</option>
+              <option value="featured">Sponsored First & Fair Feed</option>
               <option value="newest">Newest</option>
               <option value="price_asc">Price: Low to High</option>
               <option value="price_desc">Price: High to Low</option>
@@ -177,9 +199,9 @@
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center justify-between gap-2 mb-3 text-xs text-slate-500">
-        <span><strong id="count-label" class="text-slate-800">0</strong> active approved posts</span>
-        <span>Max 20 Sponsored posts per day · Paid posts run for 70 days</span>
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-2 text-xs text-slate-500">
+        <span><strong id="count-label" class="text-slate-800">Searching...</strong> approved posts</span>
+        <span class="hidden sm:inline">Sponsored posts · Paid posts run for 70 days</span>
       </div>
 
       <div id="market-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"></div>
@@ -210,11 +232,17 @@
           Create a seller account first before posting motors or spare parts.
         </p>
 
-        <!-- One-Time Reset Token Form -->
+        <!-- Email reset code and new-password forms -->
         <div id="reset-token-box" class="hidden mb-6 p-4 rounded-xl bg-amber-50 border border-amber-300">
-          <h3 class="font-extrabold text-amber-950 text-sm mb-1">Set New Password (One-Time Link)</h3>
-          <p class="text-xs text-amber-900 mb-3">Enter your new password twice. Once submitted, this link becomes invalid.</p>
-          <form onsubmit="submitResetPassword(event, this.querySelector('button[type=submit]'))" class="space-y-2.5 text-sm">
+          <h3 class="font-extrabold text-amber-950 text-sm mb-1">Reset Your Password</h3>
+          <p class="text-xs text-amber-900 mb-3">Enter the 6-digit code emailed to you. It is valid for 10 minutes.</p>
+          <form id="reset-code-form" onsubmit="verifyPasswordResetCode(event, this.querySelector('button[type=submit]'))" class="space-y-2.5 text-sm">
+            <input id="reset-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required placeholder="6-digit email code" class="w-full border rounded-lg px-3 py-2 bg-white" />
+            <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-2.5 rounded-lg text-sm">
+              Verify Code
+            </button>
+          </form>
+          <form id="reset-password-form" onsubmit="submitResetPassword(event, this.querySelector('button[type=submit]'))" class="hidden space-y-2.5 text-sm">
             <input id="reset-pass-1" type="password" required minlength="6" placeholder="New Password (min 6 chars) *" class="w-full border rounded-lg px-3 py-2 bg-white" />
             <input id="reset-pass-2" type="password" required minlength="6" placeholder="Confirm New Password *" class="w-full border rounded-lg px-3 py-2 bg-white" />
             <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-2.5 rounded-lg text-sm">
@@ -242,7 +270,8 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold mb-1">WhatsApp Number *</label>
-              <input id="s-wa" type="text" required placeholder="254712345678" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+              <input id="s-wa" type="tel" required placeholder="+254 7XX XXX XXX" oninput="normalizeWhatsAppInput(this)" onblur="normalizeWhatsAppInput(this)" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+              <span class="text-[10px] text-slate-500">A Kenyan 07… number is converted to +254 automatically.</span>
             </div>
             <div>
               <label class="block text-xs font-bold mb-1">Phone Call Number *</label>
@@ -300,15 +329,15 @@
           </button>
         </form>
 
-        <!-- Forgot Password (Sends One-Time Link via EmailJS) -->
+        <!-- Forgot Password (sends a 10-minute email code) -->
         <form id="form-forgot" onsubmit="requestPasswordReset(event, this.querySelector('button[type=submit]'))" class="hidden space-y-3 text-sm">
-          <p class="text-xs text-slate-500">We will send a single-use password reset link to your email via EmailJS.</p>
+          <p class="text-xs text-slate-500">We will email a single-use 6-digit code that expires after 10 minutes.</p>
           <div>
             <label class="block text-xs font-bold mb-1">Account Email Address *</label>
             <input id="fp-email" type="email" required placeholder="you@example.com" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
           </div>
           <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm">
-            Send One-Time Reset Link
+            Send Reset Code
           </button>
         </form>
       </div>
@@ -368,7 +397,7 @@
           </div>
           <div id="plans-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6"></div>
 
-          <h4 class="font-bold text-sm mb-2">My Posts (Pending Approval, Active, Paused, Expired, Reported)</h4>
+          <h4 class="font-bold text-sm mb-2">My Listings (Available, Sold, Pending, Paused, Expired)</h4>
           <div id="my-posts-list" class="space-y-2.5"></div>
         </div>
       </div>
@@ -416,11 +445,11 @@
     </div>
   </div>
 
-  <!-- CREATE / EDIT POST MODAL (EVERY FIELD REQUIRED) -->
+  <!-- CREATE / EDIT POST MODAL -->
   <div id="modal-post" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-6 relative">
       <button type="button" onclick="closeM('modal-post')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 font-bold">✕</button>
-      <h2 id="post-modal-title" class="text-xl font-extrabold mb-3">Create New Post (All Fields Required · Max 6 Photos)</h2>
+      <h2 id="post-modal-title" class="text-xl font-extrabold mb-3">Create New Post (only description required)</h2>
       <input type="hidden" id="edit-id" />
 
       <div id="post-cat-toggle" class="grid grid-cols-2 gap-2 mb-4">
@@ -431,120 +460,115 @@
       <form onsubmit="submitPost(event, this.querySelector('button[type=submit]'))" class="space-y-3 text-sm">
         <div id="motor-form" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold mb-1">Type *</label>
-            <select id="m-type" required onchange="fillPostBrands()" class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option>Car</option><option>Truck</option><option>Bike</option>
-            </select>
+            <label class="block text-xs font-bold mb-1">Type (optional)</label>
+            <input id="m-type" type="text" placeholder="Car, truck, bike..." class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Condition *</label>
-            <select id="m-cond" required class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option>New</option><option>Used</option><option>Import</option>
-            </select>
+            <label class="block text-xs font-bold mb-1">Condition (optional)</label>
+            <input id="m-cond" type="text" placeholder="New, used, import..." class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Brand *</label>
-            <select id="m-brand" required onchange="fillPostModels()" class="w-full border rounded-lg px-3 py-2 bg-white"></select>
+            <label class="block text-xs font-bold mb-1">Brand (optional)</label>
+            <input id="m-brand" type="text" placeholder="Any brand" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Model *</label>
-            <select id="m-model" required onchange="fillPostBody()" class="w-full border rounded-lg px-3 py-2 bg-white"></select>
+            <label class="block text-xs font-bold mb-1">Model (optional)</label>
+            <input id="m-model" type="text" placeholder="Any model" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Body Type *</label>
-            <input id="m-body" type="text" required class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Body Type (optional)</label>
+            <input id="m-body" type="text" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Year *</label>
-            <input id="m-year" type="number" required min="1970" max="2027" value="2018" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Year (optional)</label>
+            <input id="m-year" type="number" min="1970" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Vehicle Registration No. *</label>
-            <input id="m-reg" type="text" required placeholder="e.g. KDN 412B" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Vehicle Registration No. (optional)</label>
+            <input id="m-reg" type="text" placeholder="e.g. KDN 412B" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Fuel *</label>
-            <select id="m-fuel" required class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option>Diesel</option><option>Petrol</option><option>Gas</option><option>PHEV</option><option>EV</option><option>REEV</option>
-            </select>
+            <label class="block text-xs font-bold mb-1">Fuel (optional)</label>
+            <input id="m-fuel" type="text" placeholder="Diesel, petrol, electric..." class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Transmission *</label>
-            <select id="m-trans" required class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option>Manual</option><option>Automatic</option>
-            </select>
+            <label class="block text-xs font-bold mb-1">Transmission (optional)</label>
+            <input id="m-trans" type="text" placeholder="Manual, automatic..." class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Drive Type *</label>
-            <select id="m-drive" required class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option>Right</option><option>Left</option>
-            </select>
+            <label class="block text-xs font-bold mb-1">Drive Type (optional)</label>
+            <input id="m-drive" type="text" placeholder="Right, left..." class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Air Con *</label>
-            <select id="m-ac" required class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option>Yes</option><option>No</option>
-            </select>
+            <label class="block text-xs font-bold mb-1">Air Con (optional)</label>
+            <input id="m-ac" type="text" placeholder="Yes or no" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Engine Size (cc) *</label>
-            <input id="m-cc" type="number" required placeholder="2000" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Engine Size (cc, optional)</label>
+            <input id="m-cc" type="number" placeholder="2000" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Mileage (km) *</label>
-            <input id="m-km" type="number" required placeholder="70000" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Mileage (km, optional)</label>
+            <input id="m-km" type="number" placeholder="70000" class="w-full border rounded-lg px-3 py-2" />
           </div>
         </div>
 
         <div id="part-form" class="hidden grid-cols-1 sm:grid-cols-2 gap-3">
           <div class="sm:col-span-2">
-            <label class="block text-xs font-bold mb-1">Part Name *</label>
-            <input id="p-name" type="text" required placeholder="e.g. Alternator, Shock Absorber" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Part Name (optional)</label>
+            <input id="p-name" type="text" placeholder="e.g. Alternator, Shock Absorber" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Car Used For (Make) *</label>
-            <input id="p-make" type="text" required placeholder="Toyota, Audi..." class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Car Used For (Make, optional)</label>
+            <input id="p-make" type="text" placeholder="Toyota, Audi..." class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Model *</label>
-            <input id="p-model" type="text" required placeholder="Fielder, A4..." class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Model (optional)</label>
+            <input id="p-model" type="text" placeholder="Fielder, A4..." class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Year From *</label>
-            <input id="p-yfrom" type="number" required placeholder="2012" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Year From (optional)</label>
+            <input id="p-yfrom" type="number" placeholder="2012" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Year To *</label>
-            <input id="p-yto" type="number" required placeholder="2020" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Year To (optional)</label>
+            <input id="p-yto" type="number" placeholder="2020" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Condition *</label>
-            <select id="p-cond" required class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option>Used</option><option>New</option><option>Refurbished</option>
-            </select>
+            <label class="block text-xs font-bold mb-1">Condition (optional)</label>
+            <input id="p-cond" type="text" placeholder="Used, new, refurbished..." class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Genuine or Aftermarket *</label>
-            <select id="p-auth" required class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option>Genuine</option><option>Aftermarket</option>
-            </select>
+            <label class="block text-xs font-bold mb-1">Genuine or Aftermarket (optional)</label>
+            <input id="p-auth" type="text" placeholder="Genuine, aftermarket..." class="w-full border rounded-lg px-3 py-2" />
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t">
           <div>
-            <label class="block text-xs font-bold mb-1">Price (KES) *</label>
-            <input id="c-price" type="number" required min="1" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Price (KES, optional)</label>
+            <input id="c-price" type="number" min="0" placeholder="Leave blank for contact seller" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Negotiate *</label>
-            <select id="c-neg" required class="w-full border rounded-lg px-3 py-2 bg-white">
+            <label class="block text-xs font-bold mb-1">Negotiable (optional)</label>
+            <select id="c-neg" class="w-full border rounded-lg px-3 py-2 bg-white">
               <option>Yes</option><option>No</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Location *</label>
-            <input id="c-town" type="text" required value="Nakuru" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Location (optional)</label>
+            <input id="c-town" type="text" class="w-full border rounded-lg px-3 py-2" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t">
+          <div>
+            <label class="block text-xs font-bold mb-1">WhatsApp for this post (optional)</label>
+            <input id="c-whatsapp" type="tel" placeholder="Use account WhatsApp number" oninput="normalizeWhatsAppInput(this)" class="w-full border rounded-lg px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Phone to display on this post (optional)</label>
+            <input id="c-call" type="tel" placeholder="Use account phone number" class="w-full border rounded-lg px-3 py-2" />
           </div>
         </div>
 
@@ -554,7 +578,7 @@
         </div>
 
         <div>
-          <label class="block text-xs font-bold mb-1">Photos (1 to 6 photos required) *</label>
+          <label class="block text-xs font-bold mb-1">Photos (optional; select as many as needed)</label>
           <input id="c-files" type="file" accept="image/*" multiple onchange="onFilesSelected(event)" class="w-full border rounded-lg px-3 py-2 text-xs" />
           <div id="c-previews" class="grid grid-cols-6 gap-2 mt-2"></div>
         </div>
@@ -597,15 +621,16 @@
       <button type="button" onclick="closeM('modal-prio')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 font-bold">✕</button>
       <h2 class="text-xl font-extrabold">Prioritize Post (Sponsored)</h2>
       <p class="text-xs bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-lg mt-2">
-        Only <strong>20 posts/day</strong> can be prioritized. <strong>Whoever pays more is shown higher on top!</strong>
+        Choose an admin-set price and duration plan. There is no daily limit on sponsored posts.
       </p>
       <input type="hidden" id="prio-id" />
-      <div id="prio-summary" class="grid grid-cols-3 gap-2 my-3 text-center text-xs"></div>
-      <div class="flex gap-2 mb-4">
-        <input id="prio-bid" type="number" class="flex-1 border rounded-lg px-3 py-2 font-bold" />
+      <div id="prio-summary" class="grid grid-cols-2 gap-2 my-3 text-center text-xs"></div>
+      <div class="space-y-2 mb-4">
+        <label for="prio-plan" class="block text-xs font-bold">Priority plan</label>
+        <select id="prio-plan" class="w-full border rounded-lg px-3 py-2 bg-white"></select>
         <button type="button" onclick="openPrioritizePayment(this)" class="bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold px-4 py-2 rounded-lg">Pay & Sponsor</button>
       </div>
-      <div class="text-xs font-bold uppercase text-slate-400 mb-1">Who Prioritized Today (Highest First)</div>
+      <div class="text-xs font-bold uppercase text-slate-400 mb-1">Active sponsored listings</div>
       <div id="prio-list" class="max-h-48 overflow-y-auto border rounded-lg divide-y text-xs"></div>
     </div>
   </div>
@@ -613,6 +638,7 @@
   <footer class="bg-white border-t border-slate-200 py-5 px-4 text-center text-xs text-slate-500 mt-10">
     <div class="flex flex-wrap items-center justify-center gap-4 mb-1 font-semibold text-slate-600">
       <a href="terms.html" class="hover:text-emerald-700 underline">Terms & Conditions</a>
+      <a href="market.html" class="hover:text-emerald-700 underline">Market Data</a>
       <button type="button" onclick="openInfoModal('faq')" class="hover:text-emerald-700 underline">FAQ</button>
       <button type="button" onclick="openInfoModal('advertise')" class="hover:text-emerald-700 underline">Advertise With Us</button>
       <button type="button" onclick="openInfoModal('contact')" class="hover:text-emerald-700 underline">Contact: 0710911645</button>
@@ -623,21 +649,17 @@
   <script>
     const API_BASE = window.WARIARA_API_BASE || "https://carscrawers.onrender.com";
     const PAYHERO_BACKEND_URL = window.PAYHERO_BACKEND_URL || "https://parero.vercel.app";
-    const EMAILJS_PUBLIC_KEY = "wc0_v2KwNXY2ZonsD"
     const apiUrl = (path) => `${API_BASE}${path}`;
 
-    if (window.emailjs && EMAILJS_PUBLIC_KEY) {
-      emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
-    }
-
     let seller = JSON.parse(localStorage.getItem("wariara_seller") || "null");
-    let meta = { catalog: [], plans: [], settings: {} };
+    let meta = { catalog: [], plans: [], priorityPlans: [], settings: {} };
     let cat = "motor";
     let postCat = "motor";
     let storeSlug = "";
     let photos = [];
     let pendingOpenPostModalAfterAccount = false;
     let activeResetToken = new URLSearchParams(window.location.search).get("reset_token") || "";
+    let verifiedResetToken = "";
     let payHeroContext = null;
     let pollTimer = null;
 
@@ -673,6 +695,22 @@
       return data;
     }
 
+    function normalizeWhatsAppInput(input) {
+      const digits = input.value.replace(/\D/g, "");
+      if (digits.startsWith("0")) input.value = `+254${digits.slice(1)}`;
+      else if (digits.startsWith("7")) input.value = `+254${digits}`;
+      else if (digits.startsWith("2540") && digits.length === 13) input.value = `+254${digits.slice(4)}`;
+      else if (digits.startsWith("254")) input.value = `+${digits}`;
+    }
+
+    function waNumber(phone) {
+      const digits = String(phone || "").replace(/\D/g, "");
+      if (digits.startsWith("0") && digits.length === 10) return `254${digits.slice(1)}`;
+      if (digits.startsWith("7") && digits.length === 9) return `254${digits}`;
+      if (digits.startsWith("2540") && digits.length === 13) return `254${digits.slice(4)}`;
+      return digits;
+    }
+
     async function boot() {
       try {
         meta = await apiFetch("/api/meta");
@@ -683,10 +721,11 @@
         document.getElementById("f-brand").innerHTML = `<option value="">All Brands</option>` + brands.map((b) => `<option value="${b}">${b}</option>`).join("");
         const bodies = [...new Set(meta.catalog.map((x) => x.body_type))];
         document.getElementById("f-body").innerHTML = `<option value="">Body: All</option>` + bodies.map((b) => `<option value="${b}">${b}</option>`).join("");
-        fillPostBrands();
         updateSellerPill();
 
         if (activeResetToken) {
+          document.getElementById("reset-code-form").classList.add("hidden");
+          document.getElementById("reset-password-form").classList.remove("hidden");
           document.getElementById("reset-token-box").classList.remove("hidden");
           switchPage("account-gate");
           setAuthTab("login");
@@ -725,6 +764,15 @@
       }
     }
 
+    function toggleMobileFilters() {
+      document.body.classList.toggle("show-market-filters");
+    }
+
+    function searchMobile() {
+      document.getElementById("f-q").value = document.getElementById("f-q-mobile").value;
+      loadListings();
+    }
+
     function openSellerWorkspace() {
       if (!seller) {
         switchPage("account-gate");
@@ -747,11 +795,15 @@
           <h2 class="text-xl font-extrabold text-slate-900">Advertise With Us</h2>
           <p class="text-slate-600">Boost your cars, trucks, motorbikes, spare parts, or showroom across Central Rift and Kenya.</p>
           <ul class="list-disc pl-5 text-slate-700 space-y-1 text-xs">
-            <li><strong>24h Priority Slots:</strong> Up to 20 sponsored posts per day; higher bids rank higher.</li>
+            <li><strong>Sponsored priority:</strong> Choose an admin-set price and duration plan; there is no daily post limit.</li>
             <li><strong>70-Day Post Plans:</strong> Purchased post credits run for 70 days once published.</li>
             <li><strong>Direct Seller Contact:</strong> Buyers reach you via WhatsApp or phone call.</li>
           </ul>
           <a href="https://wa.me/254710911645?text=${encodeURIComponent("Hello Wariara Cars Central Rift, I would like to advertise with you.")}" target="_blank" rel="noopener" class="inline-block bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-lg text-xs">WhatsApp 0710911645</a>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="closeM('modal-info'); startSellingForCategory('motor', this)" class="bg-slate-900 text-white font-bold px-4 py-2.5 rounded-lg text-xs">Create Account & Start Selling</button>
+            <button type="button" onclick="closeM('modal-info'); openSellerWorkspace()" class="border border-slate-300 font-bold px-4 py-2.5 rounded-lg text-xs">Sign In to Seller Account</button>
+          </div>
         `;
       } else if (kind === "faq") {
         body.innerHTML = `
@@ -760,7 +812,7 @@
             <div><strong>How many free posts do I get?</strong> Each seller account starts with 6 free posts.</div>
             <div><strong>How long do purchased posts run?</strong> Posts created with paid credits run for <strong>70 days</strong> and then expire.</div>
             <div><strong>Why is my post not visible right away?</strong> All posts go to Admin for approval first; once approved, all your filled details appear on the marketplace.</div>
-            <div><strong>How does Prioritize work?</strong> Up to 20 posts/day can be prioritized; whoever pays more appears higher on top.</div>
+            <div><strong>How does Prioritize work?</strong> Choose an admin-set price and duration plan. Sponsored posts are ranked by plan price, with no daily limit.</div>
           </div>
         `;
       } else {
@@ -850,6 +902,9 @@
 
     async function loadListings(btn = null) {
       await runWithButtonLock(btn, async () => {
+        document.getElementById("count-label").textContent = "Searching...";
+        document.getElementById("market-grid").innerHTML =
+          `<div class="col-span-full bg-white rounded-xl border border-slate-200 p-6 text-center text-sm text-slate-500">Searching listings...</div>`;
         const qs = new URLSearchParams({ category: cat, sort: document.getElementById("f-sort").value });
         const fields = {
           q: "f-q", seller: "f-seller", town: "f-town", brand: "f-brand", model: "f-model",
@@ -867,23 +922,27 @@
 
         const { listings = [] } = await apiFetch(`/api/listings?${qs.toString()}`);
         document.getElementById("count-label").textContent = listings.length;
+        if (document.getElementById("f-q-mobile")) {
+          document.getElementById("f-q-mobile").value = document.getElementById("f-q").value;
+        }
 
         if (listings.length === 0) {
           document.getElementById("market-grid").innerHTML =
-            `<div class="col-span-full bg-white rounded-xl border border-slate-200 p-8 text-center text-sm text-slate-500">No approved active listings match your filters.</div>`;
+            `<div class="col-span-full bg-white rounded-xl border border-slate-200 p-8 text-center text-sm text-slate-500">No approved listings match your filters.</div>`;
           return;
         }
 
         document.getElementById("market-grid").innerHTML = listings.map((item) => {
-          const wa = encodeURIComponent(`Hi ${item.seller_name}, I saw ${item.title} (KES ${Number(item.price_kes).toLocaleString()}) on Wariara Cars Central Rift.`);
-          const waNum = (item.whatsapp_phone || "").replace(/[^0-9]/g, "");
+          const wa = encodeURIComponent(`Hi ${item.seller_name}, I saw ${item.title}${Number(item.price_kes) > 0 ? ` (KES ${Number(item.price_kes).toLocaleString()})` : ""} on Wariara Cars Central Rift.`);
+          const waNum = waNumber(item.whatsapp_phone);
           const specs = buildSpecsBadges(item);
           return `
             <div class="bg-white rounded-xl border ${item.is_sponsored ? "border-amber-400 ring-1 ring-amber-300" : "border-slate-200"} overflow-hidden flex flex-col card-lift">
               <div class="relative aspect-[16/10] bg-slate-100 cursor-pointer" onclick="openDetail('${item.id}')">
                 <img src="${item.cover_photo || ""}" alt="${item.title}" class="w-full h-full object-cover" />
                 ${item.is_sponsored ? `<span class="absolute top-2 left-2 bg-amber-400 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase">Sponsored</span>` : ""}
-                <span class="absolute bottom-2 right-2 bg-black/65 text-white text-[10px] px-2 py-0.5 rounded">${item.photo_count}/6 photos</span>
+                <span class="absolute top-2 right-2 bg-emerald-700 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">AVAILABLE</span>
+                <button type="button" onclick="event.stopPropagation(); openDetail('${item.id}')" class="absolute bottom-2 right-2 bg-black/75 hover:bg-black text-white text-[10px] font-bold px-2.5 py-1 rounded">View all ${item.photo_count} photos</button>
               </div>
               <div class="p-4 flex-1 flex flex-col justify-between">
                 <div>
@@ -895,7 +954,7 @@
                 </div>
                 <div class="mt-3 pt-3 border-t border-slate-100">
                   <div class="flex items-baseline justify-between">
-                    <span class="font-extrabold text-emerald-700 text-base">KES ${Number(item.price_kes).toLocaleString()}</span>
+                    <span class="font-extrabold text-emerald-700 text-base">${Number(item.price_kes) > 0 ? `KES ${Number(item.price_kes).toLocaleString()}` : "Contact seller for price"}</span>
                     <span class="text-[11px] text-slate-500">Price: ${item.negotiable === "Yes" ? "Negotiable" : "Fixed"}</span>
                   </div>
                   <div class="grid grid-cols-3 gap-1.5 mt-2.5 text-xs font-bold">
@@ -921,21 +980,21 @@
 
     async function openDetail(id) {
       const { listing } = await apiFetch(`/api/listings/${id}`);
-      const wa = encodeURIComponent(`Hi ${listing.seller_name}, I am interested in ${listing.title} (KES ${Number(listing.price_kes).toLocaleString()}).`);
-      const waNum = (listing.whatsapp_phone || "").replace(/[^0-9]/g, "");
+      const wa = encodeURIComponent(`Hi ${listing.seller_name}, I am interested in ${listing.title}${Number(listing.price_kes) > 0 ? ` (KES ${Number(listing.price_kes).toLocaleString()})` : ""}.`);
+      const waNum = waNumber(listing.whatsapp_phone);
       const specs = buildSpecsBadges(listing);
       document.getElementById("detail-body").innerHTML = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <img id="main-p" src="${listing.photos[0]?.photo_data || ""}" class="w-full aspect-[4/3] object-cover rounded-xl border" />
-            <div class="grid grid-cols-6 gap-2 mt-2">
-              ${listing.photos.map((p) => `<img src="${p.photo_data}" onclick="document.getElementById('main-p').src=this.src" class="aspect-square object-cover rounded-lg cursor-pointer border" />`).join("")}
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+              ${listing.photos.map((p) => `<img src="${p.photo_data}" alt="${listing.title}" onclick="document.getElementById('main-p').src=this.src" class="w-full aspect-[4/3] object-cover rounded-lg cursor-pointer border" />`).join("")}
             </div>
           </div>
           <div>
-            <span class="text-xs font-bold text-emerald-700 uppercase">Location: ${listing.town} · Price: ${listing.negotiable === "Yes" ? "Negotiable" : "Fixed Price"}</span>
+            <span class="text-xs font-bold text-emerald-700 uppercase">${listing.status === "sold" ? "SOLD" : "AVAILABLE"} · ${listing.town ? `Location: ${listing.town}` : "Location not provided"} · Price: ${Number(listing.price_kes) > 0 ? (listing.negotiable === "Yes" ? "Negotiable" : "Fixed Price") : "Contact seller"}</span>
             <h2 class="text-2xl font-extrabold mt-1">${listing.title}</h2>
-            <div class="text-2xl font-black text-emerald-700 my-2">KES ${Number(listing.price_kes).toLocaleString()}</div>
+            <div class="text-2xl font-black text-emerald-700 my-2">${Number(listing.price_kes) > 0 ? `KES ${Number(listing.price_kes).toLocaleString()}` : "Contact seller for price"}</div>
             <div class="flex flex-wrap gap-1.5 mb-3">
               ${specs.map((s) => `<span class="text-xs bg-slate-100 text-slate-800 px-2.5 py-1 rounded-md font-semibold">${s}</span>`).join("")}
             </div>
@@ -1012,11 +1071,15 @@
     }
 
     function openCreatePostModal(initialCat = "motor") {
+      document.querySelector("#modal-post form").reset();
       document.getElementById("edit-id").value = "";
-      document.getElementById("post-modal-title").textContent = "Create New Post (All Fields Required · Max 6 Photos)";
+      document.getElementById("post-modal-title").textContent = "Create New Post (only description required)";
       document.getElementById("post-cat-toggle").classList.remove("hidden");
       photos = [];
       document.getElementById("c-previews").innerHTML = "";
+      document.getElementById("c-town").value = seller?.town || "";
+      document.getElementById("c-whatsapp").value = "";
+      document.getElementById("c-call").value = "";
       setPostCat(initialCat);
       document.getElementById("modal-post").classList.remove("hidden");
     }
@@ -1031,20 +1094,20 @@
       document.getElementById("c-neg").value = listing.negotiable;
       document.getElementById("c-town").value = listing.town;
       document.getElementById("c-desc").value = listing.description || "";
+      document.getElementById("c-whatsapp").value = listing.whatsapp_phone || "";
+      document.getElementById("c-call").value = listing.call_phone || "";
       if (listing.category === "motor") {
-        document.getElementById("m-type").value = listing.vehicle_type || "Car";
-        fillPostBrands();
+        document.getElementById("m-type").value = listing.vehicle_type || "";
         document.getElementById("m-brand").value = listing.brand || "";
-        fillPostModels();
         document.getElementById("m-model").value = listing.model || "";
         document.getElementById("m-body").value = listing.body_type || "";
-        document.getElementById("m-cond").value = listing.condition_type || "Used";
-        document.getElementById("m-year").value = listing.year || 2018;
+        document.getElementById("m-cond").value = listing.condition_type || "";
+        document.getElementById("m-year").value = listing.year || "";
         document.getElementById("m-reg").value = listing.reg_number || "";
-        document.getElementById("m-fuel").value = listing.fuel_type || "Petrol";
-        document.getElementById("m-trans").value = listing.transmission || "Automatic";
-        document.getElementById("m-drive").value = listing.drive_type || "Right";
-        document.getElementById("m-ac").value = listing.air_con || "Yes";
+        document.getElementById("m-fuel").value = listing.fuel_type || "";
+        document.getElementById("m-trans").value = listing.transmission || "";
+        document.getElementById("m-drive").value = listing.drive_type || "";
+        document.getElementById("m-ac").value = listing.air_con || "";
         document.getElementById("m-cc").value = listing.engine_cc || "";
         document.getElementById("m-km").value = listing.mileage_km || "";
       } else {
@@ -1053,8 +1116,8 @@
         document.getElementById("p-model").value = listing.part_model || "";
         document.getElementById("p-yfrom").value = listing.year_from || "";
         document.getElementById("p-yto").value = listing.year_to || "";
-        document.getElementById("p-cond").value = listing.part_condition || "Used";
-        document.getElementById("p-auth").value = listing.part_authenticity || "Genuine";
+        document.getElementById("p-cond").value = listing.part_condition || "";
+        document.getElementById("p-auth").value = listing.part_authenticity || "";
       }
       photos = listing.photos.map((p) => p.photo_data);
       renderPreviews();
@@ -1068,13 +1131,6 @@
       document.getElementById("part-form").classList.toggle("hidden", isMotor);
       document.getElementById("part-form").classList.toggle("grid", !isMotor);
 
-      document.querySelectorAll("#motor-form input, #motor-form select").forEach((el) => {
-        el.required = isMotor;
-      });
-      document.querySelectorAll("#part-form input, #part-form select").forEach((el) => {
-        el.required = !isMotor;
-      });
-
       document.getElementById("pcat-motor").className = isMotor
         ? "py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white"
         : "py-2 rounded-lg font-bold text-sm bg-slate-100";
@@ -1083,35 +1139,16 @@
         : "py-2 rounded-lg font-bold text-sm bg-slate-100";
     }
 
-    function fillPostBrands() {
-      const vt = document.getElementById("m-type").value;
-      const bs = [...new Set(meta.catalog.filter((x) => x.vehicle_type === vt).map((x) => x.brand))];
-      document.getElementById("m-brand").innerHTML = bs.map((b) => `<option value="${b}">${b}</option>`).join("");
-      fillPostModels();
-    }
-
-    function fillPostModels() {
-      const vt = document.getElementById("m-type").value;
-      const br = document.getElementById("m-brand").value;
-      const ms = [...new Set(meta.catalog.filter((x) => x.vehicle_type === vt && x.brand === br).map((x) => x.model))];
-      document.getElementById("m-model").innerHTML = ms.map((m) => `<option value="${m}">${m}</option>`).join("");
-      fillPostBody();
-    }
-
-    function fillPostBody() {
-      const vt = document.getElementById("m-type").value;
-      const br = document.getElementById("m-brand").value;
-      const mo = document.getElementById("m-model").value;
-      const match = meta.catalog.find((x) => x.vehicle_type === vt && x.brand === br && x.model === mo);
-      if (match) document.getElementById("m-body").value = match.body_type;
-    }
-
     async function onFilesSelected(e) {
-      const list = Array.from(e.target.files).slice(0, 6);
-      if (e.target.files.length > 6) alert("Maximum 6 photos per post.");
       photos = [];
-      for (const f of list) photos.push(await compress(f));
-      renderPreviews();
+      try {
+        for (const file of Array.from(e.target.files)) photos.push(await compress(file));
+        renderPreviews();
+      } catch (err) {
+        photos = [];
+        renderPreviews();
+        alert(`Could not load selected photos: ${err.message}`);
+      }
     }
 
     function compress(file) {
@@ -1145,10 +1182,6 @@
         switchPage("account-gate");
         return;
       }
-      if (photos.length === 0) {
-        return alert("Please select at least 1 photo (up to 6).");
-      }
-
       await runWithButtonLock(btn, async () => {
         const editId = document.getElementById("edit-id").value;
         const payload = {
@@ -1158,6 +1191,8 @@
           negotiable: document.getElementById("c-neg").value,
           town: document.getElementById("c-town").value,
           description: document.getElementById("c-desc").value,
+          whatsapp_phone: document.getElementById("c-whatsapp").value,
+          call_phone: document.getElementById("c-call").value,
           photos,
         };
         if (postCat === "motor") {
@@ -1280,24 +1315,36 @@
       await runWithButtonLock(btn, async () => {
         try {
           const emailVal = document.getElementById("fp-email").value.trim();
-          const tokenResp = await apiFetch("/api/sellers/forgot-password/token", {
+          const response = await apiFetch("/api/sellers/forgot-password/code", {
             method: "POST",
             body: JSON.stringify({ email: emailVal }),
           });
-          const resetLink = `${window.location.origin}${window.location.pathname}?reset_token=${encodeURIComponent(tokenResp.token)}`;
+          verifiedResetToken = "";
+          document.getElementById("reset-code").value = "";
+          document.getElementById("reset-code-form").classList.remove("hidden");
+          document.getElementById("reset-password-form").classList.add("hidden");
+          document.getElementById("reset-token-box").classList.remove("hidden");
+          alert(response.message);
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    }
 
-          if (!window.emailjs || !EMAILJS_PUBLIC_KEY) {
-            throw new Error("EmailJS is not loaded.");
-          }
-
-          await emailjs.send("service_39pgd3j", "template_euj4t1e", {
-            to_email: tokenResp.email,
-            to_name: tokenResp.name,
-            reset_link: resetLink,
-            reset_token: tokenResp.token,
+    async function verifyPasswordResetCode(e, btn = null) {
+      e.preventDefault();
+      await runWithButtonLock(btn, async () => {
+        try {
+          const response = await apiFetch("/api/sellers/forgot-password/verify", {
+            method: "POST",
+            body: JSON.stringify({
+              email: document.getElementById("fp-email").value.trim(),
+              code: document.getElementById("reset-code").value.trim(),
+            }),
           });
-
-          alert("One-time password reset link sent to your email via EmailJS.");
+          verifiedResetToken = response.reset_token;
+          document.getElementById("reset-code-form").classList.add("hidden");
+          document.getElementById("reset-password-form").classList.remove("hidden");
         } catch (err) {
           alert(err.message);
         }
@@ -1317,13 +1364,14 @@
           const d = await apiFetch("/api/sellers/reset-password", {
             method: "POST",
             body: JSON.stringify({
-              token: activeResetToken,
+              token: verifiedResetToken || activeResetToken,
               password: p1,
               confirm_password: p2,
             }),
           });
           alert(d.message);
           activeResetToken = "";
+          verifiedResetToken = "";
           window.history.replaceState({}, document.title, window.location.pathname);
           document.getElementById("reset-token-box").classList.add("hidden");
           if (d.user) {
@@ -1358,7 +1406,10 @@
         seller = fresh.user;
         localStorage.setItem("wariara_seller", JSON.stringify(seller));
         updateSellerPill();
-      } catch {}
+      } catch (err) {
+        alert(`Could not refresh seller account: ${err.message}`);
+        return;
+      }
 
       document.getElementById("active-seller-name").textContent = seller.name || "Seller Profile";
       document.getElementById("active-seller-meta").textContent = `${seller.email} · ${seller.town} · WA: ${seller.whatsapp_phone}`;
@@ -1388,19 +1439,26 @@
         const daysText = l.days_remaining !== null
           ? `<span class="ml-2 text-[11px] font-bold ${l.days_remaining === 0 ? "text-red-600" : "text-emerald-700"}">${l.days_remaining}d left (70d)</span>`
           : `<span class="ml-2 text-[11px] text-slate-400">Free post (no 70d expiry)</span>`;
+        const priorityText = l.is_prioritized
+          ? `<span class="ml-2 text-[11px] font-bold text-amber-800">Sponsored: ${l.priority_plan_name || "Priority"} · ${l.priority_remaining_hours}h left (ends ${new Date(l.priority_expires_at).toLocaleString()})</span>`
+          : "";
         return `
           <div class="border rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
             <div>
               <strong class="text-sm">${l.title}</strong>
-              <span class="ml-2 px-2 py-0.5 rounded bg-slate-100 font-bold uppercase">${l.status.replace("_", " ")}</span>
+              <span class="ml-2 px-2 py-0.5 rounded ${l.status === "sold" ? "bg-red-100 text-red-800" : l.status === "active" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100"} font-bold uppercase">${l.status === "active" ? "available" : l.status.replace("_", " ")}</span>
               ${daysText}
-              <div class="text-slate-500">KES ${Number(l.price_kes).toLocaleString()} · ${l.town}</div>
+              ${priorityText}
+              <div class="text-slate-500">${Number(l.price_kes) > 0 ? `KES ${Number(l.price_kes).toLocaleString()}` : "Contact for price"} · ${l.town || "Location not provided"}</div>
             </div>
             <div class="flex flex-wrap gap-1.5 font-bold">
               <button type="button" onclick="openEditPost('${l.id}')" class="border px-2.5 py-1 rounded-lg">Edit</button>
               ${l.status === "active" ? `<button type="button" onclick="togglePause('${l.id}','paused', this)" class="border px-2.5 py-1 rounded-lg">Pause</button>` : ""}
               ${l.status === "paused" ? `<button type="button" onclick="togglePause('${l.id}','active', this)" class="bg-emerald-600 text-white px-2.5 py-1 rounded-lg">Resume</button>` : ""}
+              ${["active", "paused"].includes(l.status) ? `<button type="button" onclick="togglePause('${l.id}','sold', this)" class="bg-red-600 text-white px-2.5 py-1 rounded-lg">Mark Sold</button>` : ""}
+              ${l.status === "sold" ? `<button type="button" onclick="togglePause('${l.id}','active', this)" class="bg-emerald-600 text-white px-2.5 py-1 rounded-lg">Mark Available</button>` : ""}
               ${l.status === "active" ? `<button type="button" onclick="openPrio('${l.id}')" class="bg-amber-400 text-slate-950 px-2.5 py-1 rounded-lg">Prioritize</button>` : ""}
+              <button type="button" onclick="deleteListing('${l.id}', this)" class="border border-red-300 text-red-700 px-2.5 py-1 rounded-lg">Delete</button>
             </div>
           </div>
         `;
@@ -1429,18 +1487,17 @@
         return;
       }
       const listingId = document.getElementById("prio-id").value;
-      const amount = Number(document.getElementById("prio-bid").value);
-      if (!amount || amount < 1) {
-        return alert("Enter a valid priority amount in KES.");
-      }
+      const priorityPlan = meta.priorityPlans.find((plan) => plan.id === document.getElementById("prio-plan").value);
+      if (!priorityPlan) return alert("Select an available priority plan.");
       payHeroContext = {
         type: "prioritize",
         listingId,
-        amount,
-        label: `Prioritise Post (24h Sponsored)`,
+        priorityPlanId: priorityPlan.id,
+        amount: Number(priorityPlan.price_kes),
+        label: `Prioritise Post (${priorityPlan.name}, ${priorityPlan.duration_hours} hours)`,
       };
       closeM("modal-prio");
-      showPayHeroModal(amount, payHeroContext.label);
+      showPayHeroModal(payHeroContext.amount, payHeroContext.label);
     }
 
     function showPayHeroModal(amount, purposeLabel) {
@@ -1551,7 +1608,8 @@
         const d = await apiFetch(`/api/listings/${ctx.listingId}/prioritize`, {
           method: "POST",
           body: JSON.stringify({
-            amount_kes: ctx.amount,
+            seller_id: seller.id,
+            priority_plan_id: ctx.priorityPlanId,
             payment_ref: payRef,
             payer_phone: payerPhone,
           }),
@@ -1624,6 +1682,22 @@
       });
     }
 
+    async function deleteListing(id, btn = null) {
+      if (!confirm("Permanently delete this listing and its photos? This cannot be undone.")) return;
+      await runWithButtonLock(btn, async () => {
+        try {
+          const result = await apiFetch(`/api/listings/${id}`, {
+            method: "DELETE",
+            body: JSON.stringify({ seller_id: seller.id }),
+          });
+          alert(result.message);
+          await renderSellerPage();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    }
+
     async function sendAppeal(btn = null) {
       const appeal_text = document.getElementById("appeal-msg").value;
       await runWithButtonLock(btn, async () => {
@@ -1643,14 +1717,15 @@
       document.getElementById("prio-id").value = id;
       const d = await apiFetch("/api/priority/leaderboard");
       document.getElementById("prio-summary").innerHTML = `
-        <div class="bg-slate-100 p-2 rounded">Base Fee: <strong>KES ${d.baseFee}</strong></div>
-        <div class="bg-amber-50 p-2 rounded">Slots: <strong>${d.usedSlots}/${d.maxSlots}</strong></div>
-        <div class="bg-emerald-50 p-2 rounded">Top #1 Bid: <strong>KES ${d.recommendedForTop1}</strong></div>
+        <div class="bg-slate-100 p-2 rounded">Active sponsored posts: <strong>${d.usedSlots}</strong></div>
+        <div class="bg-emerald-50 p-2 rounded">Available plans: <strong>${meta.priorityPlans.length}</strong></div>
       `;
-      document.getElementById("prio-bid").value = d.recommendedForTop1;
+      document.getElementById("prio-plan").innerHTML = meta.priorityPlans.map((plan) =>
+        `<option value="${plan.id}">${plan.name} · ${plan.duration_hours} hours · KES ${Number(plan.price_kes).toLocaleString()}</option>`
+      ).join("");
       document.getElementById("prio-list").innerHTML = d.leaderboard.length === 0
-        ? `<div class="p-3 text-slate-500">No prioritized posts yet. Pay KES ${d.baseFee} for #1.</div>`
-        : d.leaderboard.map((x, i) => `<div class="p-2 flex justify-between"><span><strong>#${i + 1}</strong> ${x.title} (${x.seller_name})</span><strong class="text-emerald-700">KES ${x.priority_amount_kes}</strong></div>`).join("");
+        ? `<div class="p-3 text-slate-500">No active sponsored posts yet.</div>`
+        : d.leaderboard.map((x, i) => `<div class="p-2 flex justify-between gap-2"><span><strong>#${i + 1}</strong> ${x.title} (${x.seller_name}) · ${x.priority_plan_name || "Priority"} · ends ${new Date(x.priority_expires_at).toLocaleString()}</span><strong class="text-emerald-700 whitespace-nowrap">KES ${Number(x.priority_amount_kes).toLocaleString()}</strong></div>`).join("");
       document.getElementById("modal-prio").classList.remove("hidden");
     }
 
