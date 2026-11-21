@@ -6,15 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wariara Cars Central Rift | Buy & Sell Cars, Trucks, Bikes & Spare Parts</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="public/api-config.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 
     async function initFirebase() {
-      const apiConfigUrl = window.location.protocol === "file:"
-        ? "http://localhost:3000/api/config"
-        : "/api/config";
-      const response = await fetch(apiConfigUrl, { cache: "no-store" });
+      const response = await fetch(`${window.WARIARA_API_CONFIG.API_BASE}/api/config`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(4000)
+      });
       if (!response.ok) throw new Error("Could not load public application configuration.");
       const config = await response.json();
       window.wariaraPublicConfig = config;
@@ -40,7 +41,9 @@
       };
     }
 
-    initFirebase().catch((error) => console.error(error));
+    initFirebase().catch(() => {
+      window.wariaraFirebase = null;
+    });
   </script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif; }
@@ -102,14 +105,14 @@
       </div>
     </div>
 
-    <nav id="main-menu" class="hidden lg:hidden border-t border-slate-100 bg-white px-4 py-3">
-      <div class="flex flex-col gap-2 text-sm font-bold">
-        <button type="button" onclick="startSellingForCategory('part', this)">Spare Part Sell</button>
-        <button type="button" onclick="switchPage('dealers')">Dealer</button>
-        <a href="market.html">Market Data</a>
-        <a href="faq.html">FAQ</a>
-        <button type="button" onclick="openInfoModal('contact')">Contact Us</button>
-        <a href="terms.html">Terms & Conditions</a>
+    <nav id="main-menu" class="hidden lg:hidden border-t border-slate-100 bg-white px-4 py-3 shadow-md">
+      <div class="max-w-7xl mx-auto grid grid-cols-2 gap-2 text-sm font-bold">
+        <button type="button" onclick="startSellingForCategory('part', this); toggleMainMenu()" class="text-left border border-slate-200 rounded-lg px-3 py-2.5 hover:border-emerald-600">Spare Parts Sell</button>
+        <button type="button" onclick="switchPage('dealers'); toggleMainMenu()" class="text-left border border-slate-200 rounded-lg px-3 py-2.5 hover:border-emerald-600">Dealer</button>
+        <a href="market.html" class="text-left border border-slate-200 rounded-lg px-3 py-2.5 hover:border-emerald-600">Market Data</a>
+        <a href="faq.html" class="text-left border border-slate-200 rounded-lg px-3 py-2.5 hover:border-emerald-600">FAQ</a>
+        <button type="button" onclick="openInfoModal('contact'); toggleMainMenu()" class="text-left border border-slate-200 rounded-lg px-3 py-2.5 hover:border-emerald-600">Contact Us</button>
+        <a href="terms.html" class="text-left border border-slate-200 rounded-lg px-3 py-2.5 hover:border-emerald-600">Terms & Conditions</a>
       </div>
     </nav>
 
@@ -685,6 +688,18 @@
     </div>
   </div>
 
+  <div id="modal-api-settings" class="hidden fixed inset-0 bg-black/60 z-[80] flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-md w-full p-5 shadow-xl">
+      <h2 class="text-lg font-extrabold">Backend Connection</h2>
+      <p class="text-xs text-slate-500 mt-1">Set the API address once. It is saved on this device.</p>
+      <div class="space-y-3 mt-4">
+        <div><label for="api-base-input" class="block text-xs font-bold mb-1">Backend API link</label><input id="api-base-input" type="url" placeholder="http://localhost:3000" class="w-full border rounded-lg px-3 py-2 text-sm" /></div>
+        <div><label for="payhero-base-input" class="block text-xs font-bold mb-1">Payment backend link</label><input id="payhero-base-input" type="url" placeholder="https://parero.vercel.app" class="w-full border rounded-lg px-3 py-2 text-sm" /></div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mt-4"><button type="button" onclick="closeApiSettings()" class="border rounded-lg py-2 text-sm font-bold">Cancel</button><button type="button" onclick="saveApiSettings(this)" class="bg-emerald-600 text-white rounded-lg py-2 text-sm font-bold">Save & Reconnect</button></div>
+    </div>
+  </div>
+
   <footer class="bg-white border-t border-slate-200 py-5 px-4 text-center text-xs text-slate-500 mt-10">
     <div class="flex flex-wrap items-center justify-center gap-4 mb-1 font-semibold text-slate-600">
       <a href="terms.html" class="hover:text-emerald-700 underline">Terms & Conditions</a>
@@ -692,16 +707,20 @@
       <button type="button" onclick="openInfoModal('faq')" class="hover:text-emerald-700 underline">FAQ</button>
       <button type="button" onclick="openInfoModal('advertise')" class="hover:text-emerald-700 underline">Advertise With Us</button>
       <button type="button" onclick="openInfoModal('contact')" class="hover:text-emerald-700 underline">Contact: 0710911645</button>
+      <button type="button" onclick="openApiSettings()" class="hover:text-emerald-700 underline">Backend Link</button>
     </div>
     <div>Wariara Cars Central Rift · Call / WhatsApp: 0710911645</div>
   </footer>
 
   <script>
-    let API_BASE = window.location.protocol === "file:" ? "https://carscrawers.onrender.com" : window.location.origin;
-    let PAYHERO_BACKEND_URL = window.location.origin && window.location.protocol !== "file:" ? window.location.origin : "https://carscrawers.onrender.com";
+    const API_CONFIG = window.WARIARA_API_CONFIG;
+    const PAYHERO_BACKEND_URL = API_CONFIG.PAYHERO_BACKEND_URL;
+    let API_BASE = API_CONFIG.API_BASE;
 
     function toggleMainMenu() {
-      document.getElementById("main-menu").classList.toggle("hidden");
+      const menu = document.getElementById("main-menu");
+      menu.classList.toggle("hidden");
+      menu.setAttribute("aria-hidden", menu.classList.contains("hidden") ? "true" : "false");
     }
 
     function applyBrightTheme() {
@@ -726,9 +745,29 @@
         sessionStorage.setItem("wariara_cookie_prompted", "1");
         document.getElementById("cookie-banner").classList.remove("hidden");
       }
-      window.setTimeout(() => document.getElementById("welcome-loader")?.classList.add("hidden"), 550);
+      window.setTimeout(() => document.getElementById("welcome-loader")?.classList.add("hidden"), 260);
     }
     const apiUrl = (path) => `${API_BASE}${path}`;
+
+    function openApiSettings() {
+      document.getElementById("api-base-input").value = API_BASE;
+      document.getElementById("payhero-base-input").value = PAYHERO_BACKEND_URL;
+      document.getElementById("modal-api-settings").classList.remove("hidden");
+    }
+
+    function closeApiSettings() {
+      document.getElementById("modal-api-settings").classList.add("hidden");
+    }
+
+    async function saveApiSettings(btn) {
+      const apiBase = document.getElementById("api-base-input").value.trim();
+      const payHeroBase = document.getElementById("payhero-base-input").value.trim();
+      if (!/^https?:\/\//i.test(apiBase)) return alert("Enter a valid backend link starting with http:// or https://");
+      if (payHeroBase && !/^https?:\/\//i.test(payHeroBase)) return alert("Enter a valid payment backend link.");
+      window.setWariaraBackendUrls(apiBase, payHeroBase);
+      closeApiSettings();
+      window.location.reload();
+    }
 
     let seller = JSON.parse(localStorage.getItem("wariara_seller") || "null");
     let meta = { catalog: [], plans: [], priorityPlans: [], settings: {} };
@@ -815,11 +854,17 @@
             await completeSellerLogin(login.user);
           }
         }
-        const publicConfig = await apiFetch("/api/config");
+        const publicConfig = await apiFetch("/api/config", { signal: AbortSignal.timeout(4000) }).catch(() => null);
         window.wariaraPublicConfig = publicConfig;
-        API_BASE = publicConfig.apiBase || window.location.origin;
-        PAYHERO_BACKEND_URL = publicConfig.payHeroBase || window.location.origin;
-        meta = await apiFetch("/api/meta");
+        API_BASE = API_CONFIG.API_BASE;
+        const metaCacheKey = "wariara_meta_cache";
+        let cachedMeta = null;
+        try { cachedMeta = JSON.parse(sessionStorage.getItem(metaCacheKey) || "null"); } catch (_) {}
+        if (cachedMeta?.expiresAt > Date.now()) meta = cachedMeta.value;
+        else {
+          meta = await apiFetch("/api/meta", { signal: AbortSignal.timeout(8000) });
+          sessionStorage.setItem(metaCacheKey, JSON.stringify({ value: meta, expiresAt: Date.now() + 10 * 60 * 1000 }));
+        }
         const brands = [...new Set(meta.catalog.map((x) => x.brand))];
         document.getElementById("quick-makes").innerHTML =
           `<button type="button" onclick="pickBrand('')" class="px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-semibold">All</button>` +
@@ -846,7 +891,7 @@
     async function loginWithGoogle(btn = null) {
       await runWithButtonLock(btn, async () => {
         try {
-          if (!window.wariaraFirebase) throw new Error("Firebase is still loading. Please try again.");
+          if (!window.wariaraFirebase) throw new Error("Sign-in is still loading. Please try again.");
           const credential = await window.wariaraFirebase.loginWithGoogle();
           const email = credential.user.email;
           try {
@@ -861,11 +906,7 @@
             alert("Complete the seller profile fields once, then create your account.");
           }
         } catch (err) {
-          if (err.code === "auth/unauthorized-domain") {
-            alert("Google sign-in is blocked because this domain is not authorized in Firebase Authentication. Add this exact site domain under Firebase Console → Authentication → Settings → Authorized domains.");
-          } else {
-            alert(err.message);
-          }
+          alert("Google sign-in is unavailable right now. Please try again or use email and password.");
         }
       });
     }
@@ -1053,7 +1094,17 @@
         }
         if (storeSlug) qs.set("seller_slug", storeSlug);
 
-        const { listings = [] } = await apiFetch(`/api/listings?${qs.toString()}`);
+        const listingsCacheKey = `wariara_listings_${qs.toString()}`;
+        let listings = [];
+        try {
+          const cached = JSON.parse(sessionStorage.getItem(listingsCacheKey) || "null");
+          if (cached?.expiresAt > Date.now()) listings = cached.value;
+        } catch (_) {}
+        if (!listings.length) {
+          const response = await apiFetch(`/api/listings?${qs.toString()}`, { signal: AbortSignal.timeout(8000) });
+          listings = response.listings || [];
+          sessionStorage.setItem(listingsCacheKey, JSON.stringify({ value: listings, expiresAt: Date.now() + 20 * 1000 }));
+        }
         document.getElementById("count-label").textContent = listings.length;
         if (document.getElementById("f-q-mobile")) {
           document.getElementById("f-q-mobile").value = document.getElementById("f-q").value;
@@ -1403,7 +1454,7 @@
 
       await runWithButtonLock(btn, async () => {
         try {
-          if (!window.wariaraFirebase) throw new Error("Firebase is still loading. Please try again.");
+          if (!window.wariaraFirebase) throw new Error("Sign-in is still loading. Please try again.");
           const email = document.getElementById("s-email").value.trim();
           const credential = await window.wariaraFirebase.signUpEmail(email, pass);
           const d = await apiFetch("/api/sellers/account", {
@@ -1423,7 +1474,7 @@
           });
           await completeSellerLogin(d.user);
         } catch (err) {
-          alert(err.message);
+          alert("Account creation could not be completed. Check the details and try again.");
         }
       });
     }
@@ -1432,7 +1483,7 @@
       e.preventDefault();
       await runWithButtonLock(btn, async () => {
         try {
-          if (!window.wariaraFirebase) throw new Error("Firebase is still loading. Please try again.");
+          if (!window.wariaraFirebase) throw new Error("Sign-in is still loading. Please try again.");
           const email = document.getElementById("l-email").value.trim();
           const credential = await window.wariaraFirebase.loginEmail(email, document.getElementById("l-pass").value);
           const d = await apiFetch("/api/sellers/login", {
@@ -1444,7 +1495,7 @@
           });
           await completeSellerLogin(d.user);
         } catch (err) {
-          alert(err.message);
+          alert("Sign-in could not be completed. Check your email and password and try again.");
         }
       });
     }
@@ -1454,11 +1505,11 @@
       await runWithButtonLock(btn, async () => {
         try {
           const emailVal = document.getElementById("fp-email").value.trim();
-          if (!window.wariaraFirebase) throw new Error("Firebase is still loading. Please try again.");
+          if (!window.wariaraFirebase) throw new Error("Sign-in is still loading. Please try again.");
           await window.wariaraFirebase.resetPassword(emailVal);
-          alert("Firebase has sent a password reset email. Open the link in that email to reset your password.");
+          alert("A password reset email has been sent. Open the link in that email to reset your password.");
         } catch (err) {
-          alert(err.message);
+          alert("The password reset request could not be sent. Check the email address and try again.");
         }
       });
     }
