@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,6 +6,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wariara Cars Central Rift | Buy & Sell Cars, Trucks, Bikes & Spare Parts</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+    async function initFirebase() {
+      const apiConfigUrl = window.location.protocol === "file:"
+        ? "http://localhost:3000/api/config"
+        : "/api/config";
+      const response = await fetch(apiConfigUrl, { cache: "no-store" });
+      if (!response.ok) throw new Error("Could not load public application configuration.");
+      const config = await response.json();
+      window.wariaraPublicConfig = config;
+      window.dispatchEvent(new Event("wariara-config-ready"));
+
+      const app = initializeApp(config.firebase);
+      const auth = getAuth(app);
+      const googleProvider = new GoogleAuthProvider();
+      window.wariaraFirebase = {
+        auth,
+        loginWithGoogle: () => signInWithPopup(auth, googleProvider).catch((error) => {
+          if (error.code === "auth/unauthorized-domain" || error.code === "auth/popup-blocked") {
+            return signInWithRedirect(auth, googleProvider);
+          }
+          throw error;
+        }),
+        getRedirectLogin: () => getRedirectResult(auth),
+        signUpEmail: (email, password) => createUserWithEmailAndPassword(auth, email, password),
+        loginEmail: (email, password) => signInWithEmailAndPassword(auth, email, password),
+        resetPassword: (email) => sendPasswordResetEmail(auth, email),
+        logout: () => signOut(auth),
+        onAuthChange: (cb) => onAuthStateChanged(auth, cb)
+      };
+    }
+
+    initFirebase().catch((error) => console.error(error));
+  </script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif; }
     .card-lift { transition: transform 0.15s ease, box-shadow 0.15s ease; }
@@ -26,10 +63,16 @@
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
-
+  <div id="welcome-loader" class="fixed inset-0 z-[70] bg-emerald-950 text-white flex items-center justify-center"><div class="text-center"><div class="text-2xl font-extrabold">Welcome to Wariara Cars Central Rift</div><div class="text-sm mt-2 text-emerald-100">Happy to have you here. Finding the best motors and spare parts...</div></div></div>
+  <div id="cookie-banner" class="hidden fixed bottom-4 left-4 right-4 sm:left-auto sm:max-w-md z-[60] rounded-xl bg-slate-950 text-white p-4 shadow-2xl">
+    <div class="font-bold">Cookies help us remember your preferences</div>
+    <p class="text-xs text-slate-300 mt-1">Allow cookies to remember theme and account convenience settings.</p>
+    <div class="flex gap-2 mt-3"><button type="button" onclick="allowCookies()" class="bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs">Allow cookies</button><button type="button" onclick="declineCookies()" class="border border-slate-600 px-4 py-2 rounded-lg text-xs">Decline</button></div>
+  </div>
   <!-- TOP NAVIGATION (NO ADMIN BUTTON) -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 min-h-16 py-2 flex flex-wrap items-center justify-between gap-2">
+      <button type="button" onclick="toggleMainMenu()" class="lg:hidden w-10 h-10 flex flex-col items-center justify-center gap-1 rounded-lg border border-slate-300" aria-label="Open menu"><span class="block w-5 h-0.5 bg-slate-800"></span><span class="block w-5 h-0.5 bg-slate-800"></span><span class="block w-5 h-0.5 bg-slate-800"></span></button>
       <div class="flex items-center gap-4 lg:gap-6">
         <button type="button" onclick="switchPage('market', 'motor')" class="flex items-center gap-2.5 text-left">
           <img src="logo.png" alt="Wariara Cars Central Rift Logo" class="w-9 h-9 rounded-lg object-contain bg-slate-100 border border-slate-200" />
@@ -59,6 +102,17 @@
       </div>
     </div>
 
+    <nav id="main-menu" class="hidden lg:hidden border-t border-slate-100 bg-white px-4 py-3">
+      <div class="flex flex-col gap-2 text-sm font-bold">
+        <button type="button" onclick="startSellingForCategory('part', this)">Spare Part Sell</button>
+        <button type="button" onclick="switchPage('dealers')">Dealer</button>
+        <a href="market.html">Market Data</a>
+        <a href="faq.html">FAQ</a>
+        <button type="button" onclick="openInfoModal('contact')">Contact Us</button>
+        <a href="terms.html">Terms & Conditions</a>
+      </div>
+    </nav>
+
     <!-- QUICK SELLER & INFO BUTTON BAR (MOBILE & DESKTOP COMPATIBLE) -->
     <div class="border-t border-slate-100 bg-slate-50 px-4 sm:px-6 py-2">
       <div class="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs font-bold">
@@ -77,9 +131,9 @@
         <a href="market.html" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
           Market Data
         </a>
-        <button type="button" onclick="openInfoModal('faq')" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
+        <a href="faq.html" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
           FAQ
-        </button>
+        </a>
         <button type="button" onclick="openInfoModal('contact')" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
           Contact Us (0710911645)
         </button>
@@ -97,9 +151,9 @@
       <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 mb-6 shadow-sm">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2 sm:mb-4">
           <div>
-            <h1 class="text-xl sm:text-3xl font-extrabold text-slate-900">Wariara Cars Central Rift</h1>
+            <h1 class="text-xl sm:text-3xl font-extrabold text-slate-900">Welcome to Buy & Sell Your Motors and Spare Parts</h1>
             <p class="market-intro text-xs sm:text-sm text-slate-500 mt-0.5">
-              Available listings searchable by car, spare part, or seller name.
+              Wariara Cars Central Rift. Available listings searchable by car, spare part, or seller name.
             </p>
           </div>
           <div class="inline-flex rounded-xl bg-slate-100 p-1 self-start">
@@ -340,6 +394,11 @@
             Send Reset Code
           </button>
         </form>
+
+        <div class="mt-4 pt-4 border-t border-slate-200">
+          <div class="flex items-center gap-3 mb-3"><div class="h-px flex-1 bg-slate-200"></div><span class="text-[11px] font-bold text-slate-400">OR</span><div class="h-px flex-1 bg-slate-200"></div></div>
+          <button type="button" onclick="loginWithGoogle(this)" class="w-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-bold py-3 rounded-xl text-sm">Sign Up or Continue with Google</button>
+        </div>
       </div>
     </section>
 
@@ -388,7 +447,7 @@
         <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
           <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
             <div>
-              <h3 class="font-extrabold text-lg">Post Plans </h3>
+              <h3 class="font-extrabold text-lg">Post Plans (M-Pesa Payment)</h3>
               <p class="text-xs text-slate-500">First 6 posts are free. Paid post credits run for <strong>70 days</strong> once published.</p>
             </div>
             <button type="button" onclick="startSellingFlow(this)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-lg">
@@ -561,24 +620,15 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t">
-          <div>
-            <label class="block text-xs font-bold mb-1">WhatsApp for this post (optional)</label>
-            <input id="c-whatsapp" type="tel" placeholder="Use account WhatsApp number" oninput="normalizeWhatsAppInput(this)" class="w-full border rounded-lg px-3 py-2" />
-          </div>
-          <div>
-            <label class="block text-xs font-bold mb-1">Phone to display on this post (optional)</label>
-            <input id="c-call" type="tel" placeholder="Use account phone number" class="w-full border rounded-lg px-3 py-2" />
-          </div>
+        <p class="text-xs text-slate-500 pt-2 border-t">WhatsApp and call numbers come from your registered account automatically.</p>
+
+        <div>
+          <label class="block text-xs font-bold mb-1">Description (optional)</label>
+          <textarea id="c-desc" rows="2" class="w-full border rounded-lg px-3 py-2"></textarea>
         </div>
 
         <div>
-          <label class="block text-xs font-bold mb-1">Description *</label>
-          <textarea id="c-desc" rows="2" required class="w-full border rounded-lg px-3 py-2"></textarea>
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold mb-1">Photos (optional; select as many as needed)</label>
+          <label class="block text-xs font-bold mb-1">Photos (minimum 1, maximum 5)</label>
           <input id="c-files" type="file" accept="image/*" multiple onchange="onFilesSelected(event)" class="w-full border rounded-lg px-3 py-2 text-xs" />
           <div id="c-previews" class="grid grid-cols-6 gap-2 mt-2"></div>
         </div>
@@ -647,8 +697,37 @@
   </footer>
 
   <script>
-    const API_BASE = window.WARIARA_API_BASE || "https://carscrawers.onrender.com";
-    const PAYHERO_BACKEND_URL = window.PAYHERO_BACKEND_URL || "https://parero.vercel.app";
+    let API_BASE = window.location.protocol === "file:" ? "http://localhost:3000" : window.location.origin;
+    let PAYHERO_BACKEND_URL = window.location.origin && window.location.protocol !== "file:" ? window.location.origin : "http://localhost:3000";
+
+    function toggleMainMenu() {
+      document.getElementById("main-menu").classList.toggle("hidden");
+    }
+
+    function applyBrightTheme() {
+      document.documentElement.classList.remove("dark");
+      document.body.classList.add("bg-slate-50", "text-slate-900");
+      document.body.classList.remove("bg-slate-950", "text-slate-100");
+    }
+
+    function allowCookies() {
+      localStorage.setItem("wariara_cookies", "allowed");
+      document.getElementById("cookie-banner").classList.add("hidden");
+    }
+
+    function declineCookies() {
+      localStorage.setItem("wariara_cookies", "declined");
+      document.getElementById("cookie-banner").classList.add("hidden");
+    }
+
+    function initPreferences() {
+      applyBrightTheme();
+      if (!localStorage.getItem("wariara_cookies") && !sessionStorage.getItem("wariara_cookie_prompted")) {
+        sessionStorage.setItem("wariara_cookie_prompted", "1");
+        document.getElementById("cookie-banner").classList.remove("hidden");
+      }
+      window.setTimeout(() => document.getElementById("welcome-loader")?.classList.add("hidden"), 550);
+    }
     const apiUrl = (path) => `${API_BASE}${path}`;
 
     let seller = JSON.parse(localStorage.getItem("wariara_seller") || "null");
@@ -684,7 +763,12 @@
       if (options.body && !headers["Content-Type"]) {
         headers["Content-Type"] = "application/json";
       }
-      const res = await fetch(apiUrl(path), { ...options, headers });
+      let res;
+      try {
+        res = await fetch(apiUrl(path), { ...options, headers, cache: "no-store" });
+      } catch (err) {
+        throw new Error(`Cannot connect to the API at ${apiUrl(path)}. Open the site through the server or start it with "node server.js".`);
+      }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         const err = new Error(data.error || `Request failed (${res.status})`);
@@ -712,7 +796,29 @@
     }
 
     async function boot() {
+      initPreferences();
       try {
+        if (!window.wariaraFirebase) {
+          await new Promise((resolve) => {
+            const timeout = window.setTimeout(resolve, 5000);
+            window.addEventListener("wariara-config-ready", () => { window.clearTimeout(timeout); resolve(); }, { once: true });
+          });
+        }
+        if (window.wariaraFirebase?.getRedirectLogin) {
+          const redirectCredential = await window.wariaraFirebase.getRedirectLogin();
+          if (redirectCredential?.user?.email) {
+            const email = redirectCredential.user.email;
+            const login = await apiFetch("/api/sellers/login", {
+              method: "POST",
+              body: JSON.stringify({ email, firebase_uid: redirectCredential.user.uid }),
+            });
+            await completeSellerLogin(login.user);
+          }
+        }
+        const publicConfig = await apiFetch("/api/config");
+        window.wariaraPublicConfig = publicConfig;
+        API_BASE = publicConfig.apiBase || window.location.origin;
+        PAYHERO_BACKEND_URL = publicConfig.payHeroBase || window.location.origin;
         meta = await apiFetch("/api/meta");
         const brands = [...new Set(meta.catalog.map((x) => x.brand))];
         document.getElementById("quick-makes").innerHTML =
@@ -735,6 +841,33 @@
       } catch (err) {
         alert(err.message);
       }
+    }
+
+    async function loginWithGoogle(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        try {
+          if (!window.wariaraFirebase) throw new Error("Firebase is still loading. Please try again.");
+          const credential = await window.wariaraFirebase.loginWithGoogle();
+          const email = credential.user.email;
+          try {
+            const d = await apiFetch("/api/sellers/lookup", { method: "GET" }).catch(() => null);
+            const lookup = await apiFetch(`/api/sellers/lookup?email=${encodeURIComponent(email)}`);
+            const login = await apiFetch("/api/sellers/login", { method: "POST", body: JSON.stringify({ email, firebase_uid: credential.user.uid }) });
+            await completeSellerLogin(login.user);
+          } catch (err) {
+            document.getElementById("s-email").value = email || "";
+            setAuthTab("register");
+            switchPage("account-gate");
+            alert("Complete the seller profile fields once, then create your account.");
+          }
+        } catch (err) {
+          if (err.code === "auth/unauthorized-domain") {
+            alert("Google sign-in is blocked because this domain is not authorized in Firebase Authentication. Add this exact site domain under Firebase Console → Authentication → Settings → Authorized domains.");
+          } else {
+            alert(err.message);
+          }
+        }
+      });
     }
 
     function updateSellerPill() {
@@ -799,7 +932,7 @@
             <li><strong>70-Day Post Plans:</strong> Purchased post credits run for 70 days once published.</li>
             <li><strong>Direct Seller Contact:</strong> Buyers reach you via WhatsApp or phone call.</li>
           </ul>
-          <a href="https://wa.me/254710911645?text=${encodeURIComponent("Hello Wariara Cars Central Rift, I would like to advertise with you.")}" target="_blank" rel="noopener" class="inline-block bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-lg text-xs">WhatsApp 0710911645</a>
+          <button type="button" onclick="closeM('modal-info'); switchPage('account-gate'); setAuthTab('register')" class="bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-lg text-xs">Create Account to Advertise</button>
           <div class="flex flex-wrap gap-2">
             <button type="button" onclick="closeM('modal-info'); startSellingForCategory('motor', this)" class="bg-slate-900 text-white font-bold px-4 py-2.5 rounded-lg text-xs">Create Account & Start Selling</button>
             <button type="button" onclick="closeM('modal-info'); openSellerWorkspace()" class="border border-slate-300 font-bold px-4 py-2.5 rounded-lg text-xs">Sign In to Seller Account</button>
@@ -1014,8 +1147,8 @@
     }
 
     async function reportPost(id, btn = null) {
-      const reason = prompt("Reason for reporting (post is automatically suspended for Admin review):");
-      if (!reason) return;
+      const reason = prompt("Write a reason for reporting this post. This report goes to Wariara Cars Central Rift for direct post review:");
+      if (!reason || reason.trim().length < 3) return alert("A report reason is required.");
       await runWithButtonLock(btn, async () => {
         const d = await apiFetch(`/api/listings/${id}/report`, {
           method: "POST",
@@ -1078,8 +1211,6 @@
       photos = [];
       document.getElementById("c-previews").innerHTML = "";
       document.getElementById("c-town").value = seller?.town || "";
-      document.getElementById("c-whatsapp").value = "";
-      document.getElementById("c-call").value = "";
       setPostCat(initialCat);
       document.getElementById("modal-post").classList.remove("hidden");
     }
@@ -1094,8 +1225,6 @@
       document.getElementById("c-neg").value = listing.negotiable;
       document.getElementById("c-town").value = listing.town;
       document.getElementById("c-desc").value = listing.description || "";
-      document.getElementById("c-whatsapp").value = listing.whatsapp_phone || "";
-      document.getElementById("c-call").value = listing.call_phone || "";
       if (listing.category === "motor") {
         document.getElementById("m-type").value = listing.vehicle_type || "";
         document.getElementById("m-brand").value = listing.brand || "";
@@ -1142,7 +1271,12 @@
     async function onFilesSelected(e) {
       photos = [];
       try {
-        for (const file of Array.from(e.target.files)) photos.push(await compress(file));
+        const selected = Array.from(e.target.files);
+        if (selected.length > 5) {
+          e.target.value = "";
+          throw new Error("You can upload a maximum of 5 photos per post.");
+        }
+        for (const file of selected) photos.push(await compress(file));
         renderPreviews();
       } catch (err) {
         photos = [];
@@ -1191,8 +1325,6 @@
           negotiable: document.getElementById("c-neg").value,
           town: document.getElementById("c-town").value,
           description: document.getElementById("c-desc").value,
-          whatsapp_phone: document.getElementById("c-whatsapp").value,
-          call_phone: document.getElementById("c-call").value,
           photos,
         };
         if (postCat === "motor") {
@@ -1271,6 +1403,9 @@
 
       await runWithButtonLock(btn, async () => {
         try {
+          if (!window.wariaraFirebase) throw new Error("Firebase is still loading. Please try again.");
+          const email = document.getElementById("s-email").value.trim();
+          const credential = await window.wariaraFirebase.signUpEmail(email, pass);
           const d = await apiFetch("/api/sellers/account", {
             method: "POST",
             body: JSON.stringify({
@@ -1283,6 +1418,7 @@
               role: document.getElementById("s-role").value,
               town: document.getElementById("s-town").value,
               accepted_terms: true,
+              firebase_uid: credential.user.uid,
             }),
           });
           await completeSellerLogin(d.user);
@@ -1296,11 +1432,14 @@
       e.preventDefault();
       await runWithButtonLock(btn, async () => {
         try {
+          if (!window.wariaraFirebase) throw new Error("Firebase is still loading. Please try again.");
+          const email = document.getElementById("l-email").value.trim();
+          const credential = await window.wariaraFirebase.loginEmail(email, document.getElementById("l-pass").value);
           const d = await apiFetch("/api/sellers/login", {
             method: "POST",
             body: JSON.stringify({
-              email: document.getElementById("l-email").value,
-              password: document.getElementById("l-pass").value,
+              email,
+              firebase_uid: credential.user.uid,
             }),
           });
           await completeSellerLogin(d.user);
@@ -1315,16 +1454,9 @@
       await runWithButtonLock(btn, async () => {
         try {
           const emailVal = document.getElementById("fp-email").value.trim();
-          const response = await apiFetch("/api/sellers/forgot-password/code", {
-            method: "POST",
-            body: JSON.stringify({ email: emailVal }),
-          });
-          verifiedResetToken = "";
-          document.getElementById("reset-code").value = "";
-          document.getElementById("reset-code-form").classList.remove("hidden");
-          document.getElementById("reset-password-form").classList.add("hidden");
-          document.getElementById("reset-token-box").classList.remove("hidden");
-          alert(response.message);
+          if (!window.wariaraFirebase) throw new Error("Firebase is still loading. Please try again.");
+          await window.wariaraFirebase.resetPassword(emailVal);
+          alert("Firebase has sent a password reset email. Open the link in that email to reset your password.");
         } catch (err) {
           alert(err.message);
         }
@@ -1421,7 +1553,14 @@
       suspBox.classList.toggle("hidden", !seller.is_suspended);
       if (seller.is_suspended) {
         document.getElementById("seller-susp-reason").textContent = `Reason: ${seller.suspension_reason || "Account suspended"}`;
+        const appealsLeft = Math.max(0, 2 - Number(seller.appeal_count || 0));
+        document.getElementById("appeal-msg").closest("div").querySelectorAll("button").forEach((button) => button.disabled = appealsLeft === 0);
+        document.getElementById("appeal-msg").placeholder = appealsLeft ? `Write review request (${appealsLeft} remaining)` : "Both review requests have been used";
+        document.querySelector("#page-seller > .grid").classList.add("hidden");
+        suspBox.insertAdjacentHTML("beforeend", seller.appeal_response ? `<p class="mt-3 text-sm font-bold">Admin response: ${seller.appeal_response}</p>` : "");
+        return;
       }
+      document.querySelector("#page-seller > .grid").classList.remove("hidden");
 
       const notifRes = await apiFetch(`/api/sellers/${seller.id}/notifications`);
       document.getElementById("seller-notifications-list").innerHTML =
@@ -1502,7 +1641,7 @@
 
     function showPayHeroModal(amount, purposeLabel) {
       if (pollTimer) clearInterval(pollTimer);
-      document.getElementById("ph-title").textContent = "Pay with M-Pesa ";
+      document.getElementById("ph-title").textContent = "Pay with M-Pesa (PayHero)";
       document.getElementById("ph-purpose-label").textContent = purposeLabel;
       document.getElementById("ph-amount").value = String(amount);
       document.getElementById("ph-phone").value = seller?.whatsapp_phone || seller?.call_phone || "";
