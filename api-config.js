@@ -1,5 +1,5 @@
 (function () {
-  const storedApi = localStorage.getItem("wariara_backend_url") || "http://localhost:3000";
+  const storedApi = localStorage.getItem("wariara_backend_url") || "https://carscrawers.onrender.com";
   const storedPayHero = localStorage.getItem("wariara_payhero_url") || "https://parero.vercel.app";
 
   window.WARIARA_API_CONFIG = {
@@ -8,7 +8,7 @@
   };
 
   window.setWariaraBackendUrls = function (apiBase, payHeroBase) {
-    const nextApi = String(apiBase || "http://localhost:3000").trim().replace(/\/+$/, "");
+    const nextApi = String(apiBase || "https://carscrawers.onrender.com").trim().replace(/\/+$/, "");
     const nextPayHero = String(payHeroBase || "https://parero.vercel.app").trim().replace(/\/+$/, "");
     localStorage.setItem("wariara_backend_url", nextApi);
     localStorage.setItem("wariara_payhero_url", nextPayHero);
