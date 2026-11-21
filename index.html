@@ -1502,7 +1502,7 @@
 
     function showPayHeroModal(amount, purposeLabel) {
       if (pollTimer) clearInterval(pollTimer);
-      document.getElementById("ph-title").textContent = "Pay with M-Pesa (PayHero)";
+      document.getElementById("ph-title").textContent = "Pay with M-Pesa ";
       document.getElementById("ph-purpose-label").textContent = purposeLabel;
       document.getElementById("ph-amount").value = String(amount);
       document.getElementById("ph-phone").value = seller?.whatsapp_phone || seller?.call_phone || "";
