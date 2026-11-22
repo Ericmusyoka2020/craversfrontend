@@ -1,6 +1,6 @@
 
 (function () {
-  const DEFAULT_API = "https://carscrawers.onrender.com";
+  const DEFAULT_API = "https://carscrawers.vercel.app";
   const DEFAULT_PAYHERO = "https://parero.vercel.app";
   const storedApi = localStorage.getItem("wariara_backend_url");
   const apiBase = (!storedApi || storedApi.includes("localhost") || storedApi.includes("127.0.0.1") || storedApi === window.location.origin)
@@ -15,7 +15,7 @@
   };
 
   window.setWariaraBackendUrls = function (apiBase, payHeroBase) {
-    const nextApi = String(apiBase || "https://carscrawers.onrender.com").trim().replace(/\/+$/, "");
+    const nextApi = String(apiBase || "https://carscrawers.vercel.app").trim().replace(/\/+$/, "");
     const nextPayHero = String(payHeroBase || "https://parero.vercel.app").trim().replace(/\/+$/, "");
     localStorage.setItem("wariara_backend_url", nextApi);
     localStorage.setItem("wariara_payhero_url", nextPayHero);
