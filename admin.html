@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Portal | Wariara Cars Central Rift</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="public/api-config.js"></script>
+  <script src="api-config.js"></script>
   <style>
     button:disabled { opacity: 0.65; cursor: not-allowed; }
   </style>
@@ -174,9 +175,20 @@
       }
       let res;
       try {
-        res = await fetch(apiUrl(path), { ...options, headers, cache: "no-store", signal: AbortSignal.timeout(8000) });
+        let lastError = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            res = await fetch(apiUrl(path), { ...options, headers, cache: "no-store", signal: AbortSignal.timeout(30000) });
+            lastError = null;
+            break;
+          } catch (error) {
+            lastError = error;
+            if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+        }
+        if (!res) throw lastError || new Error("Request failed");
       } catch (_) {
-        throw new Error("The API is unavailable right now. Please try again.");
+        throw new Error("The API is temporarily unavailable. Please try again.");
       }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -338,6 +350,10 @@
             <div class="flex gap-1"><button type="button" onclick="savePriorityPlan('${p.id}', this)" class="bg-emerald-600 text-white font-bold rounded px-2">Save</button><button type="button" onclick="deletePriorityPlan('${p.id}', this)" class="bg-red-600 text-white font-bold rounded px-2">Delete</button></div>
           </div>
         `).join("");
+        if (d.subAccount) {
+          document.getElementById("sub-email").value = d.subAccount.email || "";
+          document.getElementById("sub-2fa").checked = Boolean(d.subAccount.two_factor_enabled);
+        }
         document.getElementById("plans-edit").innerHTML = d.plans.map((p) => `
           <div class="grid grid-cols-4 gap-1.5 text-xs">
             <input id="pn-${p.id}" value="${escapeHtml(p.name)}" class="border rounded px-2 py-1" />
@@ -452,6 +468,8 @@
             password: document.getElementById("sub-password").value,
             two_factor_enabled: document.getElementById("sub-2fa").checked,
           }) });
+          document.getElementById("sub-password").value = "";
+          await loadAdmin(true);
           alert("Sub-admin credentials updated.");
         } catch (err) { alert(err.message); }
       });
