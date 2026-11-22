@@ -1,201 +1,592 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sub-Admin | Wariara Cars Central Rift</title>
+  <title>Admin Portal | Wariara Cars Central Rift</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="api-config.js"></script>
+  <style>
+    button:disabled { opacity: 0.65; cursor: not-allowed; }
+  </style>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen">
-  <header class="bg-slate-950 text-white px-5 h-16 flex items-center justify-between"><strong>Wariara Sub-Admin</strong><button onclick="logoutSub()" class="text-xs">Sign out</button></header>
-  <main class="max-w-7xl mx-auto p-4">
-    <section id="gate" class="max-w-md mx-auto bg-white rounded-xl border p-5">
-      <h1 class="text-xl font-extrabold">Sub-Admin Login</h1>
-      <input id="password" type="password" placeholder="Password" class="w-full border rounded-lg px-3 py-2 mt-3" />
-      <button onclick="loginSub(this)" class="w-full mt-3 bg-emerald-600 text-white font-bold py-2.5 rounded-lg">Continue</button>
-      <div id="code-box" class="hidden mt-3"><input id="code" inputmode="numeric" maxlength="6" placeholder="6-digit email code" class="w-full border rounded-lg px-3 py-2" /><button onclick="verifySub(this)" class="w-full mt-2 bg-slate-900 text-white font-bold py-2.5 rounded-lg">Verify 10-minute code</button></div>
-      <p id="gate-status" class="text-xs text-red-700 mt-3"></p>
-    </section>
+  <header class="bg-slate-900 text-white px-6 h-16 flex items-center justify-between">
+    <div class="font-extrabold">Wariara Cars Central Rift — <span class="text-amber-400">Admin Portal</span></div>
+    <span class="text-xs text-slate-400">Restricted Moderation Console</span>
+  </header>
 
-    <section id="panel" class="hidden space-y-4">
-      <div class="flex flex-wrap gap-2">
-        <button onclick="tab('posts')" id="t-posts" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold">Posts & Review</button>
-        <button onclick="tab('payments')" id="t-payments" class="bg-white border px-4 py-2 rounded-lg text-sm font-bold">Payments</button>
-        <button onclick="tab('users')" id="t-users" class="bg-white border px-4 py-2 rounded-lg text-sm font-bold">Accounts</button>
-        <button onclick="tab('config')" id="t-config" class="bg-white border px-4 py-2 rounded-lg text-sm font-bold">Plans & Catalog</button>
-        <button onclick="loadOverview(true)" class="ml-auto bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold">Refresh</button>
+  <main class="max-w-7xl mx-auto p-6">
+    <div id="admin-gate" class="bg-white max-w-md mx-auto rounded-2xl border p-6 shadow-sm">
+      <h1 class="text-xl font-extrabold mb-2">Admin Access</h1>
+      <p class="text-xs text-slate-500 mb-4">Enter your <code class="bg-slate-100 px-1 py-0.5 rounded">ADMIN_SECRET</code> configured on your Render API server.</p>
+      <input id="admin-key-input" type="password" placeholder="Admin Secret Key" class="w-full border rounded-lg px-3 py-2 text-sm mb-3" />
+      <button type="button" onclick="unlockAdmin(this)" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg text-sm">Open Admin Portal</button>
+    </div>
+
+    <div id="admin-panel" class="hidden space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap gap-2 text-sm font-bold">
+          <button type="button" onclick="tab('posts')" id="t-posts" class="px-4 py-2 rounded-lg bg-emerald-600 text-white">Posts & Expiry</button>
+          <button type="button" onclick="tab('payments')" id="t-payments" class="px-4 py-2 rounded-lg bg-white border">Payment Notifications</button>
+          <button type="button" onclick="tab('users')" id="t-users" class="px-4 py-2 rounded-lg bg-white border">Accounts & Suspensions</button>
+          <button type="button" onclick="tab('config')" id="t-config" class="px-4 py-2 rounded-lg bg-white border">Priority Plans, Post Plans & Catalog</button>
+        </div>
+        <button type="button" onclick="lockAdmin()" class="text-xs text-slate-500 hover:text-red-600 font-semibold">Lock Portal</button>
       </div>
 
       <div id="sec-posts" class="space-y-3">
-        <div class="flex flex-wrap gap-2 bg-white border rounded-xl p-3 text-xs font-bold">
-          <button onclick="setPostFilter('all')" id="pf-all" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white">All Posts</button>
-          <button onclick="setPostFilter('expired')" id="pf-expired" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200">Expired Posts</button>
-          <button onclick="setPostFilter('pending_approval')" id="pf-pending_approval" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">Pending Approval</button>
-          <button onclick="setPostFilter('active')" id="pf-active" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">Active</button>
-          <button onclick="setPostFilter('sold')" id="pf-sold" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200">Sold</button>
+        <div class="flex flex-wrap gap-2 text-xs font-bold bg-white p-3 rounded-xl border">
+          <button type="button" onclick="setPostFilter('all')" id="pf-all" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white">All Posts</button>
+          <button type="button" onclick="setPostFilter('expired')" id="pf-expired" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200">Expired Posts (70d)</button>
+          <button type="button" onclick="setPostFilter('pending_approval')" id="pf-pending_approval" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">Pending Approval</button>
+          <button type="button" onclick="setPostFilter('active')" id="pf-active" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">Active</button>
+          <button type="button" onclick="setPostFilter('sold')" id="pf-sold" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200">Sold</button>
         </div>
-        <div id="posts" class="space-y-2"></div>
+        <div id="admin-posts-list" class="space-y-3"></div>
       </div>
 
-      <div id="sec-payments" class="hidden bg-white rounded-xl border p-5"><h2 class="font-extrabold mb-3">Payment Notifications</h2><div id="payments" class="divide-y text-sm"></div></div>
-
-      <div id="sec-users" class="hidden bg-white rounded-xl border p-5 overflow-x-auto"><div id="users" class="space-y-2"></div></div>
-
-      <div id="sec-config" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div class="bg-white border rounded-xl p-4"><h2 class="font-bold mb-3">Sponsored Priority Plans</h2><div id="priority-plans" class="space-y-2"></div><div class="grid grid-cols-3 gap-1 mt-3 text-xs"><input id="npp-name" placeholder="Name" class="border rounded px-1 py-1"><input id="npp-hours" type="number" placeholder="Hours" class="border rounded px-1 py-1"><input id="npp-price" type="number" placeholder="KES" class="border rounded px-1 py-1"></div><button onclick="addPriority(this)" class="mt-2 w-full bg-slate-900 text-white text-xs font-bold py-2 rounded">Add Priority Plan</button></div>
-        <div class="bg-white border rounded-xl p-4"><h2 class="font-bold mb-3">Post Plans</h2><div id="post-plans" class="space-y-2"></div><div class="grid grid-cols-3 gap-1 mt-3 text-xs"><input id="np-name" placeholder="Name" class="border rounded px-1 py-1"><input id="np-count" type="number" placeholder="Posts" class="border rounded px-1 py-1"><input id="np-price" type="number" placeholder="KES" class="border rounded px-1 py-1"></div><button onclick="addPostPlan(this)" class="mt-2 w-full bg-slate-900 text-white text-xs font-bold py-2 rounded">Add Post Plan</button></div>
-        <div class="bg-white border rounded-xl p-4"><h2 class="font-bold mb-3">Add Catalog Item</h2><div class="grid gap-2 text-xs"><select id="c-vt" class="border rounded px-2 py-2"><option>Car</option><option>Truck</option><option>Bike</option></select><input id="c-br" placeholder="Brand" class="border rounded px-2 py-2"><input id="c-mo" placeholder="Model" class="border rounded px-2 py-2"><input id="c-bo" placeholder="Body type" class="border rounded px-2 py-2"><button onclick="addCatalog(this)" class="bg-emerald-600 text-white font-bold py-2 rounded">Add</button></div></div>
+      <div id="sec-payments" class="hidden bg-white rounded-xl border p-5 space-y-3">
+        <h3 class="font-extrabold text-base">Payment Notifications (Who Paid & What For)</h3>
+        <div id="payment-notifs-list" class="divide-y text-sm"></div>
       </div>
-    </section>
 
-    <div id="gift-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-      <div class="bg-white rounded-xl max-w-sm w-full p-5"><h2 class="font-extrabold text-lg">Gift Post Credits</h2><input id="gift-user-id" type="hidden"><input id="gift-count" type="number" min="1" value="5" class="w-full border rounded-lg px-3 py-2 mt-3 text-sm"><input id="gift-phone" type="tel" placeholder="Seller's registered WhatsApp number" class="w-full border rounded-lg px-3 py-2 mt-2 text-sm"><div class="flex gap-2 mt-4"><button onclick="closeGift()" class="flex-1 border rounded-lg py-2 font-bold">Cancel</button><button onclick="submitGift(this)" class="flex-1 bg-emerald-600 text-white rounded-lg py-2 font-bold">Confirm Gift</button></div></div>
+      <div id="sec-users" class="hidden bg-white rounded-xl border p-5 overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="border-b uppercase text-slate-400">
+            <tr>
+              <th class="py-2 pr-3">Account</th>
+              <th class="py-2 pr-3">WhatsApp / Call / Email</th>
+              <th class="py-2 pr-3">Free / Credits</th>
+              <th class="py-2 pr-3">Purchased</th>
+              <th class="py-2 pr-3">Status & Appeal</th>
+              <th class="py-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-rows" class="divide-y"></tbody>
+        </table>
+      </div>
+
+      <div id="sec-config" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div id="sub-admin-credentials-section" class="bg-white rounded-xl border p-5 lg:col-span-3">
+          <h3 class="font-bold mb-2">Sub-Admin Account & 3D Security</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input id="sub-email" type="email" placeholder="Sub-admin email" class="border rounded-lg px-3 py-2 text-xs" />
+            <input id="sub-password" type="password" minlength="6" placeholder="Set or update sub-admin password" class="border rounded-lg px-3 py-2 text-xs" />
+            <label class="flex items-center gap-2 text-xs"><input id="sub-2fa" type="checkbox" /> Send a 10-minute email code at login</label>
+          </div>
+          <button type="button" onclick="saveSubAdmin(this)" class="mt-3 bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-lg">Set / Update Sub-Admin Password</button>
+        </div>
+        <div class="bg-white rounded-xl border p-5">
+          <h3 class="font-bold mb-2">Sponsored Priority Plans</h3>
+          <p class="text-xs text-slate-500 mb-3">Set a price and duration for each plan. There is no daily sponsored-post limit.</p>
+          <div id="priority-plans-edit" class="space-y-2 mb-3"></div>
+          <div class="grid grid-cols-3 gap-1.5 text-xs">
+            <input id="npp-name" placeholder="Plan name" class="border rounded px-2 py-1" />
+            <input id="npp-hours" type="number" min="1" placeholder="Hours" class="border rounded px-2 py-1" />
+            <input id="npp-price" type="number" min="1" placeholder="KES" class="border rounded px-2 py-1" />
+          </div>
+          <button type="button" onclick="addPriorityPlan(this)" class="mt-2 bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg">+ Add Priority Plan</button>
+        </div>
+
+        <div class="bg-white rounded-xl border p-5">
+          <h3 class="font-bold mb-2">Post Plans (e.g. 10 = 200, 25 = 500)</h3>
+          <div id="plans-edit" class="space-y-2 mb-3"></div>
+          <div class="grid grid-cols-3 gap-1.5 text-xs">
+            <input id="np-name" placeholder="Name" class="border rounded px-2 py-1" />
+            <input id="np-cnt" type="number" placeholder="Posts" class="border rounded px-2 py-1" />
+            <input id="np-prc" type="number" placeholder="KES" class="border rounded px-2 py-1" />
+          </div>
+          <button type="button" onclick="addPlan(this)" class="mt-2 bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg">+ Add Plan</button>
+        </div>
+
+        <div class="bg-white rounded-xl border p-5">
+          <h3 class="font-bold mb-2">Add Brand, Model & Body Type</h3>
+          <div class="space-y-2 text-xs">
+            <select id="c-vt" class="w-full border rounded px-2 py-1.5 bg-white">
+              <option>Car</option><option>Truck</option><option>Bike</option>
+            </select>
+            <input id="c-br" placeholder="Brand (e.g. Toyota, Audi)" class="w-full border rounded px-2 py-1.5" />
+            <input id="c-mo" placeholder="Model (e.g. Harrier, A4)" class="w-full border rounded px-2 py-1.5" />
+            <input id="c-bo" placeholder="Body Type (e.g. SUV, Saloon)" class="w-full border rounded px-2 py-1.5" />
+            <button type="button" onclick="addCat(this)" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg">Add Brand/Model/Body</button>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
-<script>
-const API_BASE = window.WARIARA_API_CONFIG.API_BASE;
-let session = localStorage.getItem("wariara_sub_session") || "";
-let data = null;
-let postFilter = "all";
 
-function setPostFilter(filter) {
-  postFilter = filter;
-  ["all","expired","pending_approval","active","sold"].forEach((item) => {
-    const button = document.getElementById(`pf-${item}`);
-    if (!button) return;
-    button.className = item === filter
-      ? "px-3 py-1.5 rounded-lg bg-slate-900 text-white"
-      : "px-3 py-1.5 rounded-lg bg-white border";
-  });
-  renderSubPosts();
-}
+  <div id="listing-edit-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+    <form onsubmit="saveAdminListing(event, this.querySelector('button[type=submit]'))" class="bg-white rounded-2xl p-5 w-full max-w-xl space-y-3">
+      <h2 class="text-lg font-extrabold">Edit Listing</h2>
+      <input id="edit-listing-id" type="hidden" />
+      <label class="block text-xs font-bold">Title<input id="edit-listing-title" required class="mt-1 w-full border rounded-lg px-3 py-2 text-sm" /></label>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block text-xs font-bold">Price (KES; 0 = contact seller)<input id="edit-listing-price" type="number" min="0" class="mt-1 w-full border rounded-lg px-3 py-2 text-sm" /></label>
+        <label class="block text-xs font-bold">Town<input id="edit-listing-town" class="mt-1 w-full border rounded-lg px-3 py-2 text-sm" /></label>
+      </div>
+      <label class="block text-xs font-bold">Description<textarea id="edit-listing-description" required rows="4" class="mt-1 w-full border rounded-lg px-3 py-2 text-sm"></textarea></label>
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="closeListingEditor()" class="px-4 py-2 border rounded-lg text-sm font-bold">Cancel</button>
+        <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold">Save Listing</button>
+      </div>
+    </form>
+  </div>
 
-async function subFetch(path, options = {}) {
-  const headers = { ...(options.headers || {}), "x-sub-admin-session": session };
-  if (options.body) headers["Content-Type"] = "application/json";
-  let response;
-  try {
-    let lastError = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
+  <script>
+    const API_BASE = window.WARIARA_API_CONFIG.API_BASE;
+    const apiUrl = (path) => `${API_BASE}${path}`;
+    let key = localStorage.getItem("wariara_admin_key") || "";
+    let subSession = localStorage.getItem("wariara_sub_session") || "";
+    let cachedOverview = null;
+    let postFilter = "all";
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      })[char]);
+    }
+
+    async function runWithButtonLock(btn, fn) {
+      const prevText = btn ? btn.textContent : "";
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Processing...";
+      }
       try {
-        response = await fetch(API_BASE + path, { ...options, headers, cache: "no-store", signal: AbortSignal.timeout(30000) });
-        lastError = null;
-        break;
-      } catch (error) {
-        lastError = error;
-        if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500));
+        return await fn();
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = prevText;
+        }
       }
     }
-    if (!response) throw lastError || new Error("Request failed");
-  } catch (_) {
-    throw new Error("The API is temporarily unavailable. Please try again.");
-  }
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error || "Request failed");
-  return result;
-}
 
-async function loginSub(btn) {
-  btn.disabled = true;
-  try {
-    let r;
-    try {
-      r = await fetch(API_BASE + "/api/admin/sub/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: document.getElementById("password").value }), signal: AbortSignal.timeout(30000) });
-    } catch (_) {
-      throw new Error("The API is unavailable right now. Please try again.");
-    }
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
-    if (d.requires_code) {
-      document.getElementById("code-box").classList.remove("hidden");
-      document.getElementById("gate-status").textContent = `Enter the code sent to ${d.email_hint}`;
-    } else openPanel(d.session_token);
-  } catch (e) { document.getElementById("gate-status").textContent = e.message; }
-  finally { btn.disabled = false; }
-}
-
-async function verifySub(btn) {
-  btn.disabled = true;
-  try {
-    let r;
-    try {
-      r = await fetch(API_BASE + "/api/admin/sub/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: document.getElementById("password").value, code: document.getElementById("code").value }), signal: AbortSignal.timeout(30000) });
-    } catch (_) {
-      throw new Error("The API is unavailable right now. Please try again.");
-    }
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
-    openPanel(d.session_token);
-  } catch (e) { document.getElementById("gate-status").textContent = e.message; }
-  finally { btn.disabled = false; }
-}
-
-function openPanel(token) {
-  session = token;
-  localStorage.setItem("wariara_sub_session", token);
-  document.getElementById("gate").classList.add("hidden");
-  document.getElementById("panel").classList.remove("hidden");
-  tab("posts");
-  loadOverview(true);
-}
-function logoutSub() {
-  session = "";
-  localStorage.removeItem("wariara_sub_session");
-  location.reload();
-}
-
-function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-function tab(name) {
-  ["posts","payments","users","config"].forEach(t => {
-    document.getElementById(`sec-${t}`).classList.toggle("hidden", t !== name);
-    document.getElementById(`t-${t}`).className = t === name ? "bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold" : "bg-white border px-4 py-2 rounded-lg text-sm font-bold";
-  });
-}
-function renderSubPosts() {
-  if (!data) return;
-  const listings = postFilter === "all"
-    ? data.listings
-    : data.listings.filter((listing) => listing.status === postFilter);
-  document.getElementById("posts").innerHTML = listings.length
-    ? listings.map(l => `<div class="bg-white border rounded-lg p-3 text-xs"><strong>${escapeHtml(l.title)}</strong><div>${l.status} · ${escapeHtml(l.seller_name)}</div>${l.report_reason ? `<div class="text-red-700">Report: ${escapeHtml(l.report_reason)}</div>` : ""}<div class="flex flex-wrap gap-1 mt-2"><button onclick="editListing('${l.id}',this)" class="bg-sky-700 text-white px-2 py-1 rounded">Edit</button><button onclick="moderate('${l.id}','approve',this)" class="bg-emerald-600 text-white px-2 py-1 rounded">Approve</button><button onclick="moderate('${l.id}','reject',this)" class="bg-red-600 text-white px-2 py-1 rounded">Reject</button><button onclick="moderate('${l.id}','mark_safe',this)" class="bg-slate-700 text-white px-2 py-1 rounded">Restore</button><button onclick="moderate('${l.id}','pause',this)" class="border px-2 py-1 rounded">Pause</button><button onclick="moderate('${l.id}','unpause',this)" class="border px-2 py-1 rounded">Unpause</button></div></div>`).join("")
-    : `<div class="bg-white border rounded-lg p-5 text-xs text-slate-500">No posts match this filter.</div>`;
-}
-async function loadOverview(force = false) {
-  try {
-    const cacheKey = "wariara_sub_admin_overview";
-    if (!force) {
+    async function adminFetch(path, options = {}) {
+      const headers = {
+        ...(options.headers || {}),
+        "x-admin-key": key,
+        "x-sub-admin-session": subSession,
+      };
+      if (options.body && !headers["Content-Type"]) {
+        headers["Content-Type"] = "application/json";
+      }
+      let res;
       try {
-        const cached = JSON.parse(sessionStorage.getItem(cacheKey) || "null");
-        if (cached?.expiresAt > Date.now()) data = cached.value;
-      } catch (_) {}
+        let lastError = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            res = await fetch(apiUrl(path), { ...options, headers, cache: "no-store", signal: AbortSignal.timeout(30000) });
+            lastError = null;
+            break;
+          } catch (error) {
+            lastError = error;
+            if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+        }
+        if (!res) throw lastError || new Error("Request failed");
+      } catch (_) {
+        throw new Error("The API is temporarily unavailable. Please try again.");
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err = new Error(data.error || `Admin request failed (${res.status})`);
+        err.status = res.status;
+        throw err;
+      }
+      return data;
     }
-    if (!data) data = await subFetch("/api/admin/overview");
-    else if (force) data = await subFetch("/api/admin/overview");
-    sessionStorage.setItem(cacheKey, JSON.stringify({ value: data, expiresAt: Date.now() + 15 * 1000 }));
-    renderSubPosts();
-    document.getElementById("payments").innerHTML = (data.paymentNotifications || []).length ? data.paymentNotifications.map(n => `<div class="py-3"><strong>${escapeHtml(n.payer_name)}</strong> · KES ${Number(n.amount_kes).toLocaleString()}<div>${escapeHtml(n.purpose)} · ${escapeHtml(n.payment_ref || "")}</div></div>`).join("") : `<div class="py-3 text-slate-500">No payments</div>`;
-    document.getElementById("users").innerHTML = data.users.map(u => `<div class="border rounded-lg p-3 text-xs"><strong>${escapeHtml(u.name)}</strong> · ${u.is_suspended ? "Suspended" : "Active"}<div>${escapeHtml(u.email)} · WA ${escapeHtml(u.whatsapp_phone)} · Free ${u.free_posts_used}/6 · Credits ${u.paid_post_credits}</div><div class="mt-2">${u.appeal_status === "pending" ? `Review: ${escapeHtml(u.appeal_text)} · <button onclick="appeal('${u.id}','accept',this)" class="bg-emerald-600 text-white px-2 py-1 rounded">Accept & Restore</button> <button onclick="appeal('${u.id}','reject',this)" class="bg-amber-600 text-white px-2 py-1 rounded">Reject</button>` : escapeHtml(u.appeal_response || u.appeal_status)}</div><div class="flex flex-wrap gap-1 mt-2"><button onclick="editUser('${u.id}',this)" class="bg-sky-700 text-white px-2 py-1 rounded">Edit</button><button onclick="openGift('${u.id}',this)" class="bg-emerald-600 text-white px-2 py-1 rounded">Gift Posts</button><button onclick="suspendUser('${u.id}',true,this)" class="bg-red-600 text-white px-2 py-1 rounded">Suspend</button><button onclick="suspendUser('${u.id}',false,this)" class="bg-slate-900 text-white px-2 py-1 rounded">Restore</button></div></div>`).join("");
-    document.getElementById("priority-plans").innerHTML = data.priorityPlans.map(p => `<div class="grid grid-cols-5 gap-1 text-xs"><input id="spn-${p.id}" value="${escapeHtml(p.name)}" class="border rounded px-1 py-1"><input id="sph-${p.id}" type="number" value="${p.duration_hours}" class="border rounded px-1 py-1"><input id="spp-${p.id}" type="number" value="${p.price_kes}" class="border rounded px-1 py-1"><button onclick="savePriority('${p.id}',this)" class="bg-emerald-600 text-white rounded">Save</button><button onclick="deletePriority('${p.id}',this)" class="bg-red-600 text-white rounded">Delete</button></div>`).join("");
-    document.getElementById("post-plans").innerHTML = data.plans.map(p => `<div class="grid grid-cols-4 gap-1 text-xs"><input id="pln-${p.id}" value="${escapeHtml(p.name)}" class="border rounded px-1 py-1"><input id="plc-${p.id}" type="number" value="${p.post_count}" class="border rounded px-1 py-1"><input id="plp-${p.id}" type="number" value="${p.price_kes}" class="border rounded px-1 py-1"><button onclick="savePostPlan('${p.id}',this)" class="bg-emerald-600 text-white rounded">Save</button></div>`).join("");
-  } catch (e) { if (e.message.includes("expired") || e.message.includes("Invalid")) logoutSub(); document.getElementById("gate-status").textContent = e.message; alert(e.message); }
-}
-async function moderate(id, action, btn) { btn.disabled=true; try { await subFetch(`/api/admin/listings/${id}/moderate`, { method:"POST", body:JSON.stringify({action}) }); await loadOverview(); } catch(e){alert(e.message)} finally { if(btn) btn.disabled=false; } }
-async function suspendUser(id, suspend, btn) { btn.disabled=true; const reason=suspend?prompt("Suspension reason:"):null; if(suspend&&!reason)return btn.disabled=false; try { await subFetch(`/api/admin/users/${id}/suspension`, { method:"POST", body:JSON.stringify({suspend,reason}) }); await loadOverview(); } catch(e){alert(e.message)} finally { if(btn) btn.disabled=false; } }
-async function appeal(id, action, btn) { const response=prompt("Enter the response sent to the seller:"); if(!response)return; try { await subFetch(`/api/admin/users/${id}/appeal`, { method:"POST", body:JSON.stringify({action,response}) }); await loadOverview(); } catch(e){alert(e.message)} }
-async function editListing(id) { const l=data.listings.find(x=>x.id===id); if(!l)return; const title=prompt("Title",l.title); if(title===null)return; const price=prompt("Price KES",l.price_kes||0); if(price===null)return; const town=prompt("Town",l.town||""); if(town===null)return; const description=prompt("Description",l.description||""); if(description===null)return; try { await subFetch(`/api/admin/listings/${id}`,{method:"PUT",body:JSON.stringify({title,price_kes:Number(price)||0,town,description})}); await loadOverview(); } catch(e){alert(e.message)} }
-async function editUser(id) { const u=data.users.find(x=>x.id===id); if(!u)return; const name=prompt("Account name",u.name); if(name===null)return; const town=prompt("Town",u.town||""); if(town===null)return; const role=confirm("OK = dealership, Cancel = private seller")?"dealer":"private"; try { await subFetch(`/api/admin/users/${id}/profile`,{method:"PUT",body:JSON.stringify({name,town,role,agent_of:null})}); await loadOverview(); } catch(e){alert(e.message)} }
-function openGift(id) { document.getElementById("gift-user-id").value=id; document.getElementById("gift-count").value="5"; document.getElementById("gift-phone").value=""; document.getElementById("gift-modal").classList.remove("hidden"); }
-function closeGift(){document.getElementById("gift-modal").classList.add("hidden")}
-async function submitGift(btn){ const id=document.getElementById("gift-user-id").value; const posts_count=Number(document.getElementById("gift-count").value); const confirm_whatsapp=document.getElementById("gift-phone").value.trim(); if(posts_count<1)return alert("Enter a valid post count."); if(!confirm_whatsapp)return alert("Enter the registered WhatsApp number."); btn.disabled=true; try { await subFetch(`/api/admin/users/${id}/gift-posts`,{method:"POST",body:JSON.stringify({posts_count,confirm_whatsapp})}); closeGift(); await loadOverview(); alert("Gift posts added."); } catch(e){alert(e.message)} finally{btn.disabled=false} }
-async function savePriority(id,btn){ btn.disabled=true; try{await subFetch(`/api/admin/priority-plans/${id}`,{method:"PUT",body:JSON.stringify({name:document.getElementById(`spn-${id}`).value,duration_hours:Number(document.getElementById(`sph-${id}`).value),price_kes:Number(document.getElementById(`spp-${id}`).value)})}); await loadOverview(); }catch(e){alert(e.message)}finally{btn.disabled=false} }
-async function savePostPlan(id,btn){ btn.disabled=true; try{await subFetch(`/api/admin/plans/${id}`,{method:"PUT",body:JSON.stringify({name:document.getElementById(`pln-${id}`).value,post_count:Number(document.getElementById(`plc-${id}`).value),price_kes:Number(document.getElementById(`plp-${id}`).value)})}); await loadOverview(); }catch(e){alert(e.message)}finally{btn.disabled=false} }
-async function deletePriority(id,btn){ if(!confirm('Delete this priority plan?'))return; btn.disabled=true; try{await subFetch(`/api/admin/priority-plans/${id}`,{method:'DELETE'}); await loadOverview(); }catch(e){alert(e.message)}finally{btn.disabled=false} }
-async function addPriority(btn){ btn.disabled=true; try{await subFetch('/api/admin/priority-plans',{method:'POST',body:JSON.stringify({name:document.getElementById('npp-name').value,duration_hours:Number(document.getElementById('npp-hours').value),price_kes:Number(document.getElementById('npp-price').value)})}); await loadOverview(); }catch(e){alert(e.message)}finally{btn.disabled=false} }
-async function addPostPlan(btn){ btn.disabled=true; try{await subFetch('/api/admin/plans',{method:'POST',body:JSON.stringify({name:document.getElementById('np-name').value,post_count:Number(document.getElementById('np-count').value),price_kes:Number(document.getElementById('np-price').value)})}); await loadOverview(); }catch(e){alert(e.message)}finally{btn.disabled=false} }
-async function addCatalog(btn){ btn.disabled=true; try{await subFetch('/api/admin/catalog',{method:'POST',body:JSON.stringify({vehicle_type:document.getElementById('c-vt').value,brand:document.getElementById('c-br').value,model:document.getElementById('c-mo').value,body_type:document.getElementById('c-bo').value})}); await loadOverview(); }catch(e){alert(e.message)}finally{btn.disabled=false} }
-if (session) openPanel(session);
-</script>
+
+    async function unlockAdmin(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        key = document.getElementById("admin-key-input").value.trim();
+        localStorage.setItem("wariara_admin_key", key);
+        await loadAdmin();
+      });
+    }
+
+    function lockAdmin() {
+      key = "";
+      localStorage.removeItem("wariara_admin_key");
+      document.getElementById("admin-panel").classList.add("hidden");
+      document.getElementById("admin-gate").classList.remove("hidden");
+    }
+
+    function tab(t) {
+      ["posts", "payments", "users", "config"].forEach((x) => {
+        document.getElementById(`sec-${x}`).classList.toggle("hidden", x !== t);
+        document.getElementById(`t-${x}`).className = x === t
+          ? "px-4 py-2 rounded-lg bg-emerald-600 text-white"
+          : "px-4 py-2 rounded-lg bg-white border";
+      });
+    }
+
+    function setPostFilter(f) {
+      postFilter = f;
+      renderAdminPosts();
+    }
+
+    function renderAdminPosts() {
+      if (!cachedOverview) return;
+      const list = postFilter === "all"
+        ? cachedOverview.listings
+        : cachedOverview.listings.filter((l) => l.status === postFilter);
+
+      document.getElementById("admin-posts-list").innerHTML = list.map((l) => {
+        const remainingBadge = l.days_remaining !== null
+          ? `<span class="text-xs font-bold px-2 py-0.5 rounded ${l.days_remaining === 0 ? "bg-red-100 text-red-800" : "bg-emerald-50 text-emerald-800"}">${l.days_remaining} days remaining (70d)</span>`
+          : `<span class="text-xs text-slate-400">Free post</span>`;
+        const priorityBadge = l.is_prioritized
+          ? `<span class="text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900">Sponsored: ${escapeHtml(l.priority_plan_name || "Priority")} · ${l.priority_remaining_hours}h left · ends ${new Date(l.priority_expires_at).toLocaleString()}</span>`
+          : "";
+
+        return `
+          <div class="bg-white rounded-xl border ${l.status === "reported_suspended" ? "border-red-400" : l.status === "expired" ? "border-amber-300" : ""} p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <img src="${l.cover_photo || ""}" class="w-20 h-16 object-cover rounded-lg bg-slate-100" />
+              <div>
+                <div class="font-bold flex flex-wrap items-center gap-1.5">
+                  <span>${escapeHtml(l.title)}</span>
+                  <span class="text-xs px-2 py-0.5 rounded bg-slate-100 uppercase">${l.status}</span>
+                  ${remainingBadge}
+                  ${priorityBadge}
+                </div>
+                <div class="text-xs text-slate-500">${Number(l.price_kes) ? `KES ${Number(l.price_kes).toLocaleString()}` : "Contact for price"} · Seller: <strong>${escapeHtml(l.seller_name)}</strong> (${escapeHtml(l.whatsapp_phone)})</div>
+                ${l.report_reason ? `<div class="text-xs text-red-700 font-bold mt-0.5">Report Reason: ${escapeHtml(l.report_reason)}</div>` : ""}
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-1.5 text-xs font-bold">
+              <button type="button" onclick="openListingEditor('${l.id}')" class="bg-sky-700 text-white px-3 py-1.5 rounded-lg">Edit</button>
+              ${l.status === "pending_approval" ? `
+                <button type="button" onclick="modPost('${l.id}','approve', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Approve</button>
+                <button type="button" onclick="modPost('${l.id}','reject', this)" class="bg-red-600 text-white px-3 py-1.5 rounded-lg">Reject</button>
+              ` : ""}
+              ${l.status === "reported_suspended" ? `
+                <button type="button" onclick="modPost('${l.id}','mark_safe', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Mark Safe (Restore)</button>
+                <button type="button" onclick="modPost('${l.id}','mark_unsafe', this)" class="bg-red-600 text-white px-3 py-1.5 rounded-lg">Mark Unsafe</button>
+              ` : ""}
+              ${l.status === "active" ? `<button type="button" onclick="modPost('${l.id}','pause', this)" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg">Pause Post</button>` : ""}
+              ${l.status === "paused" ? `<button type="button" onclick="modPost('${l.id}','unpause', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Unpause</button>` : ""}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function loadAdmin(force = false) {
+      if (!key && !subSession) return;
+      try {
+        let d;
+        const cacheKey = "wariara_admin_overview";
+        if (!force) {
+          try {
+            const cached = JSON.parse(sessionStorage.getItem(cacheKey) || "null");
+            if (cached?.expiresAt > Date.now()) d = cached.value;
+          } catch (_) {}
+        }
+        d = d || await adminFetch("/api/admin/overview");
+        sessionStorage.setItem(cacheKey, JSON.stringify({ value: d, expiresAt: Date.now() + 15 * 1000 }));
+        cachedOverview = d;
+        document.getElementById("admin-gate").classList.add("hidden");
+        document.getElementById("admin-panel").classList.remove("hidden");
+
+        renderAdminPosts();
+
+        document.getElementById("payment-notifs-list").innerHTML =
+          (d.paymentNotifications || []).length === 0
+            ? `<div class="py-4 text-slate-500 text-xs">No confirmed payments yet.</div>`
+            : d.paymentNotifications.map((n) => `
+                <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <div class="font-bold text-slate-900">${n.payer_name} <span class="text-xs font-normal text-slate-500">(${n.payer_phone || n.payer_email || ""})</span></div>
+                    <div class="text-xs text-slate-600">Paid for: <strong>${n.purpose}</strong> · Ref: ${n.payment_ref || "-"}</div>
+                  </div>
+                  <div class="text-right">
+                    <span class="font-black text-emerald-700">KES ${Number(n.amount_kes).toLocaleString()}</span>
+                    <div class="text-[11px] text-slate-400">${n.created_at || ""}</div>
+                  </div>
+                </div>
+              `).join("");
+
+        const dealerships = d.users.filter((u) => u.role === "dealer" && !u.is_suspended);
+        document.getElementById("users-rows").innerHTML = d.users.map((u) => `
+          <tr>
+            <td class="py-2.5 pr-3"><strong>${escapeHtml(u.name)}</strong><div class="text-slate-400">${u.agent_of ? "Agent for " + escapeHtml(d.users.find((dealer) => dealer.id === u.agent_of)?.name || "dealership") : escapeHtml(u.role)} · ${escapeHtml(u.town)}</div></td>
+            <td class="py-2.5 pr-3">${escapeHtml(u.email)}<div>WA: ${escapeHtml(u.whatsapp_phone)} | Call: ${escapeHtml(u.call_phone)}</div></td>
+            <td class="py-2.5 pr-3">Free: <strong>${u.free_posts_used}/6</strong><div>Credits: <strong>${u.paid_post_credits}</strong></div></td>
+            <td class="py-2.5 pr-3"><strong>${u.total_purchased_posts}</strong> posts (KES ${Number(u.total_spent_kes).toLocaleString()})</td>
+            <td class="py-2.5 pr-3">
+              ${u.is_suspended ? `<span class="text-red-700 font-bold">SUSPENDED</span> (${escapeHtml(u.suspension_reason)})` : `<span class="text-emerald-700 font-bold">Active</span>`}
+              ${u.appeal_status === "pending" ? `<div class="bg-amber-50 border p-1.5 rounded mt-1">Review request: ${escapeHtml(u.appeal_text)}<div class="flex gap-1 mt-1"><button type="button" onclick="appeal('${u.id}','accept',this)" class="bg-emerald-600 text-white px-2 py-1 rounded">Accept & Restore</button><button type="button" onclick="appeal('${u.id}','reject',this)" class="bg-red-600 text-white px-2 py-1 rounded">Reject</button></div></div>` : u.appeal_status && u.appeal_status !== "none" ? `<div class="text-slate-500">Appeal: ${escapeHtml(u.appeal_status)}<div>${escapeHtml(u.appeal_response || "")}</div></div>` : ""}
+            </td>
+            <td class="py-2.5 space-y-1">
+              <select id="um-role-${u.id}" class="block w-full border rounded px-2 py-1 text-[11px]">
+                <option value="private" ${!u.agent_of && u.role === "private" ? "selected" : ""}>Private</option>
+                <option value="dealer" ${!u.agent_of && u.role === "dealer" ? "selected" : ""}>Dealership</option>
+                <option value="agent" ${u.agent_of ? "selected" : ""}>Agent</option>
+              </select>
+              <select id="um-agent-${u.id}" class="block w-full border rounded px-2 py-1 text-[11px]">
+                <option value="">Select dealership for agent</option>
+                ${dealerships.map((dealer) => `<option value="${dealer.id}" ${u.agent_of === dealer.id ? "selected" : ""}>${escapeHtml(dealer.name)}</option>`).join("")}
+              </select>
+              <input id="um-name-${u.id}" value="${escapeHtml(u.name)}" aria-label="Account name" class="block w-full border rounded px-2 py-1 text-[11px]" />
+              <input id="um-town-${u.id}" value="${escapeHtml(u.town)}" aria-label="Town" class="block w-full border rounded px-2 py-1 text-[11px]" />
+              <button type="button" onclick="saveUserProfile('${u.id}', this)" class="block w-full bg-sky-700 text-white font-bold px-2 py-1 rounded">Save Account</button>
+              <button type="button" onclick="gift('${u.id}', this)" class="block w-full bg-emerald-600 text-white font-bold px-2 py-1 rounded">Gift Posts</button>
+              ${u.is_suspended
+                ? `<button type="button" onclick="susp('${u.id}',false, this)" class="block w-full bg-slate-900 text-white font-bold px-2 py-1 rounded">Restore</button>`
+                : `<button type="button" onclick="susp('${u.id}',true, this)" class="block w-full bg-red-600 text-white font-bold px-2 py-1 rounded">Suspend</button>`}
+            </td>
+          </tr>
+        `).join("");
+
+        document.getElementById("priority-plans-edit").innerHTML = (d.priorityPlans || []).map((p) => `
+          <div class="grid grid-cols-4 gap-1.5 text-xs">
+            <input id="ppn-${p.id}" value="${escapeHtml(p.name)}" class="border rounded px-2 py-1" aria-label="Priority plan name" />
+            <input id="pph-${p.id}" type="number" min="1" value="${p.duration_hours}" class="border rounded px-2 py-1" aria-label="Duration hours" />
+            <input id="ppp-${p.id}" type="number" min="1" value="${p.price_kes}" class="border rounded px-2 py-1" aria-label="Plan price" />
+            <div class="flex gap-1"><button type="button" onclick="savePriorityPlan('${p.id}', this)" class="bg-emerald-600 text-white font-bold rounded px-2">Save</button><button type="button" onclick="deletePriorityPlan('${p.id}', this)" class="bg-red-600 text-white font-bold rounded px-2">Delete</button></div>
+          </div>
+        `).join("");
+        if (d.subAccount) {
+          document.getElementById("sub-email").value = d.subAccount.email || "";
+          document.getElementById("sub-2fa").checked = Boolean(d.subAccount.two_factor_enabled);
+        }
+        document.getElementById("plans-edit").innerHTML = d.plans.map((p) => `
+          <div class="grid grid-cols-4 gap-1.5 text-xs">
+            <input id="pn-${p.id}" value="${escapeHtml(p.name)}" class="border rounded px-2 py-1" />
+            <input id="pc-${p.id}" type="number" value="${p.post_count}" class="border rounded px-2 py-1" />
+            <input id="pp-${p.id}" type="number" value="${p.price_kes}" class="border rounded px-2 py-1" />
+            <button type="button" onclick="updPlan('${p.id}', this)" class="bg-emerald-600 text-white font-bold rounded">Save</button>
+          </div>
+        `).join("");
+      } catch (err) {
+        if (err.status === 401) lockAdmin();
+        alert(err.message);
+      }
+    }
+
+    function openListingEditor(id) {
+      const listing = cachedOverview?.listings.find((item) => item.id === id);
+      if (!listing) return alert("Listing is no longer available. Refresh and try again.");
+      document.getElementById("edit-listing-id").value = id;
+      document.getElementById("edit-listing-title").value = listing.title || "";
+      document.getElementById("edit-listing-price").value = Number(listing.price_kes) || "";
+      document.getElementById("edit-listing-town").value = listing.town || "";
+      document.getElementById("edit-listing-description").value = listing.description || "";
+      document.getElementById("listing-edit-modal").classList.remove("hidden");
+    }
+
+    function closeListingEditor() {
+      document.getElementById("listing-edit-modal").classList.add("hidden");
+    }
+
+    async function saveAdminListing(event, btn = null) {
+      event.preventDefault();
+      const id = document.getElementById("edit-listing-id").value;
+      await runWithButtonLock(btn, async () => {
+        try {
+          await adminFetch(`/api/admin/listings/${id}`, {
+            method: "PUT",
+            body: JSON.stringify({
+              title: document.getElementById("edit-listing-title").value,
+              price_kes: Number(document.getElementById("edit-listing-price").value) || 0,
+              town: document.getElementById("edit-listing-town").value,
+              description: document.getElementById("edit-listing-description").value,
+            }),
+          });
+          closeListingEditor();
+          await loadAdmin();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    }
+
+    async function modPost(id, action, btn = null) {
+      await runWithButtonLock(btn, async () => {
+        await adminFetch(`/api/admin/listings/${id}/moderate`, { method: "POST", body: JSON.stringify({ action }) });
+        await loadAdmin();
+      });
+    }
+
+    async function gift(id, btn = null) {
+      const user = cachedOverview?.users.find((item) => item.id === id);
+      const name = user?.name || "this seller";
+      const posts_count = Number(prompt(`Gift how many posts to ${name}?`, "5"));
+      if (!posts_count) return;
+      const confirm_whatsapp = prompt(`Enter ${name}'s registered WhatsApp number to confirm this gift:`);
+      if (!confirm_whatsapp) return;
+      await runWithButtonLock(btn, async () => {
+        try {
+          await adminFetch(`/api/admin/users/${id}/gift-posts`, { method: "POST", body: JSON.stringify({ posts_count, confirm_whatsapp }) });
+          await loadAdmin();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    }
+
+    async function saveUserProfile(id, btn = null) {
+      const accountType = document.getElementById(`um-role-${id}`).value;
+      const agentOf = document.getElementById(`um-agent-${id}`).value;
+      if (accountType === "agent" && !agentOf) return alert("Select a dealership for this agent.");
+      await runWithButtonLock(btn, async () => {
+        try {
+          await adminFetch(`/api/admin/users/${id}/profile`, {
+            method: "PUT",
+            body: JSON.stringify({
+              name: document.getElementById(`um-name-${id}`).value,
+              town: document.getElementById(`um-town-${id}`).value,
+              role: accountType === "dealer" ? "dealer" : "private",
+              agent_of: accountType === "agent" ? agentOf : null,
+            }),
+          });
+          await loadAdmin();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    }
+
+    async function susp(id, suspend, btn = null) {
+      const reason = suspend ? prompt("Reason (e.g. Scamming / irregular activity):", "Scamming / irregular activity") : null;
+      if (suspend && !reason) return;
+      await runWithButtonLock(btn, async () => {
+        await adminFetch(`/api/admin/users/${id}/suspension`, { method: "POST", body: JSON.stringify({ suspend, reason }) });
+        await loadAdmin();
+      });
+    }
+
+    async function saveSubAdmin(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        try {
+          await adminFetch("/api/admin/sub-account", { method: "POST", body: JSON.stringify({
+            email: document.getElementById("sub-email").value,
+            password: document.getElementById("sub-password").value,
+            two_factor_enabled: document.getElementById("sub-2fa").checked,
+          }) });
+          document.getElementById("sub-password").value = "";
+          await loadAdmin(true);
+          alert("Sub-admin credentials updated.");
+        } catch (err) { alert(err.message); }
+      });
+    }
+
+    async function appeal(id, action, btn = null) {
+      const response = prompt(action === "accept" ? "Response to seller when accepting:" : "Response to seller when rejecting:");
+      if (!response) return;
+      await runWithButtonLock(btn, async () => {
+        try {
+          await adminFetch(`/api/admin/users/${id}/appeal`, { method: "POST", body: JSON.stringify({ action, response }) });
+          await loadAdmin();
+        } catch (err) { alert(err.message); }
+      });
+    }
+
+    async function savePriorityPlan(id, btn = null) {
+      await runWithButtonLock(btn, async () => {
+        try {
+          await adminFetch(`/api/admin/priority-plans/${id}`, {
+            method: "PUT",
+            body: JSON.stringify({
+              name: document.getElementById(`ppn-${id}`).value,
+              duration_hours: Number(document.getElementById(`pph-${id}`).value),
+              price_kes: Number(document.getElementById(`ppp-${id}`).value),
+            }),
+          });
+          await loadAdmin();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    }
+
+    async function addPriorityPlan(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        try {
+          await adminFetch("/api/admin/priority-plans", {
+            method: "POST",
+            body: JSON.stringify({
+              name: document.getElementById("npp-name").value,
+              duration_hours: Number(document.getElementById("npp-hours").value),
+              price_kes: Number(document.getElementById("npp-price").value),
+            }),
+          });
+          document.getElementById("npp-name").value = "";
+          document.getElementById("npp-hours").value = "";
+          document.getElementById("npp-price").value = "";
+          await loadAdmin();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    }
+
+    async function deletePriorityPlan(id, btn = null) {
+      if (!confirm("Delete this priority plan? Existing sponsored posts will keep their current end time.")) return;
+      await runWithButtonLock(btn, async () => {
+        try {
+          await adminFetch(`/api/admin/priority-plans/${id}`, { method: "DELETE" });
+          await loadAdmin();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    }
+
+    async function updPlan(id, btn = null) {
+      await runWithButtonLock(btn, async () => {
+        await adminFetch(`/api/admin/plans/${id}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            name: document.getElementById(`pn-${id}`).value,
+            post_count: Number(document.getElementById(`pc-${id}`).value),
+            price_kes: Number(document.getElementById(`pp-${id}`).value),
+          }),
+        });
+        alert("Plan updated.");
+      });
+    }
+
+    async function addPlan(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        await adminFetch("/api/admin/plans", {
+          method: "POST",
+          body: JSON.stringify({
+            name: document.getElementById("np-name").value,
+            post_count: Number(document.getElementById("np-cnt").value),
+            price_kes: Number(document.getElementById("np-prc").value),
+          }),
+        });
+        await loadAdmin();
+      });
+    }
+
+    async function addCat(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        await adminFetch("/api/admin/catalog", {
+          method: "POST",
+          body: JSON.stringify({
+            vehicle_type: document.getElementById("c-vt").value,
+            brand: document.getElementById("c-br").value,
+            model: document.getElementById("c-mo").value,
+            body_type: document.getElementById("c-bo").value,
+          }),
+        });
+        alert("Added.");
+      });
+    }
+
+    if (subSession) {
+      localStorage.removeItem("wariara_admin_key");
+      key = "";
+      document.getElementById("admin-gate")?.classList.add("hidden");
+      document.getElementById("admin-panel")?.classList.remove("hidden");
+      document.getElementById("sub-admin-credentials-section")?.remove();
+    }
+    if (key || subSession) loadAdmin();
+  </script>
 </body>
 </html>
