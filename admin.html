@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Portal | Wariara Cars Central Rift</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="api-config.js"></script>
-  <script src="api-config.js"></script>
+  <script src="public/api-config.js"></script>
   <style>
     button:disabled { opacity: 0.65; cursor: not-allowed; }
   </style>
@@ -15,7 +13,7 @@
 <body class="bg-slate-100 text-slate-900 min-h-screen">
   <header class="bg-slate-900 text-white px-6 h-16 flex items-center justify-between">
     <div class="font-extrabold">Wariara Cars Central Rift — <span class="text-amber-400">Admin Portal</span></div>
-    <div class="flex items-center gap-3"><button type="button" onclick="openBackendSetting()" class="text-xs text-slate-300 hover:text-white underline">Backend Link</button><span class="text-xs text-slate-400">Restricted Moderation Console</span></div>
+    <span class="text-xs text-slate-400">Restricted Moderation Console</span>
   </header>
 
   <main class="max-w-7xl mx-auto p-6">
@@ -143,15 +141,6 @@
     let cachedOverview = null;
     let postFilter = "all";
 
-    function openBackendSetting() {
-      const api = prompt("Backend API link:", window.WARIARA_API_CONFIG.API_BASE);
-      if (!api) return;
-      const payHero = prompt("Payment backend link:", window.WARIARA_API_CONFIG.PAYHERO_BACKEND_URL);
-      if (!/^https?:\/\//i.test(api.trim())) return alert("Enter a valid http:// or https:// backend link.");
-      window.setWariaraBackendUrls(api, payHero);
-      location.reload();
-    }
-
     function escapeHtml(value) {
       return String(value ?? "").replace(/[&<>"']/g, (char) => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -183,7 +172,12 @@
       if (options.body && !headers["Content-Type"]) {
         headers["Content-Type"] = "application/json";
       }
-      const res = await fetch(apiUrl(path), { ...options, headers });
+      let res;
+      try {
+        res = await fetch(apiUrl(path), { ...options, headers, cache: "no-store", signal: AbortSignal.timeout(8000) });
+      } catch (_) {
+        throw new Error("The API is unavailable right now. Please try again.");
+      }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         const err = new Error(data.error || `Admin request failed (${res.status})`);
@@ -269,10 +263,19 @@
       }).join("");
     }
 
-    async function loadAdmin() {
+    async function loadAdmin(force = false) {
       if (!key && !subSession) return;
       try {
-        const d = await adminFetch("/api/admin/overview");
+        let d;
+        const cacheKey = "wariara_admin_overview";
+        if (!force) {
+          try {
+            const cached = JSON.parse(sessionStorage.getItem(cacheKey) || "null");
+            if (cached?.expiresAt > Date.now()) d = cached.value;
+          } catch (_) {}
+        }
+        d = d || await adminFetch("/api/admin/overview");
+        sessionStorage.setItem(cacheKey, JSON.stringify({ value: d, expiresAt: Date.now() + 15 * 1000 }));
         cachedOverview = d;
         document.getElementById("admin-gate").classList.add("hidden");
         document.getElementById("admin-panel").classList.remove("hidden");
