@@ -806,7 +806,7 @@
       try {
         res = await fetch(apiUrl(path), { ...options, headers, cache: "no-store" });
       } catch (err) {
-        throw new Error(`Cannot connect to the API at ${apiUrl(path)}. Open the site through the server or start it with "node server.js".`);
+        throw new Error(`Poor internet connection try a new location`);
       }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
