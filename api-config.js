@@ -1,9 +1,16 @@
-(function () {
-  const storedApi = localStorage.getItem("wariara_backend_url") || "https://carscrawers.onrender.com";
-  const storedPayHero = localStorage.getItem("wariara_payhero_url") || "https://parero.vercel.app";
 
+(function () {
+  const DEFAULT_API = "https://carscrawers.onrender.com";
+  const DEFAULT_PAYHERO = "https://parero.vercel.app";
+  const storedApi = localStorage.getItem("wariara_backend_url");
+  const apiBase = (!storedApi || storedApi.includes("localhost") || storedApi.includes("127.0.0.1") || storedApi === window.location.origin)
+    ? DEFAULT_API
+    : storedApi;
+  const storedPayHero = localStorage.getItem("wariara_payhero_url") || DEFAULT_PAYHERO;
+
+  localStorage.setItem("wariara_backend_url", apiBase.replace(/\/+$/, ""));
   window.WARIARA_API_CONFIG = {
-    API_BASE: storedApi.replace(/\/+$/, ""),
+    API_BASE: apiBase.replace(/\/+$/, ""),
     PAYHERO_BACKEND_URL: storedPayHero.replace(/\/+$/, "")
   };
 
