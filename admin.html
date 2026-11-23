@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,6 +15,21 @@
     <div class="flex items-center gap-2.5 font-extrabold">
       <img src="logo.png" alt="Wariara Cars Central Rift Logo" class="w-9 h-9 rounded-lg object-contain bg-white p-0.5" />
       <span>Wariara Cars Central Rift — <span class="text-amber-400">Admin Portal</span></span>
+    </div>
+
+    <div id="sec-subadmins" class="hidden bg-white rounded-xl border p-5 space-y-4">
+      <div>
+        <h3 class="font-extrabold text-base">Sub-admin PIN Logins (maximum 4)</h3>
+        <p class="mt-1 text-xs text-slate-500">Each sub-admin signs in with a unique six-digit PIN. Email codes are optional; when enabled, a 10-minute code is sent through EmailJS. Configure the template recipient as <code>{{to_email}}</code> and include <code>{{passcode}}</code> in its message. Leave an existing PIN blank to keep it.</p>
+      </div>
+      <div id="subadmin-slots" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <p id="subadmin-emailjs-status" class="text-xs text-slate-600"></p>
+          <p id="subadmin-status" class="text-xs text-slate-600"></p>
+        </div>
+        <button type="button" onclick="saveSubAdmins(this)" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white">Save Sub-admin Logins</button>
+      </div>
     </div>
     <span class="text-xs text-slate-400">Support: 0710911645</span>
   </header>
@@ -34,6 +50,7 @@
           <button type="button" onclick="tab('dealers')" id="t-dealers" class="px-3.5 py-2 rounded-lg bg-white border">Dealers (Add / Remove)</button>
           <button type="button" onclick="tab('users')" id="t-users" class="px-3.5 py-2 rounded-lg bg-white border">Accounts & Suspensions</button>
           <button type="button" onclick="tab('config')" id="t-config" class="px-3.5 py-2 rounded-lg bg-white border">Priority Price, Plans & Catalog</button>
+          <button type="button" onclick="tab('subadmins')" id="t-subadmins" class="hidden px-3.5 py-2 rounded-lg bg-white border">Sub-admin PIN Logins</button>
         </div>
         <button type="button" onclick="lockAdmin()" class="text-xs text-slate-500 hover:text-red-600 font-semibold">Lock Portal</button>
       </div>
@@ -46,6 +63,7 @@
           <button type="button" onclick="setPostFilter('active')" id="pf-active" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">Active</button>
           <button type="button" onclick="setPostFilter('paused')" id="pf-paused" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 border">Paused</button>
           <button type="button" onclick="setPostFilter('sold')" id="pf-sold" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">Sold</button>
+          <button type="button" onclick="setPostFilter('rejected')" id="pf-rejected" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200">Rejected</button>
         </div>
         <div id="admin-posts-list" class="space-y-3"></div>
       </div>
@@ -151,7 +169,9 @@
   <script>
     const API_BASE = window.WARIARA_API_BASE || "https://carscrawers.onrender.com";
     const apiUrl = (path) => `${API_BASE}${path}`;
-    let key = localStorage.getItem("wariara_admin_key") || "";
+    const subAdminSession = localStorage.getItem("wariara_sub_session") || "";
+    const isPrimaryAdmin = !subAdminSession;
+    let key = subAdminSession || localStorage.getItem("wariara_admin_key") || "";
     let cachedOverview = null;
     let postFilter = "all";
     let adminReplacementPhotos = null;
@@ -199,14 +219,22 @@
     }
 
     function lockAdmin() {
+      if (subAdminSession) {
+        fetch(apiUrl("/api/admin/sub/logout"), {
+          method: "POST",
+          headers: { "x-admin-key": subAdminSession },
+          keepalive: true,
+        }).catch((error) => console.error("Could not revoke sub-admin session:", error));
+      }
       key = "";
       localStorage.removeItem("wariara_admin_key");
+      localStorage.removeItem("wariara_sub_session");
       document.getElementById("admin-panel").classList.add("hidden");
       document.getElementById("admin-gate").classList.remove("hidden");
     }
 
     function tab(t) {
-      ["posts", "payments", "dealers", "users", "config"].forEach((x) => {
+      ["posts", "payments", "dealers", "users", "config", "subadmins"].forEach((x) => {
         document.getElementById(`sec-${x}`).classList.toggle("hidden", x !== t);
         document.getElementById(`t-${x}`).className = x === t
           ? "px-3.5 py-2 rounded-lg bg-emerald-600 text-white"
@@ -217,6 +245,12 @@
     function setPostFilter(f) {
       postFilter = f;
       renderAdminPosts();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      })[char]);
     }
 
     function formatAdminPostDetails(l) {
@@ -261,7 +295,7 @@
           : `<span class="text-xs text-slate-400">Free post</span>`;
 
         return `
-          <div class="bg-white rounded-xl border ${l.status === "reported_suspended" ? "border-red-400" : l.status === "expired" ? "border-amber-300" : ""} p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div class="bg-white rounded-xl border ${l.status === "reported_suspended" || l.status === "rejected" ? "border-red-400" : l.status === "expired" ? "border-amber-300" : ""} p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div class="flex items-start gap-3">
               <img src="${l.cover_photo || ""}" loading="lazy" class="w-20 h-16 object-cover rounded-lg bg-slate-100 shrink-0" />
               <div>
@@ -273,11 +307,15 @@
                 <div class="text-xs text-slate-700 font-semibold mt-0.5">KES ${Number(l.price_kes).toLocaleString()} · Location: ${l.town} · Seller: <strong>${l.seller_name}</strong> (WA: ${l.whatsapp_phone} | Call: ${l.call_phone})</div>
                 <div class="text-xs text-slate-600 mt-1">${formatAdminPostDetails(l)}</div>
                 ${l.description ? `<div class="text-xs text-slate-500 mt-1">Notes: ${l.description}</div>` : ""}
+                ${l.rejection_reason ? `<div class="text-xs text-red-700 font-bold mt-1">Rejection reason: ${escapeHtml(l.rejection_reason)}</div>` : ""}
                 ${l.report_reason ? `<div class="text-xs text-red-700 font-bold mt-0.5">Report Reason: ${l.report_reason}</div>` : ""}
               </div>
             </div>
             <div class="flex flex-wrap gap-1.5 text-xs font-bold shrink-0">
-              ${l.status === "pending_approval" ? `<button type="button" onclick="modPost('${l.id}','approve', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Approve</button>` : ""}
+              ${l.status === "pending_approval" ? `
+                <button type="button" onclick="modPost('${l.id}','approve', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Accept</button>
+                <button type="button" onclick="modPost('${l.id}','reject', this)" class="bg-red-600 text-white px-3 py-1.5 rounded-lg">Reject</button>
+              ` : ""}
               ${l.status === "reported_suspended" ? `
                 <button type="button" onclick="modPost('${l.id}','mark_safe', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Mark Safe (Restore)</button>
                 <button type="button" onclick="modPost('${l.id}','mark_unsafe', this)" class="bg-red-600 text-white px-3 py-1.5 rounded-lg">Mark Unsafe</button>
@@ -285,7 +323,7 @@
               ${l.status === "active" ? `<button type="button" onclick="modPost('${l.id}','pause', this)" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg">Pause Post</button>` : ""}
               ${l.status === "paused" ? `<button type="button" onclick="modPost('${l.id}','unpause', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Unpause</button>` : ""}
               ${["active", "paused"].includes(l.status) ? `<button type="button" onclick="modPost('${l.id}','sold', this)" class="bg-amber-500 text-white px-3 py-1.5 rounded-lg">Mark Sold</button>` : ""}
-              <button type="button" onclick="editAdminListing('${l.id}')" class="rounded-lg border border-slate-300 px-3 py-1.5">Edit All</button>
+              ${l.status !== "pending_approval" ? `<button type="button" onclick="editAdminListing('${l.id}')" class="rounded-lg border border-slate-300 px-3 py-1.5">Edit All</button>` : ""}
             </div>
           </div>
         `;
@@ -321,6 +359,12 @@
 
         renderAdminPosts();
         renderDealersTab();
+        if (isPrimaryAdmin) {
+          document.getElementById("t-subadmins").classList.remove("hidden");
+          await loadSubAdmins();
+        } else {
+          document.getElementById("t-subadmins").classList.add("hidden");
+        }
 
         document.getElementById("payment-notifs-list").innerHTML =
           (d.paymentNotifications || []).length === 0
@@ -417,8 +461,106 @@
 
     async function modPost(id, action, btn = null) {
       await runWithButtonLock(btn, async () => {
-        await adminFetch(`/api/admin/listings/${id}/moderate`, { method: "POST", body: JSON.stringify({ action }) });
+        const payload = { action };
+        if (action === "reject") {
+          const reason = prompt("Enter the reason for rejecting this post:");
+          if (reason === null) return;
+          payload.reason = reason.trim();
+          if (!payload.reason) return alert("A rejection reason is required.");
+        }
+        await adminFetch(`/api/admin/listings/${id}/moderate`, { method: "POST", body: JSON.stringify(payload) });
         await loadAdmin();
+      });
+    }
+
+    async function loadSubAdmins() {
+      const { accounts, emailjs_configured } = await adminFetch("/api/admin/sub-accounts");
+      document.getElementById("subadmin-emailjs-status").textContent = emailjs_configured
+        ? "EmailJS is configured for verification codes."
+        : "EmailJS is not fully configured on the API server. PIN-only logins still work.";
+      const container = document.getElementById("subadmin-slots");
+      container.replaceChildren();
+      for (const account of accounts) {
+        const card = document.createElement("section");
+        card.className = "rounded-xl border border-slate-200 p-4 space-y-2";
+        const heading = document.createElement("h4");
+        heading.className = "font-bold text-sm";
+        heading.textContent = `Sub-admin ${account.slot}`;
+        card.append(heading);
+
+        const activeLabel = document.createElement("label");
+        activeLabel.className = "flex items-center gap-2 text-xs font-semibold";
+        const active = document.createElement("input");
+        active.type = "checkbox";
+        active.dataset.subadminActive = "";
+        active.checked = account.active;
+        const activeText = document.createElement("span");
+        activeText.textContent = "Enable this login";
+        activeLabel.append(active, activeText);
+        card.append(activeLabel);
+
+        const pin = document.createElement("input");
+        pin.type = "password";
+        pin.inputMode = "numeric";
+        pin.pattern = "[0-9]{6}";
+        pin.maxLength = 6;
+        pin.placeholder = account.active ? "New 6-digit PIN (blank keeps current)" : "New 6-digit PIN";
+        pin.dataset.subadminPin = "";
+        pin.className = "w-full rounded-lg border px-3 py-2 text-sm";
+        card.append(pin);
+
+        const email = document.createElement("input");
+        email.type = "email";
+        email.value = account.email;
+        email.placeholder = "Email for optional sign-in code";
+        email.dataset.subadminEmail = "";
+        email.className = "w-full rounded-lg border px-3 py-2 text-sm";
+        card.append(email);
+
+        const codeLabel = document.createElement("label");
+        codeLabel.className = "flex items-center gap-2 text-xs";
+        const code = document.createElement("input");
+        code.type = "checkbox";
+        code.checked = account.email_code_enabled;
+        code.dataset.subadminEmailCode = "";
+        const codeText = document.createElement("span");
+        codeText.textContent = "Require a one-time email code at login";
+        codeLabel.append(code, codeText);
+        card.append(codeLabel);
+
+        const slot = document.createElement("input");
+        slot.type = "hidden";
+        slot.value = String(account.slot);
+        slot.dataset.subadminSlot = "";
+        card.append(slot);
+        container.append(card);
+      }
+    }
+
+    async function saveSubAdmins(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        const accounts = [...document.querySelectorAll("#subadmin-slots [data-subadmin-slot]")].map((slot) => {
+          const card = slot.closest("section");
+          return {
+            slot: Number(slot.value),
+            active: card.querySelector("[data-subadmin-active]").checked,
+            pin: card.querySelector("[data-subadmin-pin]").value,
+            email: card.querySelector("[data-subadmin-email]").value.trim(),
+            email_code_enabled: card.querySelector("[data-subadmin-email-code]").checked,
+          };
+        });
+        const status = document.getElementById("subadmin-status");
+        status.textContent = "";
+        try {
+          const result = await adminFetch("/api/admin/sub-accounts", {
+            method: "PUT",
+            body: JSON.stringify({ accounts }),
+          });
+          status.textContent = result.message;
+          await loadSubAdmins();
+        } catch (error) {
+          status.textContent = error.message;
+        }
       });
     }
 
