@@ -55,7 +55,10 @@
       </section>
 
       <section id="section-payments" class="hidden rounded-xl border bg-white p-5">
-        <h2 class="mb-3 font-extrabold">Payment Notifications</h2>
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 class="font-extrabold">Payment Notifications</h2>
+          <button type="button" onclick="loadOverview(true)" class="rounded-lg border px-3 py-1.5 text-xs font-bold">Refresh</button>
+        </div>
         <div id="payments" class="divide-y text-sm"></div>
       </section>
 
@@ -299,7 +302,7 @@
       const items = overview.paymentNotifications || [];
       document.getElementById("payments").innerHTML = items.length ? items.map((item) => `
         <div class="flex flex-wrap justify-between gap-2 py-3">
-          <div><strong>${escapeHtml(item.payer_name)}</strong><div class="text-xs text-slate-600">${escapeHtml(item.payer_phone || item.payer_email || "")} · ${escapeHtml(item.purpose)}</div></div>
+          <div><strong>${escapeHtml(item.payer_name || "Seller")}</strong><div class="text-xs text-slate-600">${escapeHtml(item.payer_phone || item.payer_email || "")} · ${escapeHtml(item.purpose)}</div><div class="text-xs text-slate-400">Ref: ${escapeHtml(item.payment_ref || "-")} · ${escapeHtml(item.created_at || "")}</div></div>
           <strong class="text-emerald-700">KES ${Number(item.amount_kes).toLocaleString()}</strong>
         </div>`).join("") : `<p class="py-3 text-sm text-slate-500">No confirmed payments.</p>`;
     }
