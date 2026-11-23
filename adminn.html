@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sub-admin Portal | Wariara Cars Central Rift</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-900">
+  <header class="flex min-h-16 items-center justify-between bg-slate-950 px-5 py-2 text-white">
+    <strong>Wariara Sub-admin Portal</strong>
+    <button id="logout-button" type="button" onclick="logoutSub()" class="hidden text-xs underline">Sign out</button>
+  </header>
+
+  <main class="mx-auto max-w-7xl p-4 sm:p-6">
+    <section id="gate" class="mx-auto max-w-md rounded-xl border bg-white p-5 shadow-sm">
+      <h1 class="text-xl font-extrabold">Sub-admin sign in</h1>
+      <p class="mt-1 text-xs text-slate-500">Enter the six-digit PIN provided by the primary admin.</p>
+      <label for="pin" class="mt-4 block text-xs font-bold">PIN</label>
+      <input id="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="6-digit PIN" class="mt-1 w-full rounded-lg border px-3 py-2 text-sm" />
+      <button id="pin-button" type="button" onclick="loginSub(this)" class="mt-3 w-full rounded-lg bg-emerald-600 py-2.5 font-bold text-white">Continue</button>
+
+      <div id="code-box" class="hidden mt-4 border-t pt-4">
+        <p id="code-hint" class="mb-2 text-xs text-slate-600"></p>
+        <label for="code" class="block text-xs font-bold">Email verification code</label>
+        <input id="code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="6-digit code" class="mt-1 w-full rounded-lg border px-3 py-2 text-sm" />
+        <button id="verify-button" type="button" onclick="verifySub(this)" class="mt-2 w-full rounded-lg bg-slate-900 py-2.5 font-bold text-white">Verify code</button>
+      </div>
+      <p id="gate-status" role="status" class="mt-3 text-xs text-red-700"></p>
+    </section>
+
+    <section id="portal-frame" class="hidden overflow-hidden rounded-xl border bg-white shadow-sm">
+      <iframe title="Sub-admin portal" src="about:blank" class="h-[calc(100vh-7rem)] min-h-[720px] w-full border-0"></iframe>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = "https://carscrawers.onrender.com";
+    let session = localStorage.getItem("wariara_sub_session") || "";
+
+    async function subRequest(path, options = {}) {
+      const response = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          ...(options.body ? { "Content-Type": "application/json" } : {}),
+          ...(session ? { "x-admin-key": session } : {}),
+        },
+        cache: "no-store",
+        signal: AbortSignal.timeout(20000),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || `Request failed (${response.status}).`);
+      return result;
+    }
+
+    async function loginSub(button) {
+      button.disabled = true;
+      document.getElementById("gate-status").textContent = "";
+      try {
+        const result = await subRequest("/api/admin/sub/login", {
+          method: "POST",
+          body: JSON.stringify({ pin: document.getElementById("pin").value }),
+        });
+        if (result.requires_code) {
+          document.getElementById("code-box").classList.remove("hidden");
+          document.getElementById("code-hint").textContent = `A one-time code was sent to ${result.email_hint}. It expires in 10 minutes.`;
+          document.getElementById("verify-button").focus();
+          return;
+        }
+        openPortal(result.session_token);
+      } catch (error) {
+        document.getElementById("gate-status").textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function verifySub(button) {
+      button.disabled = true;
+      document.getElementById("gate-status").textContent = "";
+      try {
+        const result = await subRequest("/api/admin/sub/verify", {
+          method: "POST",
+          body: JSON.stringify({
+            pin: document.getElementById("pin").value,
+            code: document.getElementById("code").value,
+          }),
+        });
+        openPortal(result.session_token);
+      } catch (error) {
+        document.getElementById("gate-status").textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function openPortal(token = session) {
+      session = token;
+      localStorage.setItem("wariara_sub_session", session);
+      try {
+        await subRequest("/api/admin/overview");
+        document.getElementById("gate").classList.add("hidden");
+        document.getElementById("portal-frame").classList.remove("hidden");
+        document.getElementById("logout-button").classList.remove("hidden");
+        document.querySelector("#portal-frame iframe").src = "admin.html?subadmin=1";
+      } catch (error) {
+        session = "";
+        localStorage.removeItem("wariara_sub_session");
+        document.getElementById("gate-status").textContent = error.message;
+      }
+    }
+
+    async function logoutSub() {
+      try {
+        await subRequest("/api/admin/sub/logout", { method: "POST" });
+      } catch (error) {
+        console.error("Could not revoke sub-admin session:", error);
+      } finally {
+        session = "";
+        localStorage.removeItem("wariara_sub_session");
+        location.reload();
+      }
+    }
+
+    if (session) openPortal();
+  </script>
+</body>
+</html>
