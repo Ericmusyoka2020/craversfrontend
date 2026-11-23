@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -54,7 +55,10 @@
       </div>
 
       <div id="sec-payments" class="hidden bg-white rounded-xl border p-5 space-y-3">
-        <h3 class="font-extrabold text-base">Payment Notifications (Who Paid & What For)</h3>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h3 class="font-extrabold text-base">Payment Notifications (Who Paid & What For)</h3>
+          <button type="button" onclick="loadAdmin()" class="rounded-lg border px-3 py-1.5 text-xs font-bold">Refresh</button>
+        </div>
         <div id="payment-notifs-list" class="divide-y text-sm"></div>
       </div>
 
@@ -131,7 +135,7 @@
       <div id="sec-subadmins" class="hidden bg-white rounded-xl border p-5 space-y-4">
         <div>
           <h3 class="font-extrabold text-base">Sub-admin PIN Logins (maximum 4)</h3>
-          <p class="mt-1 text-xs text-slate-500">A six-digit PIN is the only required login detail. Email is optional unless email verification is enabled. Configure the EmailJS template recipient as <code>{{to_email}}</code> and include <code>{{passcode}}</code> in its message. Leave an existing PIN blank to keep it.</p>
+          <p class="mt-1 text-xs text-slate-500">A six-digit PIN is the only required login detail. Email is optional unless email verification is enabled. In the EmailJS template, set the recipient to <code>{{to_email}}</code> and include <code>{{message}}</code> (or <code>{{passcode}}</code>) in the email body so the code appears in the message. Leave an existing PIN blank to keep it.</p>
         </div>
         <div id="subadmin-slots" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
