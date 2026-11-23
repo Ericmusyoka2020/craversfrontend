@@ -12,26 +12,37 @@
     import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 
     async function initFirebase() {
-      const response = await fetch(`${window.WARIARA_API_CONFIG.API_BASE}/api/config`, {
-        cache: "no-store",
-        signal: AbortSignal.timeout(4000)
-      });
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 60000);
+      let response;
+      try {
+        response = await fetch(`${window.WARIARA_API_CONFIG.API_BASE}/api/config`, {
+          cache: "no-store",
+          signal: controller.signal
+        });
+      } finally {
+        window.clearTimeout(timeout);
+      }
       if (!response.ok) throw new Error("Could not load public application configuration.");
       const config = await response.json();
       window.wariaraPublicConfig = config;
-      window.dispatchEvent(new Event("wariara-config-ready"));
 
       const app = initializeApp(config.firebase);
       const auth = getAuth(app);
       const googleProvider = new GoogleAuthProvider();
       window.wariaraFirebase = {
         auth,
-        loginWithGoogle: () => signInWithPopup(auth, googleProvider).catch((error) => {
-          if (error.code === "auth/unauthorized-domain" || error.code === "auth/popup-blocked") {
-            return signInWithRedirect(auth, googleProvider);
-          }
-          throw error;
-        }),
+        loginWithGoogle: () => {
+          const isMobile = /Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+            (window.matchMedia?.("(pointer: coarse)").matches && window.innerWidth < 1024);
+          if (isMobile) return signInWithRedirect(auth, googleProvider);
+          return signInWithPopup(auth, googleProvider).catch((error) => {
+            if (error.code === "auth/popup-blocked") {
+              return signInWithRedirect(auth, googleProvider);
+            }
+            throw error;
+          });
+        },
         getRedirectLogin: () => getRedirectResult(auth),
         signUpEmail: (email, password) => createUserWithEmailAndPassword(auth, email, password),
         loginEmail: (email, password) => signInWithEmailAndPassword(auth, email, password),
@@ -39,13 +50,17 @@
         logout: () => signOut(auth),
         onAuthChange: (cb) => onAuthStateChanged(auth, cb)
       };
+      window.dispatchEvent(new Event("wariara-config-ready"));
     }
 
-    initFirebase().catch(() => {
+    initFirebase().catch((error) => {
       window.wariaraFirebase = null;
+      window.wariaraFirebaseError = error;
+      window.dispatchEvent(new Event("wariara-config-ready"));
     });
   </script>
   <style>
+    .hidden { display: none !important; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif; }
     .card-lift { transition: transform 0.15s ease, box-shadow 0.15s ease; }
     .card-lift:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08); }
@@ -166,7 +181,7 @@
         </div>
 
         <div class="sm:hidden flex gap-2 mb-2">
-          <input id="f-q-mobile" type="search" placeholder="Search cars, parts, sellers..." class="min-w-0 flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm" />
+          <input id="f-q-mobile" type="search" placeholder="Search cars, parts, sellers..." oninput="scheduleMobileSearch()" onkeydown="if(event.key === 'Enter') searchMobile()" class="min-w-0 flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm" />
           <button type="button" onclick="searchMobile()" class="bg-emerald-600 text-white font-bold text-sm px-3 rounded-lg">Search</button>
           <button type="button" onclick="toggleMobileFilters()" class="border border-slate-300 font-bold text-sm px-3 rounded-lg">Filters</button>
         </div>
@@ -182,8 +197,8 @@
         </div>
 
         <div id="market-search-fields" class="mobile-hidden-filters grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2.5">
-          <input id="f-q" type="text" placeholder="Search keyword..." class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-600" />
-          <input id="f-seller" type="text" placeholder="Search seller name..." class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-600" />
+          <input id="f-q" type="search" placeholder="Search keyword..." oninput="scheduleListingSearch()" onkeydown="if(event.key === 'Enter') loadListings()" class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-600" />
+          <input id="f-seller" type="search" placeholder="Search seller name..." oninput="scheduleListingSearch()" onkeydown="if(event.key === 'Enter') loadListings()" class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-600" />
           <select id="f-town" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
             <option value="">All Towns</option>
             <option>Nakuru</option><option>Naivasha</option><option>Eldoret</option>
@@ -324,7 +339,7 @@
             <label class="block text-xs font-bold mb-1">Email Address *</label>
             <input id="s-email" type="email" required placeholder="you@example.com" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div id="register-password-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold mb-1">WhatsApp Number *</label>
               <input id="s-wa" type="tel" required placeholder="+254 7XX XXX XXX" oninput="normalizeWhatsAppInput(this)" onblur="normalizeWhatsAppInput(this)" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
@@ -796,6 +811,10 @@
     let verifiedResetToken = "";
     let payHeroContext = null;
     let pollTimer = null;
+    let pendingGoogleUser = null;
+    let listingSearchTimer = null;
+    let listingsRequestController = null;
+    let listingsRequestId = 0;
 
     async function runWithButtonLock(btn, fn) {
       const prevText = btn ? btn.textContent : "";
@@ -818,11 +837,35 @@
       if (options.body && !headers["Content-Type"]) {
         headers["Content-Type"] = "application/json";
       }
+      const method = (options.method || "GET").toUpperCase();
       let res;
-      try {
-        res = await fetch(apiUrl(path), { ...options, headers, cache: "no-store" });
-      } catch (err) {
-        throw new Error(`Cannot connect check net.`);
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 60000);
+        const abortFromCaller = () => controller.abort();
+        if (options.signal?.aborted) controller.abort();
+        else options.signal?.addEventListener("abort", abortFromCaller, { once: true });
+        try {
+          res = await fetch(apiUrl(path), { ...options, headers, signal: controller.signal, cache: "no-store" });
+        } catch (err) {
+          window.clearTimeout(timeout);
+          options.signal?.removeEventListener("abort", abortFromCaller);
+          if (options.signal?.aborted) throw err;
+          if (method === "GET" && attempt === 0) {
+            await new Promise((resolve) => window.setTimeout(resolve, 750));
+            continue;
+          }
+          throw new Error(controller.signal.aborted
+            ? "The marketplace is taking longer than usual to respond. Please retry."
+            : "Unable to reach the marketplace. Check your connection and retry.");
+        }
+        window.clearTimeout(timeout);
+        options.signal?.removeEventListener("abort", abortFromCaller);
+        if (method === "GET" && attempt === 0 && [502, 503, 504].includes(res.status)) {
+          await new Promise((resolve) => window.setTimeout(resolve, 750));
+          continue;
+        }
+        break;
       }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -832,6 +875,20 @@
         throw err;
       }
       return data;
+    }
+
+    function showListingError(message, retryAction = () => loadListings()) {
+      const container = document.createElement("div");
+      container.className = "col-span-full bg-white rounded-xl border border-red-200 p-6 text-center text-sm text-slate-600";
+      const text = document.createElement("p");
+      text.textContent = message;
+      const retry = document.createElement("button");
+      retry.type = "button";
+      retry.className = "mt-3 bg-emerald-600 text-white font-bold px-4 py-2 rounded-lg";
+      retry.textContent = "Retry loading";
+      retry.addEventListener("click", retryAction);
+      container.append(text, retry);
+      document.getElementById("market-grid").replaceChildren(container);
     }
 
     function normalizeWhatsAppInput(input) {
@@ -854,30 +911,27 @@
       initPreferences();
       try {
         document.getElementById("loading-message").textContent = "Preparing secure sign-in...";
-        if (!window.wariaraFirebase) {
-          await new Promise((resolve) => {
-            const timeout = window.setTimeout(resolve, 5000);
-            window.addEventListener("wariara-config-ready", () => { window.clearTimeout(timeout); resolve(); }, { once: true });
-          });
-        }
-        if (window.wariaraFirebase?.getRedirectLogin) {
-          const redirectCredential = await window.wariaraFirebase.getRedirectLogin();
-          if (redirectCredential?.user?.email) {
-            const email = redirectCredential.user.email;
-            const login = await apiFetch("/api/sellers/login", {
-              method: "POST",
-              body: JSON.stringify({ email, firebase_uid: redirectCredential.user.uid }),
+        const firebaseReady = window.wariaraFirebase
+          ? Promise.resolve()
+          : new Promise((resolve) => {
+              const timeout = window.setTimeout(resolve, 20000);
+              window.addEventListener("wariara-config-ready", () => { window.clearTimeout(timeout); resolve(); }, { once: true });
             });
-            await completeSellerLogin(login.user);
-          }
-        }
+        firebaseReady.then(async () => {
+          if (!window.wariaraFirebase?.getRedirectLogin) return;
+          const redirectCredential = await window.wariaraFirebase.getRedirectLogin();
+          if (redirectCredential?.user?.email) await finishGoogleSignIn(redirectCredential.user);
+        }).catch((err) => {
+          console.error("Could not finish Google sign-in.", err);
+          alert("Google sign-in could not be completed. Please try again.");
+        });
         const metaCacheKey = "wariara_meta_cache";
         let cachedMeta = null;
         try { cachedMeta = JSON.parse(sessionStorage.getItem(metaCacheKey) || "null"); } catch (_) {}
         if (cachedMeta?.expiresAt > Date.now()) meta = cachedMeta.value;
         else {
           document.getElementById("loading-message").textContent = "Loading marketplace data...";
-          meta = await apiFetch("/api/meta", { signal: AbortSignal.timeout(8000) });
+          meta = await apiFetch("/api/meta");
           sessionStorage.setItem(metaCacheKey, JSON.stringify({ value: meta, expiresAt: Date.now() + 10 * 60 * 1000 }));
         }
         const brands = [...new Set(meta.catalog.map((x) => x.brand))];
@@ -900,10 +954,42 @@
           await loadListings();
         }
       } catch (err) {
-        alert(err.message);
+        document.getElementById("count-label").textContent = "Unavailable";
+        showListingError(err.message, () => boot());
       } finally {
         hideWelcomeLoader();
       }
+    }
+
+    async function finishGoogleSignIn(user) {
+      if (!user.email) throw new Error("Google did not provide an email address. Try another Google account.");
+      try {
+        const login = await apiFetch("/api/sellers/login", {
+          method: "POST",
+          body: JSON.stringify({ email: user.email, firebase_uid: user.uid }),
+        });
+        pendingGoogleUser = null;
+        await completeSellerLogin(login.user);
+      } catch (err) {
+        if (err.status !== 404) throw err;
+        pendingGoogleUser = user;
+        document.getElementById("s-email").value = user.email || "";
+        document.getElementById("s-name").value = user.displayName || "";
+        setGoogleSignupMode(true);
+        setAuthTab("register");
+        switchPage("account-gate");
+        document.getElementById("loading-message").textContent = "Complete your seller profile to finish Google sign-up.";
+      }
+    }
+
+    function setGoogleSignupMode(enabled) {
+      const passwordFields = document.getElementById("register-password-fields");
+      const password = document.getElementById("s-pass");
+      const passwordConfirm = document.getElementById("s-pass-confirm");
+      passwordFields.classList.toggle("hidden", enabled);
+      password.required = !enabled;
+      passwordConfirm.required = !enabled;
+      if (!enabled) pendingGoogleUser = null;
     }
 
     async function loginWithGoogle(btn = null) {
@@ -911,20 +997,9 @@
         try {
           if (!window.wariaraFirebase) throw new Error("Sign-in is still loading. Please try again.");
           const credential = await window.wariaraFirebase.loginWithGoogle();
-          const email = credential.user.email;
-          try {
-            const d = await apiFetch("/api/sellers/lookup", { method: "GET" }).catch(() => null);
-            const lookup = await apiFetch(`/api/sellers/lookup?email=${encodeURIComponent(email)}`);
-            const login = await apiFetch("/api/sellers/login", { method: "POST", body: JSON.stringify({ email, firebase_uid: credential.user.uid }) });
-            await completeSellerLogin(login.user);
-          } catch (err) {
-            document.getElementById("s-email").value = email || "";
-            setAuthTab("register");
-            switchPage("account-gate");
-            alert("Complete the seller profile fields once, then create your account.");
-          }
+          if (credential?.user) await finishGoogleSignIn(credential.user);
         } catch (err) {
-          alert("Google sign-in is unavailable right now. Please try again or use email and password.");
+          alert(err.message || "Google sign-in is unavailable right now. Please try again or use email and password.");
         }
       });
     }
@@ -947,6 +1022,7 @@
     }
 
     function setAuthTab(mode) {
+      if (mode !== "register" && pendingGoogleUser) setGoogleSignupMode(false);
       const tabs = ["register", "login", "forgot"];
       for (const t of tabs) {
         document.getElementById(`form-${t}`).classList.toggle("hidden", t !== mode);
@@ -954,6 +1030,16 @@
           ? "py-2 rounded-lg bg-emerald-600 text-white"
           : "py-2 rounded-lg bg-slate-100 text-slate-700";
       }
+    }
+
+    function scheduleListingSearch() {
+      window.clearTimeout(listingSearchTimer);
+      listingSearchTimer = window.setTimeout(() => loadListings(), 300);
+    }
+
+    function scheduleMobileSearch() {
+      document.getElementById("f-q").value = document.getElementById("f-q-mobile").value;
+      scheduleListingSearch();
     }
 
     function togglePasswordVisibility(inputId, button) {
@@ -971,6 +1057,7 @@
 
     function searchMobile() {
       document.getElementById("f-q").value = document.getElementById("f-q-mobile").value;
+      window.clearTimeout(listingSearchTimer);
       loadListings();
     }
 
@@ -1102,10 +1189,17 @@
     }
 
     async function loadListings(btn = null) {
+      window.clearTimeout(listingSearchTimer);
+      listingsRequestController?.abort();
+      const requestController = new AbortController();
+      listingsRequestController = requestController;
+      const requestId = ++listingsRequestId;
       await runWithButtonLock(btn, async () => {
         document.getElementById("count-label").textContent = "Searching...";
-        document.getElementById("market-grid").innerHTML =
-          `<div class="col-span-full bg-white rounded-xl border border-slate-200 p-6 text-center text-sm text-slate-500">Searching listings...</div>`;
+        if (!document.getElementById("market-grid").children.length) {
+          document.getElementById("market-grid").innerHTML =
+            `<div class="col-span-full bg-white rounded-xl border border-slate-200 p-6 text-center text-sm text-slate-500">Searching listings...</div>`;
+        }
         const qs = new URLSearchParams({ category: cat, sort: document.getElementById("f-sort").value });
         const fields = {
           q: "f-q", seller: "f-seller", town: "f-town", brand: "f-brand", model: "f-model",
@@ -1123,15 +1217,25 @@
 
         const listingsCacheKey = `wariara_listings_${qs.toString()}`;
         let listings = [];
+        let hasFreshCache = false;
         try {
           const cached = JSON.parse(sessionStorage.getItem(listingsCacheKey) || "null");
-          if (cached?.expiresAt > Date.now()) listings = cached.value;
+          if (cached?.expiresAt > Date.now() && Array.isArray(cached.value)) {
+            listings = cached.value;
+            hasFreshCache = true;
+          }
         } catch (_) {}
-        if (!listings.length) {
-          const response = await apiFetch(`/api/listings?${qs.toString()}`, { signal: AbortSignal.timeout(8000) });
+        if (!hasFreshCache) {
+          const response = await apiFetch(`/api/listings?${qs.toString()}`, { signal: requestController.signal });
+          if (requestId !== listingsRequestId) return;
           listings = response.listings || [];
-          sessionStorage.setItem(listingsCacheKey, JSON.stringify({ value: listings, expiresAt: Date.now() + 20 * 1000 }));
+          try {
+            sessionStorage.setItem(listingsCacheKey, JSON.stringify({ value: listings, expiresAt: Date.now() + 60 * 1000 }));
+          } catch (err) {
+            console.warn("Could not cache marketplace results for this session.", err);
+          }
         }
+        if (requestId !== listingsRequestId) return;
         document.getElementById("count-label").textContent = listings.length;
         if (document.getElementById("f-q-mobile")) {
           document.getElementById("f-q-mobile").value = document.getElementById("f-q").value;
@@ -1178,6 +1282,12 @@
             </div>
           `;
         }).join("");
+      }).catch((err) => {
+        if (requestId !== listingsRequestId || requestController.signal.aborted) return;
+        document.getElementById("count-label").textContent = "Unavailable";
+        showListingError(err.message);
+      }).finally(() => {
+        if (requestId === listingsRequestId) listingsRequestController = null;
       });
     }
 
@@ -1468,29 +1578,35 @@
 
     async function saveSellerAccount(e, btn = null) {
       e.preventDefault();
-      const pass = document.getElementById("s-pass").value;
-      const passConfirm = document.getElementById("s-pass-confirm").value;
+      const googleUser = pendingGoogleUser;
+      const pass = googleUser ? "" : document.getElementById("s-pass").value;
+      const passConfirm = googleUser ? "" : document.getElementById("s-pass-confirm").value;
       const acceptedTerms = document.getElementById("s-terms").checked;
 
       if (!acceptedTerms) {
         return alert("Please tick the box to accept the Terms and Conditions.");
       }
-      if (pass !== passConfirm) {
+      if (!googleUser && pass !== passConfirm) {
         return alert("Passwords do not match. Please enter the same password twice.");
       }
 
       await runWithButtonLock(btn, async () => {
         try {
           if (!window.wariaraFirebase) throw new Error("Sign-in is still loading. Please try again.");
-          const email = document.getElementById("s-email").value.trim();
-          const credential = await window.wariaraFirebase.signUpEmail(email, pass);
+          const email = (googleUser?.email || document.getElementById("s-email").value).trim();
+          const accountPassword = googleUser
+            ? [...window.crypto.getRandomValues(new Uint8Array(24))].map((byte) => byte.toString(16).padStart(2, "0")).join("")
+            : pass;
+          const credential = googleUser
+            ? { user: googleUser }
+            : await window.wariaraFirebase.signUpEmail(email, pass);
           const d = await apiFetch("/api/sellers/account", {
             method: "POST",
             body: JSON.stringify({
               name: document.getElementById("s-name").value,
-              email: document.getElementById("s-email").value,
-              password: pass,
-              confirm_password: passConfirm,
+              email,
+              password: accountPassword,
+              confirm_password: googleUser ? accountPassword : passConfirm,
               whatsapp_phone: document.getElementById("s-wa").value,
               call_phone: document.getElementById("s-call").value,
               role: document.getElementById("s-role").value,
@@ -1499,9 +1615,11 @@
               firebase_uid: credential.user.uid,
             }),
           });
+          pendingGoogleUser = null;
+          setGoogleSignupMode(false);
           await completeSellerLogin(d.user);
         } catch (err) {
-          alert("Account creation could not be completed. Check the details and try again.");
+          alert(err.message || "Account creation could not be completed. Check the details and try again.");
         }
       });
     }
