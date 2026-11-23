@@ -66,7 +66,7 @@
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
-  <div id="welcome-loader" class="fixed inset-0 z-[70] bg-emerald-950 text-white flex items-center justify-center"><div class="text-center"><div class="text-2xl font-extrabold">Welcome to Wariara Cars Central Rift</div><div class="text-sm mt-2 text-emerald-100">Happy to have you here. Finding the best motors and spare parts...</div></div></div>
+  <div id="welcome-loader" role="status" aria-live="polite" class="fixed inset-0 z-[70] bg-slate-50/95 text-slate-900 flex items-center justify-center transition-opacity duration-200"><div class="text-center"><div class="text-lg font-extrabold">Loading Wariara Cars</div><div class="mt-3 mx-auto h-1 w-40 overflow-hidden rounded-full bg-slate-200"><div class="h-full w-1/2 animate-pulse rounded-full bg-emerald-600"></div></div><div id="loading-message" class="text-sm mt-3 text-slate-600">Connecting to the marketplace...</div></div></div>
   <div id="cookie-banner" class="hidden fixed bottom-4 left-4 right-4 sm:left-auto sm:max-w-md z-[60] rounded-xl bg-slate-950 text-white p-4 shadow-2xl">
     <div class="font-bold">Cookies help us remember your preferences</div>
     <p class="text-xs text-slate-300 mt-1">Allow cookies to remember theme and account convenience settings.</p>
@@ -351,11 +351,17 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold mb-1">Password *</label>
-              <input id="s-pass" type="password" required minlength="6" placeholder="Min 6 characters" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+              <div class="flex">
+                <input id="s-pass" type="password" autocomplete="new-password" required minlength="6" placeholder="Min 6 characters" class="min-w-0 flex-1 border border-slate-300 rounded-l-lg px-3 py-2" />
+                <button type="button" onclick="togglePasswordVisibility('s-pass', this)" aria-controls="s-pass" aria-pressed="false" class="border border-l-0 border-slate-300 rounded-r-lg px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">Show</button>
+              </div>
             </div>
             <div>
               <label class="block text-xs font-bold mb-1">Confirm Password *</label>
-              <input id="s-pass-confirm" type="password" required minlength="6" placeholder="Re-enter password" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+              <div class="flex">
+                <input id="s-pass-confirm" type="password" autocomplete="new-password" required minlength="6" placeholder="Re-enter password" class="min-w-0 flex-1 border border-slate-300 rounded-l-lg px-3 py-2" />
+                <button type="button" onclick="togglePasswordVisibility('s-pass-confirm', this)" aria-controls="s-pass-confirm" aria-pressed="false" class="border border-l-0 border-slate-300 rounded-r-lg px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">Show</button>
+              </div>
             </div>
           </div>
 
@@ -693,7 +699,7 @@
       <h2 class="text-lg font-extrabold">Backend Connection</h2>
       <p class="text-xs text-slate-500 mt-1">Set the API address once. It is saved on this device.</p>
       <div class="space-y-3 mt-4">
-       
+        <div><label for="api-base-input" class="block text-xs font-bold mb-1">Backend API link</label><input id="api-base-input" type="url" placeholder="https://carscrawers.onrender.com" class="w-full border rounded-lg px-3 py-2 text-sm" /></div>
         <div><label for="payhero-base-input" class="block text-xs font-bold mb-1">Payment backend link</label><input id="payhero-base-input" type="url" placeholder="https://parero.vercel.app" class="w-full border rounded-lg px-3 py-2 text-sm" /></div>
       </div>
       <div class="grid grid-cols-2 gap-2 mt-4"><button type="button" onclick="closeApiSettings()" class="border rounded-lg py-2 text-sm font-bold">Cancel</button><button type="button" onclick="saveApiSettings(this)" class="bg-emerald-600 text-white rounded-lg py-2 text-sm font-bold">Save & Reconnect</button></div>
@@ -707,7 +713,7 @@
       <button type="button" onclick="openInfoModal('faq')" class="hover:text-emerald-700 underline">FAQ</button>
       <button type="button" onclick="openInfoModal('advertise')" class="hover:text-emerald-700 underline">Advertise With Us</button>
       <button type="button" onclick="openInfoModal('contact')" class="hover:text-emerald-700 underline">Contact: 0710911645</button>
-     
+      <button type="button" onclick="openApiSettings()" class="hover:text-emerald-700 underline">Backend Link</button>
     </div>
     <div>Wariara Cars Central Rift · Call / WhatsApp: 0710911645</div>
   </footer>
@@ -739,13 +745,23 @@
       document.getElementById("cookie-banner").classList.add("hidden");
     }
 
+    let welcomeLoaderTimeout = null;
+
+    function hideWelcomeLoader() {
+      window.clearTimeout(welcomeLoaderTimeout);
+      const loader = document.getElementById("welcome-loader");
+      if (!loader || loader.classList.contains("hidden")) return;
+      loader.classList.add("opacity-0", "pointer-events-none");
+      window.setTimeout(() => loader.classList.add("hidden"), 220);
+    }
+
     function initPreferences() {
       applyBrightTheme();
       if (!localStorage.getItem("wariara_cookies") && !sessionStorage.getItem("wariara_cookie_prompted")) {
         sessionStorage.setItem("wariara_cookie_prompted", "1");
         document.getElementById("cookie-banner").classList.remove("hidden");
       }
-      window.setTimeout(() => document.getElementById("welcome-loader")?.classList.add("hidden"), 260);
+      welcomeLoaderTimeout = window.setTimeout(hideWelcomeLoader, 3000);
     }
     const apiUrl = (path) => `${API_BASE}${path}`;
 
@@ -806,7 +822,7 @@
       try {
         res = await fetch(apiUrl(path), { ...options, headers, cache: "no-store" });
       } catch (err) {
-        throw new Error(`Poor internet connection try a new location`);
+        throw new Error(`Cannot connect check net.`);
       }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -837,6 +853,7 @@
     async function boot() {
       initPreferences();
       try {
+        document.getElementById("loading-message").textContent = "Preparing secure sign-in...";
         if (!window.wariaraFirebase) {
           await new Promise((resolve) => {
             const timeout = window.setTimeout(resolve, 5000);
@@ -854,14 +871,12 @@
             await completeSellerLogin(login.user);
           }
         }
-        const publicConfig = await apiFetch("/api/config", { signal: AbortSignal.timeout(4000) }).catch(() => null);
-        window.wariaraPublicConfig = publicConfig;
-        API_BASE = API_CONFIG.API_BASE;
         const metaCacheKey = "wariara_meta_cache";
         let cachedMeta = null;
         try { cachedMeta = JSON.parse(sessionStorage.getItem(metaCacheKey) || "null"); } catch (_) {}
         if (cachedMeta?.expiresAt > Date.now()) meta = cachedMeta.value;
         else {
+          document.getElementById("loading-message").textContent = "Loading marketplace data...";
           meta = await apiFetch("/api/meta", { signal: AbortSignal.timeout(8000) });
           sessionStorage.setItem(metaCacheKey, JSON.stringify({ value: meta, expiresAt: Date.now() + 10 * 60 * 1000 }));
         }
@@ -881,10 +896,13 @@
           switchPage("account-gate");
           setAuthTab("login");
         } else {
+          document.getElementById("loading-message").textContent = "Finding current listings...";
           await loadListings();
         }
       } catch (err) {
         alert(err.message);
+      } finally {
+        hideWelcomeLoader();
       }
     }
 
@@ -936,6 +954,15 @@
           ? "py-2 rounded-lg bg-emerald-600 text-white"
           : "py-2 rounded-lg bg-slate-100 text-slate-700";
       }
+    }
+
+    function togglePasswordVisibility(inputId, button) {
+      const input = document.getElementById(inputId);
+      const isVisible = input.type === "text";
+      input.type = isVisible ? "password" : "text";
+      button.textContent = isVisible ? "Show" : "Hide";
+      button.setAttribute("aria-pressed", String(!isVisible));
+      button.setAttribute("aria-label", `${isVisible ? "Show" : "Hide"} ${inputId === "s-pass" ? "password" : "password confirmation"}`);
     }
 
     function toggleMobileFilters() {
