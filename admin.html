@@ -8,7 +8,13 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="api-config.js"></script>
   <style>
+    .hidden { display: none !important; }
     button:disabled { opacity: 0.65; cursor: not-allowed; }
+    @media (max-width: 640px) {
+      header { height: auto; min-height: 4rem; padding-top: 0.75rem; padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem; }
+      main { padding: 0.75rem; }
+      #sec-users { overflow-x: auto; }
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen">
@@ -18,9 +24,10 @@
   </header>
 
   <main class="max-w-7xl mx-auto p-6">
+    <div id="admin-status" class="hidden mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert" aria-live="polite"></div>
     <div id="admin-gate" class="bg-white max-w-md mx-auto rounded-2xl border p-6 shadow-sm">
       <h1 class="text-xl font-extrabold mb-2">Admin Access</h1>
-      <p class="text-xs text-slate-500 mb-4">Enter your <code class="bg-slate-100 px-1 py-0.5 rounded">ADMIN_SECRET</code> </p>
+      <p class="text-xs text-slate-500 mb-4">Enter your <code class="bg-slate-100 px-1 py-0.5 rounded">ADMIN_SECRET</code> configured on your Render API server.</p>
       <input id="admin-key-input" type="password" placeholder="Admin Secret Key" class="w-full border rounded-lg px-3 py-2 text-sm mb-3" />
       <button type="button" onclick="unlockAdmin(this)" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg text-sm">Open Admin Portal</button>
     </div>
@@ -148,6 +155,12 @@
       })[char]);
     }
 
+    function showAdminError(message) {
+      const status = document.getElementById("admin-status");
+      status.textContent = message;
+      status.classList.remove("hidden");
+    }
+
     async function runWithButtonLock(btn, fn) {
       const prevText = btn ? btn.textContent : "";
       if (btn) {
@@ -174,21 +187,30 @@
         headers["Content-Type"] = "application/json";
       }
       let res;
-      try {
-        let lastError = null;
-        for (let attempt = 0; attempt < 3; attempt++) {
-          try {
-            res = await fetch(apiUrl(path), { ...options, headers, cache: "no-store", signal: AbortSignal.timeout(30000) });
-            lastError = null;
-            break;
-          } catch (error) {
-            lastError = error;
-            if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500));
-          }
+      let lastError = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const controller = typeof window.AbortController === "function" ? new AbortController() : null;
+        const requestOptions = { ...options, headers, cache: "no-store" };
+        let timeout;
+        if (controller) {
+          requestOptions.signal = controller.signal;
+          timeout = window.setTimeout(() => controller.abort(), 30000);
         }
-        if (!res) throw lastError || new Error("Request failed");
-      } catch (_) {
-        throw new Error("Poor internet connection ");
+        try {
+          res = await fetch(apiUrl(path), requestOptions);
+          lastError = null;
+          break;
+        } catch (error) {
+          lastError = error;
+          if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500));
+        } finally {
+          if (timeout) window.clearTimeout(timeout);
+        }
+      }
+      if (!res) {
+        throw new Error(lastError && lastError.name === "AbortError"
+          ? "The API request timed out. Check your connection and try again."
+          : "The API is temporarily unavailable. Check your connection and try again.");
       }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -201,9 +223,14 @@
 
     async function unlockAdmin(btn = null) {
       await runWithButtonLock(btn, async () => {
+        document.getElementById("admin-status").classList.add("hidden");
         key = document.getElementById("admin-key-input").value.trim();
         localStorage.setItem("wariara_admin_key", key);
-        await loadAdmin();
+        try {
+          await loadAdmin();
+        } catch (error) {
+          showAdminError(error.message);
+        }
       });
     }
 
@@ -587,7 +614,9 @@
       document.getElementById("admin-panel")?.classList.remove("hidden");
       document.getElementById("sub-admin-credentials-section")?.remove();
     }
-    if (key || subSession) loadAdmin();
+    if (key || subSession) {
+      loadAdmin().catch((error) => showAdminError(error.message));
+    }
   </script>
 </body>
 </html>
