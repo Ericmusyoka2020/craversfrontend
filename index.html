@@ -211,19 +211,6 @@
           Create a seller account first before posting motors or spare parts.
         </p>
 
-        <!-- One-Time Reset Token Form -->
-        <div id="reset-token-box" class="hidden mb-6 p-4 rounded-xl bg-amber-50 border border-amber-300">
-          <h3 class="font-extrabold text-amber-950 text-sm mb-1">Set New Password (One-Time Link)</h3>
-          <p class="text-xs text-amber-900 mb-3">Enter your new password twice. Once submitted, this link becomes invalid.</p>
-          <form onsubmit="submitResetPassword(event, this.querySelector('button[type=submit]'))" class="space-y-2.5 text-sm">
-            <input id="reset-pass-1" type="password" required minlength="6" placeholder="New Password (min 6 chars) *" class="w-full border rounded-lg px-3 py-2 bg-white" />
-            <input id="reset-pass-2" type="password" required minlength="6" placeholder="Confirm New Password *" class="w-full border rounded-lg px-3 py-2 bg-white" />
-            <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-2.5 rounded-lg text-sm">
-              Update Password
-            </button>
-          </form>
-        </div>
-
         <div class="grid grid-cols-3 gap-2 mb-5 text-xs font-bold">
           <button type="button" onclick="setAuthTab('register')" id="tab-register" class="py-2 rounded-lg bg-emerald-600 text-white">Create Account</button>
           <button type="button" onclick="setAuthTab('login')" id="tab-login" class="py-2 rounded-lg bg-slate-100 text-slate-700">Sign In</button>
@@ -250,7 +237,7 @@
               <input id="s-call" type="text" required placeholder="0712345678" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
             </div>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div id="s-password-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold mb-1">Seller Type *</label>
               <select id="s-role" required class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white">
@@ -284,6 +271,9 @@
           <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm">
             Create Account & Continue
           </button>
+          <button type="button" onclick="signInWithGoogle(this)" class="w-full border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold py-3 rounded-xl text-sm">
+            Sign up with Google
+          </button>
         </form>
 
         <!-- Sign In Existing Seller -->
@@ -299,11 +289,14 @@
           <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl text-sm">
             Sign In
           </button>
+          <button type="button" onclick="signInWithGoogle(this)" class="w-full border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold py-3 rounded-xl text-sm">
+            Sign in with Google
+          </button>
         </form>
 
-        <!-- Forgot Password (Sends One-Time Link via EmailJS) -->
+        <!-- Forgot Password (Firebase sends a secure reset link) -->
         <form id="form-forgot" onsubmit="requestPasswordReset(event, this.querySelector('button[type=submit]'))" class="hidden space-y-3 text-sm">
-          <p class="text-xs text-slate-500">We will send a single-use password reset link to your email via EmailJS.</p>
+          <p class="text-xs text-slate-500">Firebase will email you a secure password reset link.</p>
           <div>
             <label class="block text-xs font-bold mb-1">Account Email Address *</label>
             <input id="fp-email" type="email" required placeholder="you@example.com" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
@@ -622,7 +615,7 @@
   </footer>
 
   <script>
-    const API_BASE = window.WARIARA_API_BASE || "https://carscrawers.onrender.com";
+    const API_BASE = window.WARIARA_API_BASE || "http://localhost:3000";
     const PAYHERO_BACKEND_URL = window.PAYHERO_BACKEND_URL || "https://parero.vercel.app";
     const EMAILJS_PUBLIC_KEY = "wc0_v2KwNXY2ZonsD";
     const apiUrl = (path) => `${API_BASE}${path}`;
@@ -638,9 +631,10 @@
     let storeSlug = "";
     let photos = [];
     let pendingOpenPostModalAfterAccount = false;
-    let activeResetToken = new URLSearchParams(window.location.search).get("reset_token") || "";
     let payHeroContext = null;
     let pollTimer = null;
+    let firebaseAuthPromise = null;
+    let pendingFirebaseUser = null;
 
     async function runWithButtonLock(btn, fn) {
       const prevText = btn ? btn.textContent : "";
@@ -674,6 +668,45 @@
       return data;
     }
 
+    async function getFirebaseAuth() {
+      if (!firebaseAuthPromise) {
+        firebaseAuthPromise = (async () => {
+          const response = await fetch(apiUrl("/api/config"), { cache: "no-store" });
+          const config = await response.json().catch(() => ({}));
+          if (!response.ok || !config.firebase?.apiKey || !config.firebase?.projectId) {
+            throw new Error(config.error || "Firebase sign-in configuration is unavailable.");
+          }
+          const [appSdk, authSdk] = await Promise.all([
+            import("https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js"),
+            import("https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js"),
+          ]);
+          const app = appSdk.initializeApp(config.firebase);
+          const auth = authSdk.getAuth(app);
+          return {
+            auth,
+            createAccount: (email, password) => authSdk.createUserWithEmailAndPassword(auth, email, password),
+            signIn: (email, password) => authSdk.signInWithEmailAndPassword(auth, email, password),
+            signInWithGoogle: () => authSdk.signInWithPopup(auth, new authSdk.GoogleAuthProvider()),
+            sendPasswordReset: (email) => authSdk.sendPasswordResetEmail(auth, email),
+            signOut: () => authSdk.signOut(auth),
+          };
+        })();
+      }
+      try {
+        return await firebaseAuthPromise;
+      } catch (error) {
+        firebaseAuthPromise = null;
+        throw error;
+      }
+    }
+
+    function firebaseAuthErrorMessage(error) {
+      if (error?.code === "auth/configuration-not-found") {
+        return "Firebase Authentication is not configured for this project. In Firebase Console, open Build > Authentication, click Get started, then enable Email/Password and Google sign-in providers.";
+      }
+      return error?.message || "Firebase sign-in is unavailable right now. Please try again.";
+    }
+
     async function boot() {
       try {
         meta = await apiFetch("/api/meta");
@@ -687,13 +720,7 @@
         fillPostBrands();
         updateSellerPill();
 
-        if (activeResetToken) {
-          document.getElementById("reset-token-box").classList.remove("hidden");
-          switchPage("account-gate");
-          setAuthTab("login");
-        } else {
-          await loadListings();
-        }
+        await loadListings();
       } catch (err) {
         alert(err.message);
       }
@@ -724,6 +751,50 @@
           ? "py-2 rounded-lg bg-emerald-600 text-white"
           : "py-2 rounded-lg bg-slate-100 text-slate-700";
       }
+      setFirebaseRegistrationMode(mode === "register" && Boolean(pendingFirebaseUser));
+    }
+
+    function setFirebaseRegistrationMode(enabled) {
+      const passwordFields = document.getElementById("s-password-fields");
+      const emailInput = document.getElementById("s-email");
+      const password = document.getElementById("s-pass");
+      const passwordConfirm = document.getElementById("s-pass-confirm");
+      passwordFields.classList.toggle("hidden", enabled);
+      password.required = !enabled;
+      passwordConfirm.required = !enabled;
+      emailInput.readOnly = enabled;
+      if (enabled && pendingFirebaseUser) {
+        emailInput.value = pendingFirebaseUser.email || "";
+        document.getElementById("s-name").value ||= pendingFirebaseUser.displayName || "";
+      }
+    }
+
+    async function signInWithGoogle(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        try {
+          const { signInWithGoogle: googlePopup } = await getFirebaseAuth();
+          const credential = await googlePopup();
+          const firebaseUser = credential.user;
+          const idToken = await firebaseUser.getIdToken();
+          try {
+            const result = await apiFetch("/api/sellers/login", {
+              method: "POST",
+              body: JSON.stringify({ firebase_id_token: idToken }),
+            });
+            pendingFirebaseUser = null;
+            setFirebaseRegistrationMode(false);
+            await completeSellerLogin(result.user);
+          } catch (error) {
+            if (error.status !== 404) throw error;
+            pendingFirebaseUser = firebaseUser;
+            setAuthTab("register");
+            switchPage("account-gate");
+            alert("Google sign-up started. Complete your seller profile and accept the Terms to continue.");
+          }
+        } catch (error) {
+          alert(firebaseAuthErrorMessage(error));
+        }
+      });
     }
 
     function openSellerWorkspace() {
@@ -734,8 +805,16 @@
       switchPage("seller");
     }
 
-    function signOutSeller() {
+    async function signOutSeller() {
+      try {
+        const firebase = await getFirebaseAuth();
+        await firebase.signOut();
+      } catch (error) {
+        console.error("Could not sign out from Firebase.", error);
+      }
       seller = null;
+      pendingFirebaseUser = null;
+      setFirebaseRegistrationMode(false);
       localStorage.removeItem("wariara_seller");
       updateSellerPill();
       switchPage("account-gate");
@@ -1198,7 +1277,7 @@
           closeM("modal-post");
           switchPage("seller");
         } catch (err) {
-          alert(err.message);
+          alert(firebaseAuthErrorMessage(err));
           if (err.data?.needs_plan) {
             closeM("modal-post");
             switchPage("seller");
@@ -1209,6 +1288,8 @@
 
     async function completeSellerLogin(user) {
       seller = user;
+      pendingFirebaseUser = null;
+      setFirebaseRegistrationMode(false);
       localStorage.setItem("wariara_seller", JSON.stringify(seller));
       updateSellerPill();
       if (pendingOpenPostModalAfterAccount) {
@@ -1224,26 +1305,36 @@
 
     async function saveSellerAccount(e, btn = null) {
       e.preventDefault();
-      const pass = document.getElementById("s-pass").value;
-      const passConfirm = document.getElementById("s-pass-confirm").value;
       const acceptedTerms = document.getElementById("s-terms").checked;
 
       if (!acceptedTerms) {
         return alert("Please tick the box to accept the Terms and Conditions.");
       }
-      if (pass !== passConfirm) {
-        return alert("Passwords do not match. Please enter the same password twice.");
-      }
 
       await runWithButtonLock(btn, async () => {
         try {
+          let firebaseUser = pendingFirebaseUser;
+          if (!firebaseUser) {
+            const pass = document.getElementById("s-pass").value;
+            const passConfirm = document.getElementById("s-pass-confirm").value;
+            if (pass !== passConfirm) {
+              return alert("Passwords do not match. Please enter the same password twice.");
+            }
+            const firebase = await getFirebaseAuth();
+            const credential = await firebase.createAccount(
+              document.getElementById("s-email").value.trim(),
+              pass,
+            );
+            firebaseUser = credential.user;
+            pendingFirebaseUser = firebaseUser;
+          }
+          const idToken = await firebaseUser.getIdToken();
           const d = await apiFetch("/api/sellers/account", {
             method: "POST",
             body: JSON.stringify({
               name: document.getElementById("s-name").value,
-              email: document.getElementById("s-email").value,
-              password: pass,
-              confirm_password: passConfirm,
+              email: firebaseUser.email,
+              firebase_id_token: idToken,
               whatsapp_phone: document.getElementById("s-wa").value,
               call_phone: document.getElementById("s-call").value,
               role: document.getElementById("s-role").value,
@@ -1262,16 +1353,26 @@
       e.preventDefault();
       await runWithButtonLock(btn, async () => {
         try {
+          const firebase = await getFirebaseAuth();
+          const credential = await firebase.signIn(
+            document.getElementById("l-email").value.trim(),
+            document.getElementById("l-pass").value,
+          );
+          const idToken = await credential.user.getIdToken();
           const d = await apiFetch("/api/sellers/login", {
             method: "POST",
-            body: JSON.stringify({
-              email: document.getElementById("l-email").value,
-              password: document.getElementById("l-pass").value,
-            }),
+            body: JSON.stringify({ firebase_id_token: idToken }),
           });
           await completeSellerLogin(d.user);
         } catch (err) {
-          alert(err.message);
+          if (err.status === 404) {
+            pendingFirebaseUser = (await getFirebaseAuth()).auth.currentUser;
+            setAuthTab("register");
+            switchPage("account-gate");
+            alert("Sign-in succeeded. Complete your seller profile to finish setting up your account.");
+          } else {
+            alert(firebaseAuthErrorMessage(err));
+          }
         }
       });
     }
@@ -1280,60 +1381,11 @@
       e.preventDefault();
       await runWithButtonLock(btn, async () => {
         try {
-          const emailVal = document.getElementById("fp-email").value.trim();
-          const tokenResp = await apiFetch("/api/sellers/forgot-password/token", {
-            method: "POST",
-            body: JSON.stringify({ email: emailVal }),
-          });
-          const resetLink = `${window.location.origin}${window.location.pathname}?reset_token=${encodeURIComponent(tokenResp.token)}`;
-
-          if (!window.emailjs || !EMAILJS_PUBLIC_KEY) {
-            throw new Error("EmailJS is not loaded.");
-          }
-
-          await emailjs.send("service_39pgd3j", "template_euj4t1e", {
-            to_email: tokenResp.email,
-            to_name: tokenResp.name,
-            reset_link: resetLink,
-            reset_token: tokenResp.token,
-          });
-
-          alert("One-time password reset link sent to your email via EmailJS.");
+          const firebase = await getFirebaseAuth();
+          await firebase.sendPasswordReset(document.getElementById("fp-email").value.trim());
+          alert("Firebase password reset link sent. Check your email.");
         } catch (err) {
-          alert(err.message);
-        }
-      });
-    }
-
-    async function submitResetPassword(e, btn = null) {
-      e.preventDefault();
-      const p1 = document.getElementById("reset-pass-1").value;
-      const p2 = document.getElementById("reset-pass-2").value;
-      if (p1 !== p2) {
-        return alert("New passwords do not match.");
-      }
-
-      await runWithButtonLock(btn, async () => {
-        try {
-          const d = await apiFetch("/api/sellers/reset-password", {
-            method: "POST",
-            body: JSON.stringify({
-              token: activeResetToken,
-              password: p1,
-              confirm_password: p2,
-            }),
-          });
-          alert(d.message);
-          activeResetToken = "";
-          window.history.replaceState({}, document.title, window.location.pathname);
-          document.getElementById("reset-token-box").classList.add("hidden");
-          if (d.user) {
-            await completeSellerLogin(d.user);
-          } else {
-            setAuthTab("login");
-          }
-        } catch (err) {
-          alert(err.message);
+          alert(firebaseAuthErrorMessage(err));
         }
       });
     }
