@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,25 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Portal | Wariara Cars Central Rift</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="api-config.js"></script>
   <style>
-    .hidden { display: none !important; }
     button:disabled { opacity: 0.65; cursor: not-allowed; }
-    @media (max-width: 640px) {
-      header { height: auto; min-height: 4rem; padding-top: 0.75rem; padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem; }
-      main { padding: 0.75rem; }
-      #sec-users { overflow-x: auto; }
-    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen">
-  <header class="bg-slate-900 text-white px-6 h-16 flex items-center justify-between">
-    <div class="font-extrabold">Wariara Cars Central Rift — <span class="text-amber-400">Admin Portal</span></div>
-    <span class="text-xs text-slate-400">Restricted Moderation Console</span>
+  <header class="bg-slate-900 text-white px-4 sm:px-6 min-h-16 py-2 flex flex-wrap items-center justify-between gap-2">
+    <div class="flex items-center gap-2.5 font-extrabold">
+      <img src="logo.png" alt="Wariara Cars Central Rift Logo" class="w-9 h-9 rounded-lg object-contain bg-white p-0.5" />
+      <span>Wariara Cars Central Rift — <span class="text-amber-400">Admin Portal</span></span>
+    </div>
+    <span class="text-xs text-slate-400">Support: 0710911645</span>
   </header>
 
-  <main class="max-w-7xl mx-auto p-6">
-    <div id="admin-status" class="hidden mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert" aria-live="polite"></div>
+  <main class="max-w-7xl mx-auto p-4 sm:p-6">
     <div id="admin-gate" class="bg-white max-w-md mx-auto rounded-2xl border p-6 shadow-sm">
       <h1 class="text-xl font-extrabold mb-2">Admin Access</h1>
       <p class="text-xs text-slate-500 mb-4">Enter your <code class="bg-slate-100 px-1 py-0.5 rounded">ADMIN_SECRET</code> configured on your Render API server.</p>
@@ -34,11 +28,12 @@
 
     <div id="admin-panel" class="hidden space-y-6">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <div class="flex flex-wrap gap-2 text-sm font-bold">
-          <button type="button" onclick="tab('posts')" id="t-posts" class="px-4 py-2 rounded-lg bg-emerald-600 text-white">Posts & Expiry</button>
-          <button type="button" onclick="tab('payments')" id="t-payments" class="px-4 py-2 rounded-lg bg-white border">Payment Notifications</button>
-          <button type="button" onclick="tab('users')" id="t-users" class="px-4 py-2 rounded-lg bg-white border">Accounts & Suspensions</button>
-          <button type="button" onclick="tab('config')" id="t-config" class="px-4 py-2 rounded-lg bg-white border">Priority Plans, Post Plans & Catalog</button>
+        <div class="flex flex-wrap gap-2 text-xs sm:text-sm font-bold">
+          <button type="button" onclick="tab('posts')" id="t-posts" class="px-3.5 py-2 rounded-lg bg-emerald-600 text-white">Posts & Expiry</button>
+          <button type="button" onclick="tab('payments')" id="t-payments" class="px-3.5 py-2 rounded-lg bg-white border">Payment Notifications</button>
+          <button type="button" onclick="tab('dealers')" id="t-dealers" class="px-3.5 py-2 rounded-lg bg-white border">Dealers (Add / Remove)</button>
+          <button type="button" onclick="tab('users')" id="t-users" class="px-3.5 py-2 rounded-lg bg-white border">Accounts & Suspensions</button>
+          <button type="button" onclick="tab('config')" id="t-config" class="px-3.5 py-2 rounded-lg bg-white border">Priority Price, Plans & Catalog</button>
         </div>
         <button type="button" onclick="lockAdmin()" class="text-xs text-slate-500 hover:text-red-600 font-semibold">Lock Portal</button>
       </div>
@@ -49,7 +44,8 @@
           <button type="button" onclick="setPostFilter('expired')" id="pf-expired" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200">Expired Posts (70d)</button>
           <button type="button" onclick="setPostFilter('pending_approval')" id="pf-pending_approval" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">Pending Approval</button>
           <button type="button" onclick="setPostFilter('active')" id="pf-active" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">Active</button>
-          <button type="button" onclick="setPostFilter('sold')" id="pf-sold" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200">Sold</button>
+          <button type="button" onclick="setPostFilter('paused')" id="pf-paused" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 border">Paused</button>
+          <button type="button" onclick="setPostFilter('sold')" id="pf-sold" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">Sold</button>
         </div>
         <div id="admin-posts-list" class="space-y-3"></div>
       </div>
@@ -57,6 +53,28 @@
       <div id="sec-payments" class="hidden bg-white rounded-xl border p-5 space-y-3">
         <h3 class="font-extrabold text-base">Payment Notifications (Who Paid & What For)</h3>
         <div id="payment-notifs-list" class="divide-y text-sm"></div>
+      </div>
+
+      <!-- ADMIN DEALER MANAGEMENT (ADD & REMOVE DEALER) -->
+      <div id="sec-dealers" class="hidden space-y-5">
+        <div class="bg-white rounded-xl border p-5">
+          <h3 class="font-extrabold text-base mb-3">Add or Mark Dealer</h3>
+          <form onsubmit="addDealerSubmit(event, this.querySelector('button[type=submit]'))" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 text-xs">
+            <input id="dl-name" type="text" required placeholder="Dealer / Business Name *" class="border rounded-lg px-3 py-2" />
+            <input id="dl-email" type="email" required placeholder="Email *" class="border rounded-lg px-3 py-2" />
+            <input id="dl-wa" type="text" required placeholder="WhatsApp (2547...) *" class="border rounded-lg px-3 py-2" />
+            <input id="dl-call" type="text" required placeholder="Call Phone (07...) *" class="border rounded-lg px-3 py-2" />
+            <div class="flex gap-2">
+              <input id="dl-town" type="text" required value="Nakuru" placeholder="Town *" class="border rounded-lg px-3 py-2 w-full" />
+              <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg whitespace-nowrap">Add Dealer</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="bg-white rounded-xl border p-5">
+          <h3 class="font-extrabold text-base mb-3">Current Dealers (Remove Dealer Status)</h3>
+          <div id="admin-dealers-list" class="divide-y text-xs"></div>
+        </div>
       </div>
 
       <div id="sec-users" class="hidden bg-white rounded-xl border p-5 overflow-x-auto">
@@ -76,25 +94,11 @@
       </div>
 
       <div id="sec-config" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div id="sub-admin-credentials-section" class="bg-white rounded-xl border p-5 lg:col-span-3">
-          <h3 class="font-bold mb-2">Sub-Admin Account & 3D Security</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <input id="sub-email" type="email" placeholder="Sub-admin email" class="border rounded-lg px-3 py-2 text-xs" />
-            <input id="sub-password" type="password" minlength="6" placeholder="Set or update sub-admin password" class="border rounded-lg px-3 py-2 text-xs" />
-            <label class="flex items-center gap-2 text-xs"><input id="sub-2fa" type="checkbox" /> Send a 10-minute email code at login</label>
-          </div>
-          <button type="button" onclick="saveSubAdmin(this)" class="mt-3 bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-lg">Set / Update Sub-Admin Password</button>
-        </div>
         <div class="bg-white rounded-xl border p-5">
-          <h3 class="font-bold mb-2">Sponsored Priority Plans</h3>
-          <p class="text-xs text-slate-500 mb-3">Set a price and duration for each plan. There is no daily sponsored-post limit.</p>
-          <div id="priority-plans-edit" class="space-y-2 mb-3"></div>
-          <div class="grid grid-cols-3 gap-1.5 text-xs">
-            <input id="npp-name" placeholder="Plan name" class="border rounded px-2 py-1" />
-            <input id="npp-hours" type="number" min="1" placeholder="Hours" class="border rounded px-2 py-1" />
-            <input id="npp-price" type="number" min="1" placeholder="KES" class="border rounded px-2 py-1" />
-          </div>
-          <button type="button" onclick="addPriorityPlan(this)" class="mt-2 bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg">+ Add Priority Plan</button>
+          <h3 class="font-bold mb-2">Priority Price (Max 20/Day)</h3>
+          <p class="text-xs text-slate-500 mb-3">Minimum daily fee to enter the 20 sponsored slots; higher payments appear higher on top.</p>
+          <input id="cfg-prio" type="number" class="w-full border rounded-lg px-3 py-2 text-sm mb-2" />
+          <button type="button" onclick="savePrio(this)" class="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-lg">Save Priority Fee</button>
         </div>
 
         <div class="bg-white rounded-xl border p-5">
@@ -124,42 +128,33 @@
     </div>
   </main>
 
-  <div id="listing-edit-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-    <form onsubmit="saveAdminListing(event, this.querySelector('button[type=submit]'))" class="bg-white rounded-2xl p-5 w-full max-w-xl space-y-3">
-      <h2 class="text-lg font-extrabold">Edit Listing</h2>
-      <input id="edit-listing-id" type="hidden" />
-      <label class="block text-xs font-bold">Title<input id="edit-listing-title" required class="mt-1 w-full border rounded-lg px-3 py-2 text-sm" /></label>
-      <div class="grid grid-cols-2 gap-3">
-        <label class="block text-xs font-bold">Price (KES; 0 = contact seller)<input id="edit-listing-price" type="number" min="0" class="mt-1 w-full border rounded-lg px-3 py-2 text-sm" /></label>
-        <label class="block text-xs font-bold">Town<input id="edit-listing-town" class="mt-1 w-full border rounded-lg px-3 py-2 text-sm" /></label>
-      </div>
-      <label class="block text-xs font-bold">Description<textarea id="edit-listing-description" required rows="4" class="mt-1 w-full border rounded-lg px-3 py-2 text-sm"></textarea></label>
-      <div class="flex justify-end gap-2">
-        <button type="button" onclick="closeListingEditor()" class="px-4 py-2 border rounded-lg text-sm font-bold">Cancel</button>
-        <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold">Save Listing</button>
-      </div>
-    </form>
+  <div id="admin-edit-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4">
+    <div class="relative my-auto max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
+      <button type="button" onclick="closeAdminEdit()" class="absolute right-4 top-4 rounded-full bg-slate-100 px-3 py-1 font-bold">Close</button>
+      <h2 class="mb-1 pr-20 text-xl font-extrabold">Edit Listing</h2>
+      <p class="mb-4 text-xs text-slate-500">Update listing details, contacts, and replace photos (up to 6).</p>
+      <form id="admin-edit-form" onsubmit="saveAdminListing(event, this.querySelector('button[type=submit]'))" class="space-y-4">
+        <input id="admin-edit-id" type="hidden" />
+        <div id="admin-edit-fields" class="grid grid-cols-1 gap-3 sm:grid-cols-2"></div>
+        <div id="admin-edit-photos" class="grid grid-cols-4 gap-2"></div>
+        <label class="block text-xs font-bold">Replace photos
+          <input id="admin-edit-files" type="file" accept="image/*" multiple class="mt-1 w-full rounded-lg border px-3 py-2" />
+        </label>
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="closeAdminEdit()" class="rounded-lg border px-4 py-2 text-sm font-bold">Cancel</button>
+          <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white">Save Listing</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script>
-    const API_BASE = window.WARIARA_API_CONFIG.API_BASE;
+    const API_BASE = window.WARIARA_API_BASE || "https://carscrawers.onrender.com";
     const apiUrl = (path) => `${API_BASE}${path}`;
     let key = localStorage.getItem("wariara_admin_key") || "";
-    let subSession = localStorage.getItem("wariara_sub_session") || "";
     let cachedOverview = null;
     let postFilter = "all";
-
-    function escapeHtml(value) {
-      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-      })[char]);
-    }
-
-    function showAdminError(message) {
-      const status = document.getElementById("admin-status");
-      status.textContent = message;
-      status.classList.remove("hidden");
-    }
+    let adminReplacementPhotos = null;
 
     async function runWithButtonLock(btn, fn) {
       const prevText = btn ? btn.textContent : "";
@@ -181,37 +176,11 @@
       const headers = {
         ...(options.headers || {}),
         "x-admin-key": key,
-        "x-sub-admin-session": subSession,
       };
       if (options.body && !headers["Content-Type"]) {
         headers["Content-Type"] = "application/json";
       }
-      let res;
-      let lastError = null;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const controller = typeof window.AbortController === "function" ? new AbortController() : null;
-        const requestOptions = { ...options, headers, cache: "no-store" };
-        let timeout;
-        if (controller) {
-          requestOptions.signal = controller.signal;
-          timeout = window.setTimeout(() => controller.abort(), 30000);
-        }
-        try {
-          res = await fetch(apiUrl(path), requestOptions);
-          lastError = null;
-          break;
-        } catch (error) {
-          lastError = error;
-          if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500));
-        } finally {
-          if (timeout) window.clearTimeout(timeout);
-        }
-      }
-      if (!res) {
-        throw new Error(lastError && lastError.name === "AbortError"
-          ? "The API request timed out. Check your connection and try again."
-          : "The API is temporarily unavailable. Check your connection and try again.");
-      }
+      const res = await fetch(apiUrl(path), { ...options, headers });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         const err = new Error(data.error || `Admin request failed (${res.status})`);
@@ -223,14 +192,9 @@
 
     async function unlockAdmin(btn = null) {
       await runWithButtonLock(btn, async () => {
-        document.getElementById("admin-status").classList.add("hidden");
         key = document.getElementById("admin-key-input").value.trim();
         localStorage.setItem("wariara_admin_key", key);
-        try {
-          await loadAdmin();
-        } catch (error) {
-          showAdminError(error.message);
-        }
+        await loadAdmin();
       });
     }
 
@@ -242,17 +206,47 @@
     }
 
     function tab(t) {
-      ["posts", "payments", "users", "config"].forEach((x) => {
+      ["posts", "payments", "dealers", "users", "config"].forEach((x) => {
         document.getElementById(`sec-${x}`).classList.toggle("hidden", x !== t);
         document.getElementById(`t-${x}`).className = x === t
-          ? "px-4 py-2 rounded-lg bg-emerald-600 text-white"
-          : "px-4 py-2 rounded-lg bg-white border";
+          ? "px-3.5 py-2 rounded-lg bg-emerald-600 text-white"
+          : "px-3.5 py-2 rounded-lg bg-white border";
       });
     }
 
     function setPostFilter(f) {
       postFilter = f;
       renderAdminPosts();
+    }
+
+    function formatAdminPostDetails(l) {
+      if (l.category === "motor") {
+        const parts = [
+          l.vehicle_type ? `Type: ${l.vehicle_type}` : "",
+          l.condition_type ? `Condition: ${l.condition_type}` : "",
+          l.body_type ? `Body: ${l.body_type}` : "",
+          l.year ? `Year: ${l.year}` : "",
+          l.reg_number ? `Reg: ${l.reg_number}` : "",
+          l.fuel_type ? `Fuel: ${l.fuel_type}` : "",
+          l.transmission ? `Trans: ${l.transmission}` : "",
+          l.drive_type ? `Drive: ${l.drive_type}-Hand` : "",
+          l.air_con ? `A/C: ${l.air_con}` : "",
+          l.engine_cc ? `Engine: ${l.engine_cc}cc` : "",
+          l.mileage_km ? `Mileage: ${Number(l.mileage_km).toLocaleString()} km` : "",
+          l.negotiable ? `Price: ${l.negotiable === "Yes" ? "Negotiable" : "Fixed"}` : "",
+        ].filter(Boolean);
+        return parts.join(" · ");
+      }
+      const partSpecs = [
+        l.part_name ? `Part: ${l.part_name}` : "",
+        l.part_make ? `Make: ${l.part_make}` : "",
+        l.part_model ? `Model: ${l.part_model}` : "",
+        l.year_from && l.year_to ? `Years: ${l.year_from}-${l.year_to}` : "",
+        l.part_condition ? `Condition: ${l.part_condition}` : "",
+        l.part_authenticity ? `Type: ${l.part_authenticity}` : "",
+        l.negotiable ? `Price: ${l.negotiable === "Yes" ? "Negotiable" : "Fixed"}` : "",
+      ].filter(Boolean);
+      return partSpecs.join(" · ");
     }
 
     function renderAdminPosts() {
@@ -265,61 +259,68 @@
         const remainingBadge = l.days_remaining !== null
           ? `<span class="text-xs font-bold px-2 py-0.5 rounded ${l.days_remaining === 0 ? "bg-red-100 text-red-800" : "bg-emerald-50 text-emerald-800"}">${l.days_remaining} days remaining (70d)</span>`
           : `<span class="text-xs text-slate-400">Free post</span>`;
-        const priorityBadge = l.is_prioritized
-          ? `<span class="text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900">Sponsored: ${escapeHtml(l.priority_plan_name || "Priority")} · ${l.priority_remaining_hours}h left · ends ${new Date(l.priority_expires_at).toLocaleString()}</span>`
-          : "";
 
         return `
           <div class="bg-white rounded-xl border ${l.status === "reported_suspended" ? "border-red-400" : l.status === "expired" ? "border-amber-300" : ""} p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-              <img src="${l.cover_photo || ""}" class="w-20 h-16 object-cover rounded-lg bg-slate-100" />
+            <div class="flex items-start gap-3">
+              <img src="${l.cover_photo || ""}" loading="lazy" class="w-20 h-16 object-cover rounded-lg bg-slate-100 shrink-0" />
               <div>
                 <div class="font-bold flex flex-wrap items-center gap-1.5">
-                  <span>${escapeHtml(l.title)}</span>
+                  <span>${l.title}</span>
                   <span class="text-xs px-2 py-0.5 rounded bg-slate-100 uppercase">${l.status}</span>
                   ${remainingBadge}
-                  ${priorityBadge}
                 </div>
-                <div class="text-xs text-slate-500">${Number(l.price_kes) ? `KES ${Number(l.price_kes).toLocaleString()}` : "Contact for price"} · Seller: <strong>${escapeHtml(l.seller_name)}</strong> (${escapeHtml(l.whatsapp_phone)})</div>
-                ${l.report_reason ? `<div class="text-xs text-red-700 font-bold mt-0.5">Report Reason: ${escapeHtml(l.report_reason)}</div>` : ""}
+                <div class="text-xs text-slate-700 font-semibold mt-0.5">KES ${Number(l.price_kes).toLocaleString()} · Location: ${l.town} · Seller: <strong>${l.seller_name}</strong> (WA: ${l.whatsapp_phone} | Call: ${l.call_phone})</div>
+                <div class="text-xs text-slate-600 mt-1">${formatAdminPostDetails(l)}</div>
+                ${l.description ? `<div class="text-xs text-slate-500 mt-1">Notes: ${l.description}</div>` : ""}
+                ${l.report_reason ? `<div class="text-xs text-red-700 font-bold mt-0.5">Report Reason: ${l.report_reason}</div>` : ""}
               </div>
             </div>
-            <div class="flex flex-wrap gap-1.5 text-xs font-bold">
-              <button type="button" onclick="openListingEditor('${l.id}')" class="bg-sky-700 text-white px-3 py-1.5 rounded-lg">Edit</button>
-              ${l.status === "pending_approval" ? `
-                <button type="button" onclick="modPost('${l.id}','approve', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Approve</button>
-                <button type="button" onclick="modPost('${l.id}','reject', this)" class="bg-red-600 text-white px-3 py-1.5 rounded-lg">Reject</button>
-              ` : ""}
+            <div class="flex flex-wrap gap-1.5 text-xs font-bold shrink-0">
+              ${l.status === "pending_approval" ? `<button type="button" onclick="modPost('${l.id}','approve', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Approve</button>` : ""}
               ${l.status === "reported_suspended" ? `
                 <button type="button" onclick="modPost('${l.id}','mark_safe', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Mark Safe (Restore)</button>
                 <button type="button" onclick="modPost('${l.id}','mark_unsafe', this)" class="bg-red-600 text-white px-3 py-1.5 rounded-lg">Mark Unsafe</button>
               ` : ""}
               ${l.status === "active" ? `<button type="button" onclick="modPost('${l.id}','pause', this)" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg">Pause Post</button>` : ""}
               ${l.status === "paused" ? `<button type="button" onclick="modPost('${l.id}','unpause', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Unpause</button>` : ""}
+              ${["active", "paused"].includes(l.status) ? `<button type="button" onclick="modPost('${l.id}','sold', this)" class="bg-amber-500 text-white px-3 py-1.5 rounded-lg">Mark Sold</button>` : ""}
+              <button type="button" onclick="editAdminListing('${l.id}')" class="rounded-lg border border-slate-300 px-3 py-1.5">Edit All</button>
             </div>
           </div>
         `;
       }).join("");
     }
 
-    async function loadAdmin(force = false) {
-      if (!key && !subSession) return;
+    function renderDealersTab() {
+      if (!cachedOverview) return;
+      const dealers = (cachedOverview.users || []).filter((u) => u.role === "dealer");
+      document.getElementById("admin-dealers-list").innerHTML =
+        dealers.length === 0
+          ? `<div class="py-4 text-slate-500">No dealers marked yet.</div>`
+          : dealers.map((d) => `
+              <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <strong class="text-sm text-slate-900">${d.name}</strong>
+                  <span class="ml-2 text-xs text-slate-500">${d.town} · ${d.email || ""} · WA: ${d.whatsapp_phone}</span>
+                </div>
+                <button type="button" onclick="removeDealer('${d.id}', this)" class="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg self-start sm:self-auto">
+                  Remove Dealer
+                </button>
+              </div>
+            `).join("");
+    }
+
+    async function loadAdmin() {
+      if (!key) return;
       try {
-        let d;
-        const cacheKey = "wariara_admin_overview";
-        if (!force) {
-          try {
-            const cached = JSON.parse(sessionStorage.getItem(cacheKey) || "null");
-            if (cached?.expiresAt > Date.now()) d = cached.value;
-          } catch (_) {}
-        }
-        d = d || await adminFetch("/api/admin/overview");
-        sessionStorage.setItem(cacheKey, JSON.stringify({ value: d, expiresAt: Date.now() + 15 * 1000 }));
+        const d = await adminFetch("/api/admin/overview");
         cachedOverview = d;
         document.getElementById("admin-gate").classList.add("hidden");
         document.getElementById("admin-panel").classList.remove("hidden");
 
         renderAdminPosts();
+        renderDealersTab();
 
         document.getElementById("payment-notifs-list").innerHTML =
           (d.paymentNotifications || []).length === 0
@@ -337,31 +338,21 @@
                 </div>
               `).join("");
 
-        const dealerships = d.users.filter((u) => u.role === "dealer" && !u.is_suspended);
         document.getElementById("users-rows").innerHTML = d.users.map((u) => `
           <tr>
-            <td class="py-2.5 pr-3"><strong>${escapeHtml(u.name)}</strong><div class="text-slate-400">${u.agent_of ? "Agent for " + escapeHtml(d.users.find((dealer) => dealer.id === u.agent_of)?.name || "dealership") : escapeHtml(u.role)} · ${escapeHtml(u.town)}</div></td>
-            <td class="py-2.5 pr-3">${escapeHtml(u.email)}<div>WA: ${escapeHtml(u.whatsapp_phone)} | Call: ${escapeHtml(u.call_phone)}</div></td>
+            <td class="py-2.5 pr-3"><strong>${u.name}</strong><div class="text-slate-400">${u.role} · ${u.town}</div></td>
+            <td class="py-2.5 pr-3">${u.email}<div>WA: ${u.whatsapp_phone} | Call: ${u.call_phone}</div></td>
             <td class="py-2.5 pr-3">Free: <strong>${u.free_posts_used}/6</strong><div>Credits: <strong>${u.paid_post_credits}</strong></div></td>
             <td class="py-2.5 pr-3"><strong>${u.total_purchased_posts}</strong> posts (KES ${Number(u.total_spent_kes).toLocaleString()})</td>
             <td class="py-2.5 pr-3">
-              ${u.is_suspended ? `<span class="text-red-700 font-bold">SUSPENDED</span> (${escapeHtml(u.suspension_reason)})` : `<span class="text-emerald-700 font-bold">Active</span>`}
-              ${u.appeal_status === "pending" ? `<div class="bg-amber-50 border p-1.5 rounded mt-1">Review request: ${escapeHtml(u.appeal_text)}<div class="flex gap-1 mt-1"><button type="button" onclick="appeal('${u.id}','accept',this)" class="bg-emerald-600 text-white px-2 py-1 rounded">Accept & Restore</button><button type="button" onclick="appeal('${u.id}','reject',this)" class="bg-red-600 text-white px-2 py-1 rounded">Reject</button></div></div>` : u.appeal_status && u.appeal_status !== "none" ? `<div class="text-slate-500">Appeal: ${escapeHtml(u.appeal_status)}<div>${escapeHtml(u.appeal_response || "")}</div></div>` : ""}
+              ${u.is_suspended ? `<span class="text-red-700 font-bold">SUSPENDED</span> (${u.suspension_reason || ""})` : `<span class="text-emerald-700 font-bold">Active</span>`}
+              ${u.appeal_status === "pending" ? `<div class="bg-amber-50 border p-1.5 rounded mt-1">Appeal: ${u.appeal_text}</div>` : ""}
             </td>
             <td class="py-2.5 space-y-1">
-              <select id="um-role-${u.id}" class="block w-full border rounded px-2 py-1 text-[11px]">
-                <option value="private" ${!u.agent_of && u.role === "private" ? "selected" : ""}>Private</option>
-                <option value="dealer" ${!u.agent_of && u.role === "dealer" ? "selected" : ""}>Dealership</option>
-                <option value="agent" ${u.agent_of ? "selected" : ""}>Agent</option>
-              </select>
-              <select id="um-agent-${u.id}" class="block w-full border rounded px-2 py-1 text-[11px]">
-                <option value="">Select dealership for agent</option>
-                ${dealerships.map((dealer) => `<option value="${dealer.id}" ${u.agent_of === dealer.id ? "selected" : ""}>${escapeHtml(dealer.name)}</option>`).join("")}
-              </select>
-              <input id="um-name-${u.id}" value="${escapeHtml(u.name)}" aria-label="Account name" class="block w-full border rounded px-2 py-1 text-[11px]" />
-              <input id="um-town-${u.id}" value="${escapeHtml(u.town)}" aria-label="Town" class="block w-full border rounded px-2 py-1 text-[11px]" />
-              <button type="button" onclick="saveUserProfile('${u.id}', this)" class="block w-full bg-sky-700 text-white font-bold px-2 py-1 rounded">Save Account</button>
-              <button type="button" onclick="gift('${u.id}', this)" class="block w-full bg-emerald-600 text-white font-bold px-2 py-1 rounded">Gift Posts</button>
+              <button type="button" onclick="gift('${u.id}','${u.name}', this)" class="block w-full bg-emerald-600 text-white font-bold px-2 py-1 rounded">Gift Posts</button>
+              ${u.role !== "dealer"
+                ? `<button type="button" onclick="markExistingDealer('${u.id}', this)" class="block w-full bg-amber-500 text-slate-950 font-bold px-2 py-1 rounded">Make Dealer</button>`
+                : `<button type="button" onclick="removeDealer('${u.id}', this)" class="block w-full bg-slate-600 text-white font-bold px-2 py-1 rounded">Remove Dealer</button>`}
               ${u.is_suspended
                 ? `<button type="button" onclick="susp('${u.id}',false, this)" class="block w-full bg-slate-900 text-white font-bold px-2 py-1 rounded">Restore</button>`
                 : `<button type="button" onclick="susp('${u.id}',true, this)" class="block w-full bg-red-600 text-white font-bold px-2 py-1 rounded">Suspend</button>`}
@@ -369,66 +360,58 @@
           </tr>
         `).join("");
 
-        document.getElementById("priority-plans-edit").innerHTML = (d.priorityPlans || []).map((p) => `
-          <div class="grid grid-cols-4 gap-1.5 text-xs">
-            <input id="ppn-${p.id}" value="${escapeHtml(p.name)}" class="border rounded px-2 py-1" aria-label="Priority plan name" />
-            <input id="pph-${p.id}" type="number" min="1" value="${p.duration_hours}" class="border rounded px-2 py-1" aria-label="Duration hours" />
-            <input id="ppp-${p.id}" type="number" min="1" value="${p.price_kes}" class="border rounded px-2 py-1" aria-label="Plan price" />
-            <div class="flex gap-1"><button type="button" onclick="savePriorityPlan('${p.id}', this)" class="bg-emerald-600 text-white font-bold rounded px-2">Save</button><button type="button" onclick="deletePriorityPlan('${p.id}', this)" class="bg-red-600 text-white font-bold rounded px-2">Delete</button></div>
-          </div>
-        `).join("");
-        if (d.subAccount) {
-          document.getElementById("sub-email").value = d.subAccount.email || "";
-          document.getElementById("sub-2fa").checked = Boolean(d.subAccount.two_factor_enabled);
-        }
+        document.getElementById("cfg-prio").value = d.settings.base_priority_price_kes || 300;
         document.getElementById("plans-edit").innerHTML = d.plans.map((p) => `
           <div class="grid grid-cols-4 gap-1.5 text-xs">
-            <input id="pn-${p.id}" value="${escapeHtml(p.name)}" class="border rounded px-2 py-1" />
+            <input id="pn-${p.id}" value="${p.name}" class="border rounded px-2 py-1" />
             <input id="pc-${p.id}" type="number" value="${p.post_count}" class="border rounded px-2 py-1" />
             <input id="pp-${p.id}" type="number" value="${p.price_kes}" class="border rounded px-2 py-1" />
             <button type="button" onclick="updPlan('${p.id}', this)" class="bg-emerald-600 text-white font-bold rounded">Save</button>
           </div>
         `).join("");
-      } catch (err) {
-        if (err.status === 401) lockAdmin();
-        alert(err.message);
+      } catch {
+        lockAdmin();
       }
     }
 
-    function openListingEditor(id) {
-      const listing = cachedOverview?.listings.find((item) => item.id === id);
-      if (!listing) return alert("Listing is no longer available. Refresh and try again.");
-      document.getElementById("edit-listing-id").value = id;
-      document.getElementById("edit-listing-title").value = listing.title || "";
-      document.getElementById("edit-listing-price").value = Number(listing.price_kes) || "";
-      document.getElementById("edit-listing-town").value = listing.town || "";
-      document.getElementById("edit-listing-description").value = listing.description || "";
-      document.getElementById("listing-edit-modal").classList.remove("hidden");
-    }
-
-    function closeListingEditor() {
-      document.getElementById("listing-edit-modal").classList.add("hidden");
-    }
-
-    async function saveAdminListing(event, btn = null) {
-      event.preventDefault();
-      const id = document.getElementById("edit-listing-id").value;
+    async function addDealerSubmit(e, btn = null) {
+      e.preventDefault();
       await runWithButtonLock(btn, async () => {
-        try {
-          await adminFetch(`/api/admin/listings/${id}`, {
-            method: "PUT",
-            body: JSON.stringify({
-              title: document.getElementById("edit-listing-title").value,
-              price_kes: Number(document.getElementById("edit-listing-price").value) || 0,
-              town: document.getElementById("edit-listing-town").value,
-              description: document.getElementById("edit-listing-description").value,
-            }),
-          });
-          closeListingEditor();
-          await loadAdmin();
-        } catch (err) {
-          alert(err.message);
-        }
+        const d = await adminFetch("/api/admin/dealers", {
+          method: "POST",
+          body: JSON.stringify({
+            name: document.getElementById("dl-name").value,
+            email: document.getElementById("dl-email").value,
+            whatsapp_phone: document.getElementById("dl-wa").value,
+            call_phone: document.getElementById("dl-call").value,
+            town: document.getElementById("dl-town").value,
+          }),
+        });
+        alert(d.message);
+        e.target.reset();
+        document.getElementById("dl-town").value = "Nakuru";
+        await loadAdmin();
+      });
+    }
+
+    async function markExistingDealer(userId, btn = null) {
+      await runWithButtonLock(btn, async () => {
+        const d = await adminFetch("/api/admin/dealers", {
+          method: "POST",
+          body: JSON.stringify({ user_id: userId }),
+        });
+        alert(d.message);
+        await loadAdmin();
+      });
+    }
+
+    async function removeDealer(userId, btn = null) {
+      await runWithButtonLock(btn, async () => {
+        const d = await adminFetch(`/api/admin/dealers/${userId}`, {
+          method: "DELETE",
+        });
+        alert(d.message);
+        await loadAdmin();
       });
     }
 
@@ -439,42 +422,143 @@
       });
     }
 
-    async function gift(id, btn = null) {
-      const user = cachedOverview?.users.find((item) => item.id === id);
-      const name = user?.name || "this seller";
-      const posts_count = Number(prompt(`Gift how many posts to ${name}?`, "5"));
-      if (!posts_count) return;
-      const confirm_whatsapp = prompt(`Enter ${name}'s registered WhatsApp number to confirm this gift:`);
-      if (!confirm_whatsapp) return;
+    async function editAdminListing(id) {
+      try {
+        const { listing } = await adminFetch(`/api/listings/${encodeURIComponent(id)}`);
+        const fields = [
+          ["title", "Title", "text"], ["seller_name", "Seller name", "text"],
+          ["seller_slug", "Seller profile slug", "text"], ["whatsapp_phone", "WhatsApp contact", "text"],
+          ["call_phone", "Phone contact", "text"], ["town", "Town", "text"],
+          ["price_kes", "Price (KES)", "number"], ["negotiable", "Negotiable", "text"],
+        ];
+        if (listing.category === "motor") {
+          fields.push(
+            ["vehicle_type", "Vehicle type", "text"], ["condition_type", "Condition", "text"],
+            ["brand", "Brand", "text"], ["model", "Model", "text"], ["body_type", "Body type", "text"],
+            ["year", "Year", "number"], ["reg_number", "Registration number", "text"],
+            ["fuel_type", "Fuel", "text"], ["transmission", "Transmission", "text"],
+            ["drive_type", "Drive type", "text"], ["air_con", "Air conditioning", "text"],
+            ["engine_cc", "Engine size (cc)", "number"], ["mileage_km", "Mileage (km)", "number"],
+          );
+        } else {
+          fields.push(
+            ["part_name", "Part name", "text"], ["part_make", "Vehicle make", "text"],
+            ["part_model", "Vehicle model", "text"], ["year_from", "Year from", "number"],
+            ["year_to", "Year to", "number"], ["part_condition", "Condition", "text"],
+            ["part_authenticity", "Authenticity", "text"],
+          );
+        }
+
+        const container = document.getElementById("admin-edit-fields");
+        container.replaceChildren();
+        for (const [name, label, type] of fields) {
+          const wrap = document.createElement("label");
+          wrap.className = "text-xs font-bold";
+          wrap.textContent = label;
+          const input = document.createElement("input");
+          input.type = type;
+          input.id = `admin-edit-${name}`;
+          input.value = listing[name] ?? "";
+          input.className = "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal";
+          wrap.append(input);
+          container.append(wrap);
+        }
+        const descriptionWrap = document.createElement("label");
+        descriptionWrap.className = "text-xs font-bold sm:col-span-2";
+        descriptionWrap.textContent = "Description";
+        const description = document.createElement("textarea");
+        description.id = "admin-edit-description";
+        description.rows = 4;
+        description.value = listing.description || "";
+        description.className = "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal";
+        descriptionWrap.append(description);
+        container.append(descriptionWrap);
+
+        const photoContainer = document.getElementById("admin-edit-photos");
+        photoContainer.replaceChildren();
+        for (const photo of listing.photos || []) {
+          const image = document.createElement("img");
+          image.src = photo.photo_data;
+          image.alt = "Current listing photo";
+          image.loading = "lazy";
+          image.className = "aspect-square w-full rounded-lg border object-cover";
+          photoContainer.append(image);
+        }
+        adminReplacementPhotos = null;
+        document.getElementById("admin-edit-id").value = id;
+        document.getElementById("admin-edit-files").value = "";
+        document.getElementById("admin-edit-modal").classList.remove("hidden");
+      } catch (error) {
+        alert(error.message);
+      }
+    }
+
+    async function compressAdminPhoto(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("Could not read the selected photo."));
+        reader.onload = () => {
+          const image = new Image();
+          image.onerror = () => reject(new Error("The selected file is not a valid image."));
+          image.onload = () => {
+            const scale = Math.min(1, 1050 / image.width);
+            const canvas = document.createElement("canvas");
+            canvas.width = image.width * scale;
+            canvas.height = image.height * scale;
+            canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", 0.78));
+          };
+          image.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function saveAdminListing(event, btn = null) {
+      event.preventDefault();
       await runWithButtonLock(btn, async () => {
         try {
-          await adminFetch(`/api/admin/users/${id}/gift-posts`, { method: "POST", body: JSON.stringify({ posts_count, confirm_whatsapp }) });
+          const id = document.getElementById("admin-edit-id").value;
+          const payload = { description: document.getElementById("admin-edit-description").value };
+          for (const input of document.querySelectorAll("#admin-edit-fields input")) {
+            payload[input.id.replace("admin-edit-", "")] = input.value;
+          }
+          if (adminReplacementPhotos !== null) payload.photos = adminReplacementPhotos;
+          await adminFetch(`/api/admin/listings/${encodeURIComponent(id)}`, {
+            method: "PUT",
+            body: JSON.stringify(payload),
+          });
+          closeAdminEdit();
           await loadAdmin();
-        } catch (err) {
-          alert(err.message);
+        } catch (error) {
+          alert(error.message);
         }
       });
     }
 
-    async function saveUserProfile(id, btn = null) {
-      const accountType = document.getElementById(`um-role-${id}`).value;
-      const agentOf = document.getElementById(`um-agent-${id}`).value;
-      if (accountType === "agent" && !agentOf) return alert("Select a dealership for this agent.");
-      await runWithButtonLock(btn, async () => {
-        try {
-          await adminFetch(`/api/admin/users/${id}/profile`, {
-            method: "PUT",
-            body: JSON.stringify({
-              name: document.getElementById(`um-name-${id}`).value,
-              town: document.getElementById(`um-town-${id}`).value,
-              role: accountType === "dealer" ? "dealer" : "private",
-              agent_of: accountType === "agent" ? agentOf : null,
-            }),
-          });
-          await loadAdmin();
-        } catch (err) {
-          alert(err.message);
+    function closeAdminEdit() {
+      document.getElementById("admin-edit-modal").classList.add("hidden");
+    }
+
+    document.getElementById("admin-edit-files").addEventListener("change", async (event) => {
+      try {
+        const files = Array.from(event.target.files || []);
+        if (files.length > 6) {
+          event.target.value = "";
+          throw new Error("Please choose no more than 6 photos.");
         }
+        adminReplacementPhotos = await Promise.all(files.map(compressAdminPhoto));
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+
+    async function gift(id, name, btn = null) {
+      const posts_count = Number(prompt(`Gift how many posts to ${name}?`, "5"));
+      if (!posts_count) return;
+      await runWithButtonLock(btn, async () => {
+        await adminFetch(`/api/admin/users/${id}/gift-posts`, { method: "POST", body: JSON.stringify({ posts_count }) });
+        await loadAdmin();
       });
     }
 
@@ -487,80 +571,10 @@
       });
     }
 
-    async function saveSubAdmin(btn = null) {
+    async function savePrio(btn = null) {
       await runWithButtonLock(btn, async () => {
-        try {
-          await adminFetch("/api/admin/sub-account", { method: "POST", body: JSON.stringify({
-            email: document.getElementById("sub-email").value,
-            password: document.getElementById("sub-password").value,
-            two_factor_enabled: document.getElementById("sub-2fa").checked,
-          }) });
-          document.getElementById("sub-password").value = "";
-          await loadAdmin(true);
-          alert("Sub-admin credentials updated.");
-        } catch (err) { alert(err.message); }
-      });
-    }
-
-    async function appeal(id, action, btn = null) {
-      const response = prompt(action === "accept" ? "Response to seller when accepting:" : "Response to seller when rejecting:");
-      if (!response) return;
-      await runWithButtonLock(btn, async () => {
-        try {
-          await adminFetch(`/api/admin/users/${id}/appeal`, { method: "POST", body: JSON.stringify({ action, response }) });
-          await loadAdmin();
-        } catch (err) { alert(err.message); }
-      });
-    }
-
-    async function savePriorityPlan(id, btn = null) {
-      await runWithButtonLock(btn, async () => {
-        try {
-          await adminFetch(`/api/admin/priority-plans/${id}`, {
-            method: "PUT",
-            body: JSON.stringify({
-              name: document.getElementById(`ppn-${id}`).value,
-              duration_hours: Number(document.getElementById(`pph-${id}`).value),
-              price_kes: Number(document.getElementById(`ppp-${id}`).value),
-            }),
-          });
-          await loadAdmin();
-        } catch (err) {
-          alert(err.message);
-        }
-      });
-    }
-
-    async function addPriorityPlan(btn = null) {
-      await runWithButtonLock(btn, async () => {
-        try {
-          await adminFetch("/api/admin/priority-plans", {
-            method: "POST",
-            body: JSON.stringify({
-              name: document.getElementById("npp-name").value,
-              duration_hours: Number(document.getElementById("npp-hours").value),
-              price_kes: Number(document.getElementById("npp-price").value),
-            }),
-          });
-          document.getElementById("npp-name").value = "";
-          document.getElementById("npp-hours").value = "";
-          document.getElementById("npp-price").value = "";
-          await loadAdmin();
-        } catch (err) {
-          alert(err.message);
-        }
-      });
-    }
-
-    async function deletePriorityPlan(id, btn = null) {
-      if (!confirm("Delete this priority plan? Existing sponsored posts will keep their current end time.")) return;
-      await runWithButtonLock(btn, async () => {
-        try {
-          await adminFetch(`/api/admin/priority-plans/${id}`, { method: "DELETE" });
-          await loadAdmin();
-        } catch (err) {
-          alert(err.message);
-        }
+        await adminFetch("/api/admin/settings", { method: "POST", body: JSON.stringify({ base_priority_price_kes: Number(document.getElementById("cfg-prio").value) }) });
+        alert("Saved.");
       });
     }
 
@@ -607,16 +621,7 @@
       });
     }
 
-    if (subSession) {
-      localStorage.removeItem("wariara_admin_key");
-      key = "";
-      document.getElementById("admin-gate")?.classList.add("hidden");
-      document.getElementById("admin-panel")?.classList.remove("hidden");
-      document.getElementById("sub-admin-credentials-section")?.remove();
-    }
-    if (key || subSession) {
-      loadAdmin().catch((error) => showAdminError(error.message));
-    }
+    if (key) loadAdmin();
   </script>
 </body>
 </html>
