@@ -5,13 +5,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wariara Cars Central Rift | Buy & Sell Cars, Trucks, Bikes & Spare Parts</title>
+  <link rel="preconnect" href="https://carscrawers.onrender.com" />
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif; }
+    body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.5; }
     .card-lift { transition: transform 0.15s ease, box-shadow 0.15s ease; }
     .card-lift:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08); }
     button:disabled { opacity: 0.65; cursor: not-allowed; }
+    @media (max-width: 639px) {
+      #mobile-market-filters:not(.is-open) #market-filter-controls { display: none; }
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
@@ -59,12 +63,12 @@
         <button type="button" onclick="switchPage('dealers')" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
           Dealer
         </button>
-        <button type="button" onclick="openInfoModal('advertise')" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
+        <button type="button" onclick="startSellingForCategory('motor', this)" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
           Advertise With Us
         </button>
-        <button type="button" onclick="openInfoModal('faq')" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
+        <a href="faq.html" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
           FAQ
-        </button>
+        </a>
         <button type="button" onclick="openInfoModal('contact')" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
           Contact Us (0710911645)
         </button>
@@ -95,6 +99,12 @@
 
         <div id="quick-makes" class="flex flex-wrap gap-2 mb-3"></div>
 
+        <div id="mobile-market-filters" class="mt-3 sm:mt-0">
+          <button type="button" onclick="toggleMobileFilters()" aria-controls="market-filter-controls" aria-expanded="false" class="sm:hidden flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-800">
+            <span class="flex flex-col gap-1" aria-hidden="true"><span class="block h-0.5 w-5 bg-current"></span><span class="block h-0.5 w-5 bg-current"></span><span class="block h-0.5 w-5 bg-current"></span></span>
+            <span id="mobile-filter-label">Search & filters</span>
+          </button>
+          <div id="market-filter-controls" class="pt-3 sm:pt-0">
         <div class="flex flex-wrap gap-2 mb-4 text-xs">
           <button type="button" onclick="setBudget('', '')" class="px-3 py-1.5 rounded-full border border-slate-200 hover:border-emerald-600 font-medium">All Prices</button>
           <button type="button" onclick="setBudget('', 500000)" class="px-3 py-1.5 rounded-full border border-slate-200 hover:border-emerald-600 font-medium">Under 500K</button>
@@ -174,6 +184,8 @@
               <option value="mileage_asc">Lowest Mileage</option>
               <option value="year_desc">Newest Year</option>
             </select>
+          </div>
+        </div>
           </div>
         </div>
       </div>
@@ -366,6 +378,10 @@
           <div id="my-posts-list" class="space-y-2.5"></div>
         </div>
       </div>
+      <section class="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 class="font-extrabold text-lg mb-3">More Marketplace Posts</h3>
+        <div id="seller-market-posts" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+      </section>
     </section>
 
   </main>
@@ -414,7 +430,7 @@
   <div id="modal-post" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-6 relative">
       <button type="button" onclick="closeM('modal-post')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 font-bold">✕</button>
-      <h2 id="post-modal-title" class="text-xl font-extrabold mb-3">Create New Post (All Fields Required · Max 6 Photos)</h2>
+      <h2 id="post-modal-title" class="text-xl font-extrabold mb-3">Create New Post (Description required)</h2>
       <input type="hidden" id="edit-id" />
 
       <div id="post-cat-toggle" class="grid grid-cols-2 gap-2 mb-4">
@@ -425,101 +441,109 @@
       <form onsubmit="submitPost(event, this.querySelector('button[type=submit]'))" class="space-y-3 text-sm">
         <div id="motor-form" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold mb-1">Type *</label>
-            <select id="m-type" required onchange="fillPostBrands()" class="w-full border rounded-lg px-3 py-2 bg-white">
+            <label class="block text-xs font-bold mb-1">Type</label>
+            <select id="m-type" onchange="fillPostBrands()" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select type</option>
               <option>Car</option><option>Truck</option><option>Bike</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Condition *</label>
-            <select id="m-cond" required class="w-full border rounded-lg px-3 py-2 bg-white">
+            <label class="block text-xs font-bold mb-1">Condition</label>
+            <select id="m-cond" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select condition</option>
               <option>New</option><option>Used</option><option>Import</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Brand *</label>
-            <select id="m-brand" required onchange="fillPostModels()" class="w-full border rounded-lg px-3 py-2 bg-white"></select>
+            <label class="block text-xs font-bold mb-1">Brand</label>
+            <select id="m-brand" onchange="fillPostModels()" class="w-full border rounded-lg px-3 py-2 bg-white"></select>
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Model *</label>
-            <select id="m-model" required onchange="fillPostBody()" class="w-full border rounded-lg px-3 py-2 bg-white"></select>
+            <label class="block text-xs font-bold mb-1">Model</label>
+            <select id="m-model" onchange="fillPostBody()" class="w-full border rounded-lg px-3 py-2 bg-white"></select>
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Body Type *</label>
-            <input id="m-body" type="text" required class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Body Type</label>
+            <input id="m-body" type="text" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Year *</label>
-            <input id="m-year" type="number" required min="1970" max="2027" value="2018" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Year</label>
+            <input id="m-year" type="number" min="1970" max="2027" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Vehicle Registration No. *</label>
-            <input id="m-reg" type="text" required placeholder="e.g. KDN 412B" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Vehicle Registration No.</label>
+            <input id="m-reg" type="text" placeholder="e.g. KDN 412B" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Fuel *</label>
-            <select id="m-fuel" required class="w-full border rounded-lg px-3 py-2 bg-white">
+            <label class="block text-xs font-bold mb-1">Fuel</label>
+            <select id="m-fuel" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select fuel</option>
               <option>Diesel</option><option>Petrol</option><option>Gas</option><option>PHEV</option><option>EV</option><option>REEV</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Transmission *</label>
-            <select id="m-trans" required class="w-full border rounded-lg px-3 py-2 bg-white">
+            <label class="block text-xs font-bold mb-1">Transmission</label>
+            <select id="m-trans" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select transmission</option>
               <option>Manual</option><option>Automatic</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Drive Type *</label>
-            <select id="m-drive" required class="w-full border rounded-lg px-3 py-2 bg-white">
+            <label class="block text-xs font-bold mb-1">Drive Type</label>
+            <select id="m-drive" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select drive type</option>
               <option>Right</option><option>Left</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Air Con *</label>
-            <select id="m-ac" required class="w-full border rounded-lg px-3 py-2 bg-white">
+            <label class="block text-xs font-bold mb-1">Air Con</label>
+            <select id="m-ac" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select option</option>
               <option>Yes</option><option>No</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Engine Size (cc) *</label>
-            <input id="m-cc" type="number" required placeholder="2000" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Engine Size (cc)</label>
+            <input id="m-cc" type="number" placeholder="2000" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Mileage (km) *</label>
-            <input id="m-km" type="number" required placeholder="70000" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Mileage (km)</label>
+            <input id="m-km" type="number" placeholder="70000" class="w-full border rounded-lg px-3 py-2" />
           </div>
         </div>
 
         <div id="part-form" class="hidden grid-cols-1 sm:grid-cols-2 gap-3">
           <div class="sm:col-span-2">
-            <label class="block text-xs font-bold mb-1">Part Name *</label>
-            <input id="p-name" type="text" required placeholder="e.g. Alternator, Shock Absorber" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Part Name</label>
+            <input id="p-name" type="text" placeholder="e.g. Alternator, Shock Absorber" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Car Used For (Make) *</label>
-            <input id="p-make" type="text" required placeholder="Toyota, Audi..." class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Car Used For (Make)</label>
+            <input id="p-make" type="text" placeholder="Toyota, Audi..." class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Model *</label>
-            <input id="p-model" type="text" required placeholder="Fielder, A4..." class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Model</label>
+            <input id="p-model" type="text" placeholder="Fielder, A4..." class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Year From *</label>
-            <input id="p-yfrom" type="number" required placeholder="2012" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Year From</label>
+            <input id="p-yfrom" type="number" placeholder="2012" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Year To *</label>
-            <input id="p-yto" type="number" required placeholder="2020" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Year To</label>
+            <input id="p-yto" type="number" placeholder="2020" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Condition *</label>
-            <select id="p-cond" required class="w-full border rounded-lg px-3 py-2 bg-white">
+            <label class="block text-xs font-bold mb-1">Condition</label>
+            <select id="p-cond" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select condition</option>
               <option>Used</option><option>New</option><option>Refurbished</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Genuine or Aftermarket *</label>
-            <select id="p-auth" required class="w-full border rounded-lg px-3 py-2 bg-white">
+            <label class="block text-xs font-bold mb-1">Genuine or Aftermarket</label>
+            <select id="p-auth" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select type</option>
               <option>Genuine</option><option>Aftermarket</option>
             </select>
           </div>
@@ -527,18 +551,19 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t">
           <div>
-            <label class="block text-xs font-bold mb-1">Price (KES) *</label>
-            <input id="c-price" type="number" required min="1" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Price (KES)</label>
+            <input id="c-price" type="number" min="1" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Negotiate *</label>
-            <select id="c-neg" required class="w-full border rounded-lg px-3 py-2 bg-white">
+            <label class="block text-xs font-bold mb-1">Negotiate</label>
+            <select id="c-neg" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select option</option>
               <option>Yes</option><option>No</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">Location *</label>
-            <input id="c-town" type="text" required value="Nakuru" class="w-full border rounded-lg px-3 py-2" />
+            <label class="block text-xs font-bold mb-1">Location</label>
+            <input id="c-town" type="text" class="w-full border rounded-lg px-3 py-2" />
           </div>
         </div>
 
@@ -548,7 +573,7 @@
         </div>
 
         <div>
-          <label class="block text-xs font-bold mb-1">Photos (1 to 6 photos required) *</label>
+          <label class="block text-xs font-bold mb-1">Photos (up to 6)</label>
           <input id="c-files" type="file" accept="image/*" multiple onchange="onFilesSelected(event)" class="w-full border rounded-lg px-3 py-2 text-xs" />
           <div id="c-previews" class="grid grid-cols-6 gap-2 mt-2"></div>
         </div>
@@ -607,22 +632,27 @@
   <footer class="bg-white border-t border-slate-200 py-5 px-4 text-center text-xs text-slate-500 mt-10">
     <div class="flex flex-wrap items-center justify-center gap-4 mb-1 font-semibold text-slate-600">
       <a href="terms.html" class="hover:text-emerald-700 underline">Terms & Conditions</a>
-      <button type="button" onclick="openInfoModal('faq')" class="hover:text-emerald-700 underline">FAQ</button>
-      <button type="button" onclick="openInfoModal('advertise')" class="hover:text-emerald-700 underline">Advertise With Us</button>
+      <a href="faq.html" class="hover:text-emerald-700 underline">FAQ</a>
+      <button type="button" onclick="startSellingForCategory('motor', this)" class="hover:text-emerald-700 underline">Advertise With Us</button>
       <button type="button" onclick="openInfoModal('contact')" class="hover:text-emerald-700 underline">Contact: 0710911645</button>
     </div>
     <div>Wariara Cars Central Rift · Call / WhatsApp: 0710911645</div>
   </footer>
 
+  <aside id="cookie-notice" class="hidden fixed bottom-3 left-3 right-3 z-40 mx-auto max-w-xl rounded-xl border border-slate-300 bg-white p-4 shadow-xl" role="dialog" aria-label="Cookie and storage notice">
+    <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+      <p class="flex-1 text-sm text-slate-700">This site uses essential browser storage to keep you signed in and remember your preferences. No advertising cookies are used.</p>
+      <div class="flex gap-2 text-xs font-bold">
+        <button type="button" onclick="dismissCookieNotice()" class="rounded-lg bg-emerald-600 px-3 py-2 text-white">Okay</button>
+        <button type="button" onclick="dismissCookieNotice()" class="rounded-lg border border-slate-300 px-3 py-2 text-slate-700">Dismiss</button>
+      </div>
+    </div>
+  </aside>
+
   <script>
     const API_BASE = window.WARIARA_API_BASE || "https://carscrawers.onrender.com";
     const PAYHERO_BACKEND_URL = window.PAYHERO_BACKEND_URL || "https://parero.vercel.app";
-    const EMAILJS_PUBLIC_KEY = "wc0_v2KwNXY2ZonsD";
     const apiUrl = (path) => `${API_BASE}${path}`;
-
-    if (window.emailjs && EMAILJS_PUBLIC_KEY) {
-      emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
-    }
 
     let seller = JSON.parse(localStorage.getItem("wariara_seller") || "null");
     let meta = { catalog: [], plans: [], settings: {} };
@@ -721,6 +751,11 @@
         updateSellerPill();
 
         await loadListings();
+        const linkedPostId = new URLSearchParams(window.location.search).get("post");
+        if (linkedPostId) await openDetail(linkedPostId);
+        if (!localStorage.getItem("wariara_cookie_notice")) {
+          document.getElementById("cookie-notice").classList.remove("hidden");
+        }
       } catch (err) {
         alert(err.message);
       }
@@ -821,42 +856,26 @@
     }
 
     function openInfoModal(kind) {
-      const body = document.getElementById("info-modal-body");
       if (kind === "advertise") {
-        body.innerHTML = `
-          <h2 class="text-xl font-extrabold text-slate-900">Advertise With Us</h2>
-          <p class="text-slate-600">Boost your cars, trucks, motorbikes, spare parts, or showroom across Central Rift and Kenya.</p>
-          <ul class="list-disc pl-5 text-slate-700 space-y-1 text-xs">
-            <li><strong>24h Priority Slots:</strong> Up to 20 sponsored posts per day; higher bids rank higher.</li>
-            <li><strong>70-Day Post Plans:</strong> Purchased post credits run for 70 days once published.</li>
-            <li><strong>Direct Seller Contact:</strong> Buyers reach you via WhatsApp or phone call.</li>
-          </ul>
-          <a href="https://wa.me/254710911645?text=${encodeURIComponent("Hello Wariara Cars Central Rift, I would like to advertise with you.")}" target="_blank" rel="noopener" class="inline-block bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-lg text-xs">WhatsApp 0710911645</a>
-        `;
-      } else if (kind === "faq") {
-        body.innerHTML = `
-          <h2 class="text-xl font-extrabold text-slate-900">Frequently Asked Questions (FAQ)</h2>
-          <div class="space-y-2.5 text-xs text-slate-700">
-            <div><strong>How many free posts do I get?</strong> Each seller account starts with 6 free posts.</div>
-            <div><strong>How long do purchased posts run?</strong> Posts created with paid credits run for <strong>70 days</strong> and then expire.</div>
-            <div><strong>Why is my post not visible right away?</strong> All posts go to Admin for approval first; once approved, all your filled details appear on the marketplace.</div>
-            <div><strong>How does Prioritize work?</strong> Up to 20 posts/day can be prioritized; whoever pays more appears higher on top.</div>
-          </div>
-        `;
-      } else {
-        body.innerHTML = `
+        startSellingForCategory("motor");
+        return;
+      }
+      if (kind === "faq") {
+        window.location.href = "faq.html";
+        return;
+      }
+      const body = document.getElementById("info-modal-body");
+      body.innerHTML = `
           <h2 class="text-xl font-extrabold text-slate-900">Contact Us</h2>
           <p class="text-slate-600">Reach Wariara Cars Central Rift support, dealer desk, or advertising team:</p>
           <div class="p-3.5 rounded-xl bg-slate-50 border text-xs space-y-1">
-            <div><strong>Phone / WhatsApp:</strong> 0710911645</div>
+            <div><strong>Phone:</strong> 0710911645</div>
             <div><strong>Terms & Conditions:</strong> <a href="terms.html" class="text-emerald-700 underline font-bold">View terms.html</a></div>
           </div>
-          <div class="grid grid-cols-2 gap-2 text-xs font-bold">
+          <div class="text-xs font-bold">
             <a href="tel:0710911645" class="bg-slate-900 text-white text-center py-2.5 rounded-lg">Call 0710911645</a>
-            <a href="https://wa.me/254710911645" target="_blank" rel="noopener" class="bg-emerald-600 text-white text-center py-2.5 rounded-lg">WhatsApp Us</a>
           </div>
         `;
-      }
       document.getElementById("modal-info").classList.remove("hidden");
     }
 
@@ -955,13 +974,11 @@
         }
 
         document.getElementById("market-grid").innerHTML = listings.map((item) => {
-          const wa = encodeURIComponent(`Hi ${item.seller_name}, I saw ${item.title} (KES ${Number(item.price_kes).toLocaleString()}) on Wariara Cars Central Rift.`);
-          const waNum = (item.whatsapp_phone || "").replace(/[^0-9]/g, "");
           const specs = buildSpecsBadges(item);
           return `
             <div class="bg-white rounded-xl border ${item.is_sponsored ? "border-amber-400 ring-1 ring-amber-300" : "border-slate-200"} overflow-hidden flex flex-col card-lift">
               <div class="relative aspect-[16/10] bg-slate-100 cursor-pointer" onclick="openDetail('${item.id}')">
-                <img src="${item.cover_photo || ""}" alt="${item.title}" class="w-full h-full object-cover" />
+                <img src="${item.cover_photo || ""}" alt="${item.title}" loading="lazy" class="w-full h-full object-cover" />
                 ${item.is_sponsored ? `<span class="absolute top-2 left-2 bg-amber-400 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase">Sponsored</span>` : ""}
                 <span class="absolute bottom-2 right-2 bg-black/65 text-white text-[10px] px-2 py-0.5 rounded">${item.photo_count}/6 photos</span>
               </div>
@@ -978,8 +995,7 @@
                     <span class="font-extrabold text-emerald-700 text-base">KES ${Number(item.price_kes).toLocaleString()}</span>
                     <span class="text-[11px] text-slate-500">Price: ${item.negotiable === "Yes" ? "Negotiable" : "Fixed"}</span>
                   </div>
-                  <div class="grid grid-cols-3 gap-1.5 mt-2.5 text-xs font-bold">
-                    <a href="https://wa.me/${waNum}?text=${wa}" target="_blank" rel="noopener" class="bg-emerald-600 hover:bg-emerald-700 text-white text-center py-1.5 rounded-lg">WhatsApp</a>
+                  <div class="grid grid-cols-2 gap-1.5 mt-2.5 text-xs font-bold">
                     <a href="tel:${item.call_phone}" class="bg-slate-900 hover:bg-slate-800 text-white text-center py-1.5 rounded-lg">Call Seller</a>
                     <button type="button" onclick="reportPost('${item.id}', this)" class="border border-red-200 text-red-600 hover:bg-red-50 py-1.5 rounded-lg">Report</button>
                   </div>
@@ -1001,15 +1017,16 @@
 
     async function openDetail(id) {
       const { listing } = await apiFetch(`/api/listings/${id}`);
-      const wa = encodeURIComponent(`Hi ${listing.seller_name}, I am interested in ${listing.title} (KES ${Number(listing.price_kes).toLocaleString()}).`);
-      const waNum = (listing.whatsapp_phone || "").replace(/[^0-9]/g, "");
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set("post", id);
+      history.replaceState(null, "", currentUrl);
       const specs = buildSpecsBadges(listing);
       document.getElementById("detail-body").innerHTML = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <img id="main-p" src="${listing.photos[0]?.photo_data || ""}" class="w-full aspect-[4/3] object-cover rounded-xl border" />
+            <img id="main-p" src="${listing.photos[0]?.photo_data || ""}" loading="lazy" class="w-full aspect-[4/3] object-cover rounded-xl border" />
             <div class="grid grid-cols-6 gap-2 mt-2">
-              ${listing.photos.map((p) => `<img src="${p.photo_data}" onclick="document.getElementById('main-p').src=this.src" class="aspect-square object-cover rounded-lg cursor-pointer border" />`).join("")}
+              ${listing.photos.map((p) => `<img src="${p.photo_data}" loading="lazy" onclick="document.getElementById('main-p').src=this.src" class="aspect-square object-cover rounded-lg cursor-pointer border" />`).join("")}
             </div>
           </div>
           <div>
@@ -1022,10 +1039,9 @@
             <p class="text-sm text-slate-600 whitespace-pre-line">${listing.description || ""}</p>
             <div class="mt-4 p-4 rounded-xl bg-slate-50 border">
               <div class="font-bold">Seller: ${listing.seller_name}</div>
-              <div class="text-xs text-slate-500 mt-0.5">WhatsApp: ${listing.whatsapp_phone} · Call: ${listing.call_phone}</div>
-              <div class="grid grid-cols-2 gap-2 mt-3 text-sm font-bold">
-                <a href="https://wa.me/${waNum}?text=${wa}" target="_blank" rel="noopener" class="bg-emerald-600 text-white text-center py-2.5 rounded-lg">WhatsApp Seller</a>
-                <a href="tel:${listing.call_phone}" class="bg-slate-900 text-white text-center py-2.5 rounded-lg">Call ${listing.call_phone}</a>
+              <div class="text-xs text-slate-500 mt-0.5">Call: ${listing.call_phone}</div>
+              <div class="mt-3 text-sm font-bold">
+                <a href="tel:${listing.call_phone}" class="block bg-slate-900 text-white text-center py-2.5 rounded-lg">Call ${listing.call_phone}</a>
               </div>
             </div>
           </div>
@@ -1092,10 +1108,12 @@
     }
 
     function openCreatePostModal(initialCat = "motor") {
+      document.querySelector("#modal-post form").reset();
       document.getElementById("edit-id").value = "";
-      document.getElementById("post-modal-title").textContent = "Create New Post (All Fields Required · Max 6 Photos)";
+      document.getElementById("post-modal-title").textContent = "Create New Post (Description required)";
       document.getElementById("post-cat-toggle").classList.remove("hidden");
       photos = [];
+      document.getElementById("c-files").value = "";
       document.getElementById("c-previews").innerHTML = "";
       setPostCat(initialCat);
       document.getElementById("modal-post").classList.remove("hidden");
@@ -1107,24 +1125,24 @@
       document.getElementById("post-modal-title").textContent = "Edit Post Info";
       document.getElementById("post-cat-toggle").classList.add("hidden");
       setPostCat(listing.category);
-      document.getElementById("c-price").value = listing.price_kes;
-      document.getElementById("c-neg").value = listing.negotiable;
-      document.getElementById("c-town").value = listing.town;
+      document.getElementById("c-price").value = listing.price_kes ?? "";
+      document.getElementById("c-neg").value = listing.negotiable || "";
+      document.getElementById("c-town").value = listing.town || "";
       document.getElementById("c-desc").value = listing.description || "";
       if (listing.category === "motor") {
-        document.getElementById("m-type").value = listing.vehicle_type || "Car";
+        document.getElementById("m-type").value = listing.vehicle_type || "";
         fillPostBrands();
         document.getElementById("m-brand").value = listing.brand || "";
         fillPostModels();
         document.getElementById("m-model").value = listing.model || "";
         document.getElementById("m-body").value = listing.body_type || "";
-        document.getElementById("m-cond").value = listing.condition_type || "Used";
-        document.getElementById("m-year").value = listing.year || 2018;
+        document.getElementById("m-cond").value = listing.condition_type || "";
+        document.getElementById("m-year").value = listing.year || "";
         document.getElementById("m-reg").value = listing.reg_number || "";
-        document.getElementById("m-fuel").value = listing.fuel_type || "Petrol";
-        document.getElementById("m-trans").value = listing.transmission || "Automatic";
-        document.getElementById("m-drive").value = listing.drive_type || "Right";
-        document.getElementById("m-ac").value = listing.air_con || "Yes";
+        document.getElementById("m-fuel").value = listing.fuel_type || "";
+        document.getElementById("m-trans").value = listing.transmission || "";
+        document.getElementById("m-drive").value = listing.drive_type || "";
+        document.getElementById("m-ac").value = listing.air_con || "";
         document.getElementById("m-cc").value = listing.engine_cc || "";
         document.getElementById("m-km").value = listing.mileage_km || "";
       } else {
@@ -1133,8 +1151,8 @@
         document.getElementById("p-model").value = listing.part_model || "";
         document.getElementById("p-yfrom").value = listing.year_from || "";
         document.getElementById("p-yto").value = listing.year_to || "";
-        document.getElementById("p-cond").value = listing.part_condition || "Used";
-        document.getElementById("p-auth").value = listing.part_authenticity || "Genuine";
+        document.getElementById("p-cond").value = listing.part_condition || "";
+        document.getElementById("p-auth").value = listing.part_authenticity || "";
       }
       photos = listing.photos.map((p) => p.photo_data);
       renderPreviews();
@@ -1148,12 +1166,8 @@
       document.getElementById("part-form").classList.toggle("hidden", isMotor);
       document.getElementById("part-form").classList.toggle("grid", !isMotor);
 
-      document.querySelectorAll("#motor-form input, #motor-form select").forEach((el) => {
-        el.required = isMotor;
-      });
-      document.querySelectorAll("#part-form input, #part-form select").forEach((el) => {
-        el.required = !isMotor;
-      });
+      document.querySelectorAll("#motor-form input, #motor-form select, #part-form input, #part-form select, #c-price, #c-neg, #c-town, #c-files")
+        .forEach((el) => { el.required = false; });
 
       document.getElementById("pcat-motor").className = isMotor
         ? "py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white"
@@ -1166,7 +1180,8 @@
     function fillPostBrands() {
       const vt = document.getElementById("m-type").value;
       const bs = [...new Set(meta.catalog.filter((x) => x.vehicle_type === vt).map((x) => x.brand))];
-      document.getElementById("m-brand").innerHTML = bs.map((b) => `<option value="${b}">${b}</option>`).join("");
+      document.getElementById("m-brand").innerHTML =
+        `<option value="">Select brand</option>` + bs.map((b) => `<option value="${b}">${b}</option>`).join("");
       fillPostModels();
     }
 
@@ -1174,7 +1189,8 @@
       const vt = document.getElementById("m-type").value;
       const br = document.getElementById("m-brand").value;
       const ms = [...new Set(meta.catalog.filter((x) => x.vehicle_type === vt && x.brand === br).map((x) => x.model))];
-      document.getElementById("m-model").innerHTML = ms.map((m) => `<option value="${m}">${m}</option>`).join("");
+      document.getElementById("m-model").innerHTML =
+        `<option value="">Select model</option>` + ms.map((m) => `<option value="${m}">${m}</option>`).join("");
       fillPostBody();
     }
 
@@ -1183,7 +1199,7 @@
       const br = document.getElementById("m-brand").value;
       const mo = document.getElementById("m-model").value;
       const match = meta.catalog.find((x) => x.vehicle_type === vt && x.brand === br && x.model === mo);
-      if (match) document.getElementById("m-body").value = match.body_type;
+      document.getElementById("m-body").value = match?.body_type || "";
     }
 
     async function onFilesSelected(e) {
@@ -1225,10 +1241,6 @@
         switchPage("account-gate");
         return;
       }
-      if (photos.length === 0) {
-        return alert("Please select at least 1 photo (up to 6).");
-      }
-
       await runWithButtonLock(btn, async () => {
         const editId = document.getElementById("edit-id").value;
         const payload = {
@@ -1453,11 +1465,29 @@
               <button type="button" onclick="openEditPost('${l.id}')" class="border px-2.5 py-1 rounded-lg">Edit</button>
               ${l.status === "active" ? `<button type="button" onclick="togglePause('${l.id}','paused', this)" class="border px-2.5 py-1 rounded-lg">Pause</button>` : ""}
               ${l.status === "paused" ? `<button type="button" onclick="togglePause('${l.id}','active', this)" class="bg-emerald-600 text-white px-2.5 py-1 rounded-lg">Resume</button>` : ""}
+              ${["active", "paused"].includes(l.status) ? `<button type="button" onclick="togglePause('${l.id}','sold', this)" class="bg-amber-500 text-white px-2.5 py-1 rounded-lg">Mark Sold</button>` : ""}
               ${l.status === "active" ? `<button type="button" onclick="openPrio('${l.id}')" class="bg-amber-400 text-slate-950 px-2.5 py-1 rounded-lg">Prioritize</button>` : ""}
             </div>
           </div>
         `;
       }).join("");
+
+      const [motorPosts, partPosts] = await Promise.all([
+        apiFetch(`/api/listings?category=motor&sort=newest&limit=4&exclude_seller_id=${encodeURIComponent(seller.id)}`),
+        apiFetch(`/api/listings?category=part&sort=newest&limit=4&exclude_seller_id=${encodeURIComponent(seller.id)}`),
+      ]);
+      const otherPosts = [...motorPosts.listings, ...partPosts.listings];
+      document.getElementById("seller-market-posts").innerHTML = otherPosts.length
+        ? otherPosts.map((item) => `
+            <button type="button" onclick="openDetail('${item.id}')" class="overflow-hidden rounded-xl border text-left hover:border-emerald-500">
+              <img src="${item.cover_photo || ""}" alt="${item.title}" loading="lazy" class="aspect-[16/10] w-full bg-slate-100 object-cover" />
+              <span class="block p-3">
+                <strong class="block text-sm">${item.title}</strong>
+                <span class="text-xs text-slate-500">${item.town} · KES ${Number(item.price_kes).toLocaleString()}</span>
+              </span>
+            </button>
+          `).join("")
+        : `<p class="col-span-full rounded-lg bg-slate-50 p-4 text-sm text-slate-500">No other active marketplace posts are available yet.</p>`;
     }
 
     function openPlanPayment(planId) {
@@ -1706,6 +1736,24 @@
 
     function closeM(id) {
       document.getElementById(id).classList.add("hidden");
+      if (id === "modal-detail") {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.delete("post");
+        history.replaceState(null, "", currentUrl);
+      }
+    }
+
+    function toggleMobileFilters() {
+      const filters = document.getElementById("mobile-market-filters");
+      const button = filters.querySelector("button");
+      const isOpen = filters.classList.toggle("is-open");
+      button.setAttribute("aria-expanded", String(isOpen));
+      document.getElementById("mobile-filter-label").textContent = isOpen ? "Hide filters" : "Search & filters";
+    }
+
+    function dismissCookieNotice() {
+      localStorage.setItem("wariara_cookie_notice", "dismissed");
+      document.getElementById("cookie-notice").classList.add("hidden");
     }
 
     boot();
