@@ -20,7 +20,7 @@
   <main class="max-w-7xl mx-auto p-6">
     <div id="admin-gate" class="bg-white max-w-md mx-auto rounded-2xl border p-6 shadow-sm">
       <h1 class="text-xl font-extrabold mb-2">Admin Access</h1>
-      <p class="text-xs text-slate-500 mb-4">Enter your <code class="bg-slate-100 px-1 py-0.5 rounded">ADMIN_SECRET</code> configured on your Render API server.</p>
+      <p class="text-xs text-slate-500 mb-4">Enter your <code class="bg-slate-100 px-1 py-0.5 rounded">ADMIN_SECRET</code> </p>
       <input id="admin-key-input" type="password" placeholder="Admin Secret Key" class="w-full border rounded-lg px-3 py-2 text-sm mb-3" />
       <button type="button" onclick="unlockAdmin(this)" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg text-sm">Open Admin Portal</button>
     </div>
@@ -188,7 +188,7 @@
         }
         if (!res) throw lastError || new Error("Request failed");
       } catch (_) {
-        throw new Error("The API is temporarily unavailable. Please try again.");
+        throw new Error("Poor internet connection ");
       }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
