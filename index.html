@@ -191,7 +191,7 @@
       </div>
 
       <div class="flex flex-wrap items-center justify-between gap-2 mb-3 text-xs text-slate-500">
-        <span><strong id="count-label" class="text-slate-800">0</strong> active approved posts</span>
+        <span><strong id="count-label" class="text-slate-800">Loading...</strong> active approved posts</span>
         <span>Max 20 Sponsored posts per day · Paid posts run for 70 days</span>
       </div>
 
@@ -382,6 +382,10 @@
         <h3 class="font-extrabold text-lg mb-3">More Marketplace Posts</h3>
         <div id="seller-market-posts" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
       </section>
+      <section class="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 class="font-extrabold text-lg mb-3">Payment Notifications</h3>
+        <div id="seller-payment-notifications" class="space-y-2 text-sm text-slate-600"></div>
+      </section>
     </section>
 
   </main>
@@ -442,25 +446,19 @@
         <div id="motor-form" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-bold mb-1">Type</label>
-            <select id="m-type" onchange="fillPostBrands()" class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option value="">Select type</option>
-              <option>Car</option><option>Truck</option><option>Bike</option>
-            </select>
+            <input id="m-type" type="text" placeholder="e.g. Car, Truck, Bike" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
             <label class="block text-xs font-bold mb-1">Condition</label>
-            <select id="m-cond" class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option value="">Select condition</option>
-              <option>New</option><option>Used</option><option>Import</option>
-            </select>
+            <input id="m-cond" type="text" placeholder="e.g. New, Used, Import" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
             <label class="block text-xs font-bold mb-1">Brand</label>
-            <select id="m-brand" onchange="fillPostModels()" class="w-full border rounded-lg px-3 py-2 bg-white"></select>
+            <input id="m-brand" type="text" placeholder="Enter brand" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
             <label class="block text-xs font-bold mb-1">Model</label>
-            <select id="m-model" onchange="fillPostBody()" class="w-full border rounded-lg px-3 py-2 bg-white"></select>
+            <input id="m-model" type="text" placeholder="Enter model" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
             <label class="block text-xs font-bold mb-1">Body Type</label>
@@ -476,31 +474,19 @@
           </div>
           <div>
             <label class="block text-xs font-bold mb-1">Fuel</label>
-            <select id="m-fuel" class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option value="">Select fuel</option>
-              <option>Diesel</option><option>Petrol</option><option>Gas</option><option>PHEV</option><option>EV</option><option>REEV</option>
-            </select>
+            <input id="m-fuel" type="text" placeholder="Enter fuel type" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
             <label class="block text-xs font-bold mb-1">Transmission</label>
-            <select id="m-trans" class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option value="">Select transmission</option>
-              <option>Manual</option><option>Automatic</option>
-            </select>
+            <input id="m-trans" type="text" placeholder="Enter transmission" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
             <label class="block text-xs font-bold mb-1">Drive Type</label>
-            <select id="m-drive" class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option value="">Select drive type</option>
-              <option>Right</option><option>Left</option>
-            </select>
+            <input id="m-drive" type="text" placeholder="e.g. Right-hand or Left-hand" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
             <label class="block text-xs font-bold mb-1">Air Con</label>
-            <select id="m-ac" class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option value="">Select option</option>
-              <option>Yes</option><option>No</option>
-            </select>
+            <input id="m-ac" type="text" placeholder="Air conditioning details" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
             <label class="block text-xs font-bold mb-1">Engine Size (cc)</label>
@@ -535,17 +521,11 @@
           </div>
           <div>
             <label class="block text-xs font-bold mb-1">Condition</label>
-            <select id="p-cond" class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option value="">Select condition</option>
-              <option>Used</option><option>New</option><option>Refurbished</option>
-            </select>
+            <input id="p-cond" type="text" placeholder="Enter condition" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
             <label class="block text-xs font-bold mb-1">Genuine or Aftermarket</label>
-            <select id="p-auth" class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option value="">Select type</option>
-              <option>Genuine</option><option>Aftermarket</option>
-            </select>
+            <input id="p-auth" type="text" placeholder="Genuine or aftermarket" class="w-full border rounded-lg px-3 py-2" />
           </div>
         </div>
 
@@ -556,10 +536,7 @@
           </div>
           <div>
             <label class="block text-xs font-bold mb-1">Negotiate</label>
-            <select id="c-neg" class="w-full border rounded-lg px-3 py-2 bg-white">
-              <option value="">Select option</option>
-              <option>Yes</option><option>No</option>
-            </select>
+            <input id="c-neg" type="text" placeholder="e.g. Negotiable or Fixed" class="w-full border rounded-lg px-3 py-2" />
           </div>
           <div>
             <label class="block text-xs font-bold mb-1">Location</label>
@@ -753,7 +730,6 @@
         document.getElementById("f-brand").innerHTML = `<option value="">All Brands</option>` + brands.map((b) => `<option value="${b}">${b}</option>`).join("");
         const bodies = [...new Set(meta.catalog.map((x) => x.body_type))];
         document.getElementById("f-body").innerHTML = `<option value="">Body: All</option>` + bodies.map((b) => `<option value="${b}">${b}</option>`).join("");
-        fillPostBrands();
         updateSellerPill();
 
         await loadListings();
@@ -955,6 +931,7 @@
 
     async function loadListings(btn = null) {
       await runWithButtonLock(btn, async () => {
+        document.getElementById("count-label").textContent = "Loading...";
         const qs = new URLSearchParams({ category: cat, sort: document.getElementById("f-sort").value });
         const fields = {
           q: "f-q", seller: "f-seller", town: "f-town", brand: "f-brand", model: "f-model",
@@ -1137,9 +1114,7 @@
       document.getElementById("c-desc").value = listing.description || "";
       if (listing.category === "motor") {
         document.getElementById("m-type").value = listing.vehicle_type || "";
-        fillPostBrands();
         document.getElementById("m-brand").value = listing.brand || "";
-        fillPostModels();
         document.getElementById("m-model").value = listing.model || "";
         document.getElementById("m-body").value = listing.body_type || "";
         document.getElementById("m-cond").value = listing.condition_type || "";
@@ -1181,31 +1156,6 @@
       document.getElementById("pcat-part").className = !isMotor
         ? "py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white"
         : "py-2 rounded-lg font-bold text-sm bg-slate-100";
-    }
-
-    function fillPostBrands() {
-      const vt = document.getElementById("m-type").value;
-      const bs = [...new Set(meta.catalog.filter((x) => x.vehicle_type === vt).map((x) => x.brand))];
-      document.getElementById("m-brand").innerHTML =
-        `<option value="">Select brand</option>` + bs.map((b) => `<option value="${b}">${b}</option>`).join("");
-      fillPostModels();
-    }
-
-    function fillPostModels() {
-      const vt = document.getElementById("m-type").value;
-      const br = document.getElementById("m-brand").value;
-      const ms = [...new Set(meta.catalog.filter((x) => x.vehicle_type === vt && x.brand === br).map((x) => x.model))];
-      document.getElementById("m-model").innerHTML =
-        `<option value="">Select model</option>` + ms.map((m) => `<option value="${m}">${m}</option>`).join("");
-      fillPostBody();
-    }
-
-    function fillPostBody() {
-      const vt = document.getElementById("m-type").value;
-      const br = document.getElementById("m-brand").value;
-      const mo = document.getElementById("m-model").value;
-      const match = meta.catalog.find((x) => x.vehicle_type === vt && x.brand === br && x.model === mo);
-      document.getElementById("m-body").value = match?.body_type || "";
     }
 
     async function onFilesSelected(e) {
@@ -1453,6 +1403,16 @@
                 <div class="text-[10px] text-slate-400 mt-0.5">${n.created_at || ""}</div>
               </div>
             `).join("");
+      const paymentNotifications = notifRes.paymentNotifications || [];
+      document.getElementById("seller-payment-notifications").innerHTML = paymentNotifications.length
+        ? paymentNotifications.map((payment) => `
+            <div class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50 p-3">
+              <span>${escapeHtml(payment.purpose || "Payment confirmed")}</span>
+              <strong class="text-emerald-700">KES ${Number(payment.amount_kes || 0).toLocaleString()}</strong>
+              <span class="w-full text-xs text-slate-400">${escapeHtml(payment.created_at || "")}</span>
+            </div>
+          `).join("")
+        : `<div class="text-slate-400">No payment notifications yet.</div>`;
 
       const { listings = [] } = await apiFetch(`/api/sellers/${seller.id}/listings`);
       document.getElementById("my-posts-list").innerHTML = listings.map((l) => {
