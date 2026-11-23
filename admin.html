@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,20 +16,6 @@
       <span>Wariara Cars Central Rift — <span class="text-amber-400">Admin Portal</span></span>
     </div>
 
-    <div id="sec-subadmins" class="hidden bg-white rounded-xl border p-5 space-y-4">
-      <div>
-        <h3 class="font-extrabold text-base">Sub-admin PIN Logins (maximum 4)</h3>
-        <p class="mt-1 text-xs text-slate-500">Each sub-admin signs in with a unique six-digit PIN. Email codes are optional; when enabled, a 10-minute code is sent through EmailJS. Configure the template recipient as <code>{{to_email}}</code> and include <code>{{passcode}}</code> in its message. Leave an existing PIN blank to keep it.</p>
-      </div>
-      <div id="subadmin-slots" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-          <p id="subadmin-emailjs-status" class="text-xs text-slate-600"></p>
-          <p id="subadmin-status" class="text-xs text-slate-600"></p>
-        </div>
-        <button type="button" onclick="saveSubAdmins(this)" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white">Save Sub-admin Logins</button>
-      </div>
-    </div>
     <span class="text-xs text-slate-400">Support: 0710911645</span>
   </header>
 
@@ -141,6 +126,20 @@
             <input id="c-bo" placeholder="Body Type (e.g. SUV, Saloon)" class="w-full border rounded px-2 py-1.5" />
             <button type="button" onclick="addCat(this)" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg">Add Brand/Model/Body</button>
           </div>
+        </div>
+      </div>
+      <div id="sec-subadmins" class="hidden bg-white rounded-xl border p-5 space-y-4">
+        <div>
+          <h3 class="font-extrabold text-base">Sub-admin PIN Logins (maximum 4)</h3>
+          <p class="mt-1 text-xs text-slate-500">A six-digit PIN is the only required login detail. Email is optional unless email verification is enabled. Configure the EmailJS template recipient as <code>{{to_email}}</code> and include <code>{{passcode}}</code> in its message. Leave an existing PIN blank to keep it.</p>
+        </div>
+        <div id="subadmin-slots" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <p id="subadmin-emailjs-status" class="text-xs text-slate-600"></p>
+            <p id="subadmin-status" class="text-xs text-slate-600"></p>
+          </div>
+          <button type="button" onclick="saveSubAdmins(this)" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white">Save Sub-admin Logins</button>
         </div>
       </div>
     </div>
@@ -461,15 +460,23 @@
 
     async function modPost(id, action, btn = null) {
       await runWithButtonLock(btn, async () => {
-        const payload = { action };
-        if (action === "reject") {
-          const reason = prompt("Enter the reason for rejecting this post:");
-          if (reason === null) return;
-          payload.reason = reason.trim();
-          if (!payload.reason) return alert("A rejection reason is required.");
+        try {
+          const payload = { action };
+          if (action === "reject") {
+            const reason = prompt("Enter the reason for rejecting this post:");
+            if (reason === null) return;
+            payload.reason = reason.trim();
+            if (!payload.reason) return alert("A rejection reason is required.");
+          }
+          const result = await adminFetch(`/api/admin/listings/${id}/moderate`, {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+          alert(result.message || (action === "reject" ? "Post rejected." : "Post accepted."));
+          await loadAdmin();
+        } catch (error) {
+          alert(error.message);
         }
-        await adminFetch(`/api/admin/listings/${id}/moderate`, { method: "POST", body: JSON.stringify(payload) });
-        await loadAdmin();
       });
     }
 
