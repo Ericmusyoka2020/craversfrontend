@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sub-admin Portal | Wariara Cars Central Rift</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>button:disabled { opacity: .65; cursor: not-allowed; }</style>
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
   <header class="flex min-h-16 items-center justify-between bg-slate-950 px-5 py-2 text-white">
@@ -15,11 +17,10 @@
   <main class="mx-auto max-w-7xl p-4 sm:p-6">
     <section id="gate" class="mx-auto max-w-md rounded-xl border bg-white p-5 shadow-sm">
       <h1 class="text-xl font-extrabold">Sub-admin sign in</h1>
-      <p class="mt-1 text-xs text-slate-500">Enter the six-digit PIN provided by the primary admin.</p>
+      <p class="mt-1 text-xs text-slate-500">Enter your six-digit PIN.</p>
       <label for="pin" class="mt-4 block text-xs font-bold">PIN</label>
       <input id="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="6-digit PIN" class="mt-1 w-full rounded-lg border px-3 py-2 text-sm" />
       <button id="pin-button" type="button" onclick="loginSub(this)" class="mt-3 w-full rounded-lg bg-emerald-600 py-2.5 font-bold text-white">Continue</button>
-
       <div id="code-box" class="hidden mt-4 border-t pt-4">
         <p id="code-hint" class="mb-2 text-xs text-slate-600"></p>
         <label for="code" class="block text-xs font-bold">Email verification code</label>
@@ -29,22 +30,121 @@
       <p id="gate-status" role="status" class="mt-3 text-xs text-red-700"></p>
     </section>
 
-    <section id="portal-frame" class="hidden overflow-hidden rounded-xl border bg-white shadow-sm">
-      <iframe title="Sub-admin portal" src="about:blank" class="h-[calc(100vh-7rem)] min-h-[720px] w-full border-0"></iframe>
+    <section id="portal" class="hidden space-y-5">
+      <nav class="flex flex-wrap gap-2 rounded-xl border bg-white p-3 text-xs font-bold sm:text-sm">
+        <button type="button" onclick="tab('posts')" id="tab-posts" class="rounded-lg bg-emerald-600 px-3 py-2 text-white">Posts & Reviews</button>
+        <button type="button" onclick="tab('payments')" id="tab-payments" class="rounded-lg border px-3 py-2">Payments</button>
+        <button type="button" onclick="tab('dealers')" id="tab-dealers" class="rounded-lg border px-3 py-2">Dealers</button>
+        <button type="button" onclick="tab('users')" id="tab-users" class="rounded-lg border px-3 py-2">Accounts</button>
+        <button type="button" onclick="tab('config')" id="tab-config" class="rounded-lg border px-3 py-2">Plans & Catalog</button>
+        <button type="button" onclick="loadOverview(true)" class="ml-auto rounded-lg bg-slate-900 px-3 py-2 text-white">Refresh</button>
+      </nav>
+
+      <section id="section-posts" class="space-y-3">
+        <div class="flex flex-wrap gap-2 rounded-xl border bg-white p-3 text-xs font-bold">
+          <button type="button" onclick="setPostFilter('all')" data-post-filter="all" class="rounded-lg bg-slate-900 px-3 py-1.5 text-white">All</button>
+          <button type="button" onclick="setPostFilter('pending_approval')" data-post-filter="pending_approval" class="rounded-lg border px-3 py-1.5">Pending approval</button>
+          <button type="button" onclick="setPostFilter('active')" data-post-filter="active" class="rounded-lg border px-3 py-1.5">Active</button>
+          <button type="button" onclick="setPostFilter('paused')" data-post-filter="paused" class="rounded-lg border px-3 py-1.5">Paused</button>
+          <button type="button" onclick="setPostFilter('sold')" data-post-filter="sold" class="rounded-lg border px-3 py-1.5">Sold</button>
+          <button type="button" onclick="setPostFilter('rejected')" data-post-filter="rejected" class="rounded-lg border px-3 py-1.5">Rejected</button>
+          <button type="button" onclick="setPostFilter('expired')" data-post-filter="expired" class="rounded-lg border px-3 py-1.5">Expired</button>
+          <button type="button" onclick="setPostFilter('reported_suspended')" data-post-filter="reported_suspended" class="rounded-lg border px-3 py-1.5">Reported</button>
+        </div>
+        <div id="posts" class="space-y-3"></div>
+      </section>
+
+      <section id="section-payments" class="hidden rounded-xl border bg-white p-5">
+        <h2 class="mb-3 font-extrabold">Payment Notifications</h2>
+        <div id="payments" class="divide-y text-sm"></div>
+      </section>
+
+      <section id="section-dealers" class="hidden space-y-4">
+        <form onsubmit="addDealer(event,this.querySelector('button[type=submit]'))" class="grid grid-cols-1 gap-2 rounded-xl border bg-white p-4 text-sm sm:grid-cols-2 lg:grid-cols-6">
+          <input id="dealer-name" required placeholder="Business name" class="rounded-lg border px-3 py-2" />
+          <input id="dealer-email" required type="email" placeholder="Email" class="rounded-lg border px-3 py-2" />
+          <input id="dealer-wa" required placeholder="WhatsApp number" class="rounded-lg border px-3 py-2" />
+          <input id="dealer-call" required placeholder="Call number" class="rounded-lg border px-3 py-2" />
+          <input id="dealer-town" required placeholder="Town" class="rounded-lg border px-3 py-2" />
+          <button type="submit" class="rounded-lg bg-emerald-600 px-3 py-2 font-bold text-white">Add Dealer</button>
+        </form>
+        <div id="dealers" class="rounded-xl border bg-white p-4"></div>
+      </section>
+
+      <section id="section-users" class="hidden overflow-x-auto rounded-xl border bg-white p-4">
+        <table class="w-full min-w-[760px] text-left text-xs">
+          <thead class="border-b uppercase text-slate-500">
+            <tr><th class="py-2 pr-3">Account</th><th class="py-2 pr-3">Contact</th><th class="py-2 pr-3">Posts / Credits</th><th class="py-2 pr-3">Status / Appeal</th><th class="py-2">Actions</th></tr>
+          </thead>
+          <tbody id="users" class="divide-y"></tbody>
+        </table>
+      </section>
+
+      <section id="section-config" class="hidden grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div class="rounded-xl border bg-white p-4">
+          <h2 class="mb-2 font-bold">Sponsored Priority Price</h2>
+          <input id="priority-price" type="number" min="1" class="w-full rounded-lg border px-3 py-2" />
+          <button type="button" onclick="savePriorityPrice(this)" class="mt-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white">Save Price</button>
+        </div>
+        <div class="rounded-xl border bg-white p-4">
+          <h2 class="mb-2 font-bold">Post Plans</h2>
+          <div id="plans" class="space-y-2"></div>
+          <div class="mt-3 grid grid-cols-3 gap-1">
+            <input id="new-plan-name" placeholder="Name" class="min-w-0 rounded border px-2 py-1 text-xs" />
+            <input id="new-plan-count" type="number" min="1" placeholder="Posts" class="min-w-0 rounded border px-2 py-1 text-xs" />
+            <input id="new-plan-price" type="number" min="1" placeholder="KES" class="min-w-0 rounded border px-2 py-1 text-xs" />
+          </div>
+          <button type="button" onclick="addPlan(this)" class="mt-2 rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white">Add Plan</button>
+        </div>
+        <div class="rounded-xl border bg-white p-4">
+          <h2 class="mb-2 font-bold">Vehicle Catalog</h2>
+          <div class="space-y-2">
+            <input id="catalog-type" placeholder="Vehicle type" class="w-full rounded-lg border px-3 py-2 text-sm" />
+            <input id="catalog-brand" placeholder="Brand" class="w-full rounded-lg border px-3 py-2 text-sm" />
+            <input id="catalog-model" placeholder="Model" class="w-full rounded-lg border px-3 py-2 text-sm" />
+            <input id="catalog-body" placeholder="Body type" class="w-full rounded-lg border px-3 py-2 text-sm" />
+            <button type="button" onclick="addCatalog(this)" class="w-full rounded-lg bg-emerald-600 py-2 font-bold text-white">Add Catalog Item</button>
+          </div>
+        </div>
+      </section>
     </section>
   </main>
+
+  <div id="edit-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4">
+    <div class="my-auto max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white p-5">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-lg font-extrabold">Edit Listing</h2>
+        <button type="button" onclick="closeEdit()" class="rounded border px-3 py-1">Close</button>
+      </div>
+      <form onsubmit="saveListing(event,this.querySelector('button[type=submit]'))" class="space-y-3">
+        <input id="edit-id" type="hidden" />
+        <div id="edit-fields" class="grid grid-cols-1 gap-2 sm:grid-cols-2"></div>
+        <div id="edit-photos" class="grid grid-cols-4 gap-2"></div>
+        <label class="block text-xs font-bold">Replace photos (leave empty to keep current photos)
+          <input id="edit-files" type="file" accept="image/*" multiple class="mt-1 w-full rounded-lg border px-3 py-2" />
+        </label>
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="closeEdit()" class="rounded-lg border px-4 py-2 font-bold">Cancel</button>
+          <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-2 font-bold text-white">Save Listing</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <script>
     const API_BASE = "https://carscrawers.onrender.com";
     let session = localStorage.getItem("wariara_sub_session") || "";
+    let overview = null;
+    let postFilter = "all";
+    let replacementPhotos = null;
 
-    async function subRequest(path, options = {}) {
-      const response = await fetch(`${API_BASE}${path}`, {
+    async function api(path, options = {}) {
+      const response = await fetch(API_BASE + path, {
         ...options,
         headers: {
           ...(options.headers || {}),
-          ...(options.body ? { "Content-Type": "application/json" } : {}),
           ...(session ? { "x-admin-key": session } : {}),
+          ...(options.body ? { "Content-Type": "application/json" } : {}),
         },
         cache: "no-store",
         signal: AbortSignal.timeout(20000),
@@ -54,56 +154,64 @@
       return result;
     }
 
+    async function withLock(button, action) {
+      const label = button?.textContent;
+      if (button) { button.disabled = true; button.textContent = "Working..."; }
+      try { return await action(); }
+      finally { if (button) { button.disabled = false; button.textContent = label; } }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      })[char]);
+    }
+
     async function loginSub(button) {
-      button.disabled = true;
       document.getElementById("gate-status").textContent = "";
-      try {
-        const result = await subRequest("/api/admin/sub/login", {
-          method: "POST",
-          body: JSON.stringify({ pin: document.getElementById("pin").value }),
-        });
-        if (result.requires_code) {
-          document.getElementById("code-box").classList.remove("hidden");
-          document.getElementById("code-hint").textContent = `A one-time code was sent to ${result.email_hint}. It expires in 10 minutes.`;
-          document.getElementById("verify-button").focus();
-          return;
+      await withLock(button, async () => {
+        try {
+          const result = await api("/api/admin/sub/login", {
+            method: "POST",
+            body: JSON.stringify({ pin: document.getElementById("pin").value }),
+          });
+          if (result.requires_code) {
+            document.getElementById("code-box").classList.remove("hidden");
+            document.getElementById("code-hint").textContent = `A verification code was sent to ${result.email_hint}. It expires in 10 minutes.`;
+            document.getElementById("code").focus();
+          } else {
+            await openPortal(result.session_token);
+          }
+        } catch (error) {
+          document.getElementById("gate-status").textContent = error.message;
         }
-        openPortal(result.session_token);
-      } catch (error) {
-        document.getElementById("gate-status").textContent = error.message;
-      } finally {
-        button.disabled = false;
-      }
+      });
     }
 
     async function verifySub(button) {
-      button.disabled = true;
       document.getElementById("gate-status").textContent = "";
-      try {
-        const result = await subRequest("/api/admin/sub/verify", {
-          method: "POST",
-          body: JSON.stringify({
-            pin: document.getElementById("pin").value,
-            code: document.getElementById("code").value,
-          }),
-        });
-        openPortal(result.session_token);
-      } catch (error) {
-        document.getElementById("gate-status").textContent = error.message;
-      } finally {
-        button.disabled = false;
-      }
+      await withLock(button, async () => {
+        try {
+          const result = await api("/api/admin/sub/verify", {
+            method: "POST",
+            body: JSON.stringify({ pin: document.getElementById("pin").value, code: document.getElementById("code").value }),
+          });
+          await openPortal(result.session_token);
+        } catch (error) {
+          document.getElementById("gate-status").textContent = error.message;
+        }
+      });
     }
 
     async function openPortal(token = session) {
       session = token;
       localStorage.setItem("wariara_sub_session", session);
       try {
-        await subRequest("/api/admin/overview");
+        await api("/api/admin/overview");
         document.getElementById("gate").classList.add("hidden");
-        document.getElementById("portal-frame").classList.remove("hidden");
+        document.getElementById("portal").classList.remove("hidden");
         document.getElementById("logout-button").classList.remove("hidden");
-        document.querySelector("#portal-frame iframe").src = "admin.html?subadmin=1";
+        await loadOverview(true);
       } catch (error) {
         session = "";
         localStorage.removeItem("wariara_sub_session");
@@ -112,15 +220,378 @@
     }
 
     async function logoutSub() {
-      try {
-        await subRequest("/api/admin/sub/logout", { method: "POST" });
-      } catch (error) {
-        console.error("Could not revoke sub-admin session:", error);
-      } finally {
+      try { await api("/api/admin/sub/logout", { method: "POST" }); }
+      catch (error) { console.error("Could not revoke sub-admin session:", error); }
+      finally {
         session = "";
         localStorage.removeItem("wariara_sub_session");
         location.reload();
       }
+    }
+
+    function tab(name) {
+      for (const section of ["posts", "payments", "dealers", "users", "config"]) {
+        document.getElementById(`section-${section}`).classList.toggle("hidden", section !== name);
+        document.getElementById(`tab-${section}`).className = section === name
+          ? "rounded-lg bg-emerald-600 px-3 py-2 text-white"
+          : "rounded-lg border px-3 py-2";
+      }
+    }
+
+    function setPostFilter(filter) {
+      postFilter = filter;
+      for (const button of document.querySelectorAll("[data-post-filter]")) {
+        button.className = button.dataset.postFilter === filter
+          ? "rounded-lg bg-slate-900 px-3 py-1.5 text-white"
+          : "rounded-lg border px-3 py-1.5";
+      }
+      renderPosts();
+    }
+
+    function renderPosts() {
+      if (!overview) return;
+      const listings = postFilter === "all" ? overview.listings : overview.listings.filter((item) => item.status === postFilter);
+      document.getElementById("posts").innerHTML = listings.length ? listings.map((item) => `
+        <article class="flex flex-col gap-3 rounded-xl border bg-white p-4 md:flex-row md:items-start md:justify-between">
+          <div class="flex min-w-0 gap-3">
+            <img src="${escapeHtml(item.cover_photo || "")}" loading="lazy" alt="" class="h-20 w-24 rounded-lg bg-slate-100 object-cover" />
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2"><strong>${escapeHtml(item.title)}</strong><span class="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase">${escapeHtml(item.status)}</span></div>
+              <p class="mt-1 text-xs text-slate-600">${escapeHtml(item.seller_name)} · ${escapeHtml(item.town)} · KES ${Number(item.price_kes).toLocaleString()}</p>
+              <p class="mt-1 whitespace-pre-line text-xs text-slate-600">${escapeHtml(item.description)}</p>
+              ${item.rejection_reason ? `<p class="mt-1 text-xs font-bold text-red-700">Rejection reason: ${escapeHtml(item.rejection_reason)}</p>` : ""}
+              ${item.report_reason ? `<p class="mt-1 text-xs font-bold text-red-700">Report: ${escapeHtml(item.report_reason)}</p>` : ""}
+            </div>
+          </div>
+          <div class="flex shrink-0 flex-wrap gap-1.5 text-xs font-bold">
+            ${item.status === "pending_approval" ? `<button type="button" onclick="moderate('${item.id}','approve',this)" class="rounded bg-emerald-600 px-3 py-1.5 text-white">Accept</button><button type="button" onclick="moderate('${item.id}','reject',this)" class="rounded bg-red-600 px-3 py-1.5 text-white">Reject</button>` : ""}
+            ${item.status === "active" ? `<button type="button" onclick="moderate('${item.id}','pause',this)" class="rounded bg-slate-900 px-3 py-1.5 text-white">Pause</button>` : ""}
+            ${item.status === "paused" ? `<button type="button" onclick="moderate('${item.id}','unpause',this)" class="rounded bg-emerald-600 px-3 py-1.5 text-white">Resume</button>` : ""}
+            ${["active","paused"].includes(item.status) ? `<button type="button" onclick="moderate('${item.id}','sold',this)" class="rounded bg-amber-500 px-3 py-1.5 text-white">Mark Sold</button>` : ""}
+            ${item.status === "reported_suspended" ? `<button type="button" onclick="moderate('${item.id}','mark_safe',this)" class="rounded bg-emerald-600 px-3 py-1.5 text-white">Restore</button><button type="button" onclick="moderate('${item.id}','mark_unsafe',this)" class="rounded bg-red-600 px-3 py-1.5 text-white">Keep Paused</button>` : ""}
+            <button type="button" onclick="editListing('${item.id}')" class="rounded border px-3 py-1.5">Edit All</button>
+          </div>
+        </article>`).join("") : `<div class="rounded-xl border bg-white p-6 text-center text-sm text-slate-500">No posts match this filter.</div>`;
+    }
+
+    async function loadOverview(force = false) {
+      try {
+        overview = await api("/api/admin/overview");
+        renderPosts();
+        renderPayments();
+        renderDealers();
+        renderUsers();
+        renderPlans();
+        document.getElementById("priority-price").value = overview.settings.base_priority_price_kes || 300;
+      } catch (error) {
+        if (error.message.includes("session expired") || error.message.includes("Unauthorized")) {
+          session = "";
+          localStorage.removeItem("wariara_sub_session");
+          document.getElementById("portal").classList.add("hidden");
+          document.getElementById("logout-button").classList.add("hidden");
+          document.getElementById("gate").classList.remove("hidden");
+        }
+        alert(error.message);
+      }
+    }
+
+    function renderPayments() {
+      const items = overview.paymentNotifications || [];
+      document.getElementById("payments").innerHTML = items.length ? items.map((item) => `
+        <div class="flex flex-wrap justify-between gap-2 py-3">
+          <div><strong>${escapeHtml(item.payer_name)}</strong><div class="text-xs text-slate-600">${escapeHtml(item.payer_phone || item.payer_email || "")} · ${escapeHtml(item.purpose)}</div></div>
+          <strong class="text-emerald-700">KES ${Number(item.amount_kes).toLocaleString()}</strong>
+        </div>`).join("") : `<p class="py-3 text-sm text-slate-500">No confirmed payments.</p>`;
+    }
+
+    function renderDealers() {
+      const dealers = (overview.users || []).filter((user) => user.role === "dealer");
+      document.getElementById("dealers").innerHTML = dealers.length ? dealers.map((dealer) => `
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b py-3 text-sm">
+          <span><strong>${escapeHtml(dealer.name)}</strong> · ${escapeHtml(dealer.town)} · ${escapeHtml(dealer.email)}</span>
+          <button type="button" onclick="removeDealer('${dealer.id}',this)" class="rounded bg-red-600 px-3 py-1.5 text-xs font-bold text-white">Remove Dealer</button>
+        </div>`).join("") : `<p class="text-sm text-slate-500">No dealers registered.</p>`;
+    }
+
+    function renderUsers() {
+      document.getElementById("users").innerHTML = overview.users.map((user) => `
+        <tr>
+          <td class="py-3 pr-3"><strong>${escapeHtml(user.name)}</strong><div>${escapeHtml(user.role)} · ${escapeHtml(user.town)}</div></td>
+          <td class="py-3 pr-3">${escapeHtml(user.email)}<div>WA: ${escapeHtml(user.whatsapp_phone)} · Call: ${escapeHtml(user.call_phone)}</div></td>
+          <td class="py-3 pr-3">Free ${Number(user.free_posts_used || 0)}/6 · Credits ${Number(user.paid_post_credits || 0)}<div>Purchases: ${Number(user.total_purchased_posts || 0)}</div></td>
+          <td class="py-3 pr-3">${user.is_suspended ? `<strong class="text-red-700">Suspended</strong>: ${escapeHtml(user.suspension_reason)}` : "Active"}${user.appeal_status === "pending" ? `<div class="mt-1 text-amber-800">Appeal: ${escapeHtml(user.appeal_text)}</div>` : ""}</td>
+          <td class="py-3"><div class="flex flex-wrap gap-1">
+            <button type="button" onclick="giftPosts('${user.id}',this)" class="rounded bg-emerald-600 px-2 py-1 text-white">Gift</button>
+            ${user.role === "dealer" ? `<button type="button" onclick="removeDealer('${user.id}',this)" class="rounded border px-2 py-1">Remove Dealer</button>` : `<button type="button" onclick="makeDealer('${user.id}',this)" class="rounded bg-amber-400 px-2 py-1">Make Dealer</button>`}
+            <button type="button" onclick="suspendUser('${user.id}',${!user.is_suspended},this)" class="rounded ${user.is_suspended ? "bg-slate-800" : "bg-red-600"} px-2 py-1 text-white">${user.is_suspended ? "Restore" : "Suspend"}</button>
+          </div></td>
+        </tr>`).join("");
+    }
+
+    function renderPlans() {
+      document.getElementById("plans").innerHTML = overview.plans.map((plan) => `
+        <div class="grid grid-cols-4 gap-1">
+          <input id="plan-name-${plan.id}" value="${escapeHtml(plan.name)}" aria-label="Plan name" class="min-w-0 rounded border px-1 py-1 text-xs" />
+          <input id="plan-count-${plan.id}" type="number" value="${Number(plan.post_count)}" aria-label="Post count" class="min-w-0 rounded border px-1 py-1 text-xs" />
+          <input id="plan-price-${plan.id}" type="number" value="${Number(plan.price_kes)}" aria-label="Plan price" class="min-w-0 rounded border px-1 py-1 text-xs" />
+          <button type="button" onclick="savePlan('${plan.id}',this)" class="rounded bg-emerald-600 text-xs font-bold text-white">Save</button>
+        </div>`).join("");
+    }
+
+    async function moderate(id, action, button) {
+      await withLock(button, async () => {
+        try {
+          const body = { action };
+          if (action === "reject") {
+            const reason = prompt("Enter the reason for rejecting this post:");
+            if (reason === null) return;
+            body.reason = reason.trim();
+            if (!body.reason) { alert("A rejection reason is required."); return; }
+          }
+          const result = await api(`/api/admin/listings/${encodeURIComponent(id)}/moderate`, { method: "POST", body: JSON.stringify(body) });
+          alert(result.message || "Post updated.");
+          await loadOverview(true);
+        } catch (error) { alert(error.message); }
+      });
+    }
+
+    async function editListing(id) {
+      try {
+        const { listing } = await api(`/api/listings/${encodeURIComponent(id)}`);
+        const fields = [
+          ["title","Title","text"],["seller_name","Seller name","text"],["seller_slug","Seller slug","text"],
+          ["whatsapp_phone","WhatsApp","text"],["call_phone","Call phone","text"],["town","Town","text"],
+          ["price_kes","Price (KES)","number"],["negotiable","Negotiable","text"],
+          ...(listing.category === "motor" ? [
+            ["vehicle_type","Vehicle type","text"],["condition_type","Condition","text"],["brand","Brand","text"],
+            ["model","Model","text"],["body_type","Body type","text"],["year","Year","number"],
+            ["reg_number","Registration","text"],["fuel_type","Fuel","text"],["transmission","Transmission","text"],
+            ["drive_type","Drive type","text"],["air_con","Air conditioning","text"],["engine_cc","Engine cc","number"],
+            ["mileage_km","Mileage km","number"],
+          ] : [
+            ["part_name","Part name","text"],["part_make","Vehicle make","text"],["part_model","Vehicle model","text"],
+            ["year_from","Year from","number"],["year_to","Year to","number"],["part_condition","Condition","text"],
+            ["part_authenticity","Authenticity","text"],
+          ]),
+        ];
+        const container = document.getElementById("edit-fields");
+        container.replaceChildren();
+        for (const [name,label,type] of fields) {
+          const wrapper = document.createElement("label");
+          wrapper.className = "text-xs font-bold";
+          wrapper.textContent = label;
+          const input = document.createElement("input");
+          input.type = type;
+          input.dataset.field = name;
+          input.value = listing[name] ?? "";
+          input.className = "mt-1 w-full rounded-lg border px-3 py-2 text-sm font-normal";
+          wrapper.append(input);
+          container.append(wrapper);
+        }
+        const descriptionWrapper = document.createElement("label");
+        descriptionWrapper.className = "text-xs font-bold sm:col-span-2";
+        descriptionWrapper.textContent = "Description";
+        const description = document.createElement("textarea");
+        description.id = "edit-description";
+        description.rows = 4;
+        description.value = listing.description || "";
+        description.className = "mt-1 w-full rounded-lg border px-3 py-2 text-sm font-normal";
+        descriptionWrapper.append(description);
+        container.append(descriptionWrapper);
+        const photos = document.getElementById("edit-photos");
+        photos.replaceChildren();
+        for (const item of listing.photos || []) {
+          const image = document.createElement("img");
+          image.src = item.photo_data;
+          image.alt = "Current post photo";
+          image.loading = "lazy";
+          image.className = "aspect-square w-full rounded border object-cover";
+          photos.append(image);
+        }
+        replacementPhotos = null;
+        document.getElementById("edit-id").value = id;
+        document.getElementById("edit-files").value = "";
+        document.getElementById("edit-modal").classList.remove("hidden");
+      } catch (error) { alert(error.message); }
+    }
+
+    function compressPhoto(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("Could not read the selected photo."));
+        reader.onload = () => {
+          const image = new Image();
+          image.onerror = () => reject(new Error("The selected file is not a valid image."));
+          image.onload = () => {
+            const scale = Math.min(1, 1050 / image.width);
+            const canvas = document.createElement("canvas");
+            canvas.width = image.width * scale;
+            canvas.height = image.height * scale;
+            canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", 0.78));
+          };
+          image.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    document.getElementById("edit-files").addEventListener("change", async (event) => {
+      const files = Array.from(event.target.files || []);
+      if (files.length > 6) {
+        event.target.value = "";
+        replacementPhotos = null;
+        alert("Select no more than six photos.");
+        return;
+      }
+      try { replacementPhotos = await Promise.all(files.map(compressPhoto)); }
+      catch (error) { replacementPhotos = null; alert(error.message); }
+    });
+
+    async function saveListing(event, button) {
+      event.preventDefault();
+      await withLock(button, async () => {
+        try {
+          const payload = { description: document.getElementById("edit-description").value };
+          for (const input of document.querySelectorAll("#edit-fields [data-field]")) payload[input.dataset.field] = input.value;
+          if (replacementPhotos !== null) payload.photos = replacementPhotos;
+          const result = await api(`/api/admin/listings/${encodeURIComponent(document.getElementById("edit-id").value)}`, {
+            method: "PUT",
+            body: JSON.stringify(payload),
+          });
+          closeEdit();
+          alert(result.message || "Listing saved.");
+          await loadOverview(true);
+        } catch (error) { alert(error.message); }
+      });
+    }
+
+    function closeEdit() { document.getElementById("edit-modal").classList.add("hidden"); }
+
+    async function addDealer(event, button) {
+      event.preventDefault();
+      await withLock(button, async () => {
+        try {
+          const result = await api("/api/admin/dealers", {
+            method: "POST",
+            body: JSON.stringify({
+              name: document.getElementById("dealer-name").value,
+              email: document.getElementById("dealer-email").value,
+              whatsapp_phone: document.getElementById("dealer-wa").value,
+              call_phone: document.getElementById("dealer-call").value,
+              town: document.getElementById("dealer-town").value,
+            }),
+          });
+          event.target.reset();
+          alert(result.message);
+          await loadOverview(true);
+        } catch (error) { alert(error.message); }
+      });
+    }
+
+    async function makeDealer(id, button) {
+      await withLock(button, async () => {
+        try {
+          const result = await api("/api/admin/dealers", { method: "POST", body: JSON.stringify({ user_id: id }) });
+          alert(result.message);
+          await loadOverview(true);
+        } catch (error) { alert(error.message); }
+      });
+    }
+
+    async function removeDealer(id, button) {
+      await withLock(button, async () => {
+        try {
+          const result = await api(`/api/admin/dealers/${encodeURIComponent(id)}`, { method: "DELETE" });
+          alert(result.message);
+          await loadOverview(true);
+        } catch (error) { alert(error.message); }
+      });
+    }
+
+    async function giftPosts(id, button) {
+      const posts_count = Number(prompt("How many post credits should be added?", "5"));
+      if (!posts_count) return;
+      await withLock(button, async () => {
+        try {
+          const result = await api(`/api/admin/users/${encodeURIComponent(id)}/gift-posts`, { method: "POST", body: JSON.stringify({ posts_count }) });
+          alert(result.message);
+          await loadOverview(true);
+        } catch (error) { alert(error.message); }
+      });
+    }
+
+    async function suspendUser(id, suspend, button) {
+      const reason = suspend ? prompt("Reason for suspending this account:") : null;
+      if (suspend && !reason) return;
+      await withLock(button, async () => {
+        try {
+          const result = await api(`/api/admin/users/${encodeURIComponent(id)}/suspension`, { method: "POST", body: JSON.stringify({ suspend, reason }) });
+          alert(result.message);
+          await loadOverview(true);
+        } catch (error) { alert(error.message); }
+      });
+    }
+
+    async function savePriorityPrice(button) {
+      await withLock(button, async () => {
+        try {
+          const result = await api("/api/admin/settings", { method: "POST", body: JSON.stringify({ base_priority_price_kes: Number(document.getElementById("priority-price").value) }) });
+          alert(result.message || "Priority price saved.");
+          await loadOverview(true);
+        } catch (error) { alert(error.message); }
+      });
+    }
+
+    async function savePlan(id, button) {
+      await withLock(button, async () => {
+        try {
+          await api(`/api/admin/plans/${encodeURIComponent(id)}`, {
+            method: "PUT",
+            body: JSON.stringify({
+              name: document.getElementById(`plan-name-${id}`).value,
+              post_count: Number(document.getElementById(`plan-count-${id}`).value),
+              price_kes: Number(document.getElementById(`plan-price-${id}`).value),
+            }),
+          });
+          alert("Plan updated.");
+          await loadOverview(true);
+        } catch (error) { alert(error.message); }
+      });
+    }
+
+    async function addPlan(button) {
+      await withLock(button, async () => {
+        try {
+          const result = await api("/api/admin/plans", {
+            method: "POST",
+            body: JSON.stringify({
+              name: document.getElementById("new-plan-name").value,
+              post_count: Number(document.getElementById("new-plan-count").value),
+              price_kes: Number(document.getElementById("new-plan-price").value),
+            }),
+          });
+          alert(result.message || "Plan added.");
+          await loadOverview(true);
+        } catch (error) { alert(error.message); }
+      });
+    }
+
+    async function addCatalog(button) {
+      await withLock(button, async () => {
+        try {
+          const result = await api("/api/admin/catalog", {
+            method: "POST",
+            body: JSON.stringify({
+              vehicle_type: document.getElementById("catalog-type").value,
+              brand: document.getElementById("catalog-brand").value,
+              model: document.getElementById("catalog-model").value,
+              body_type: document.getElementById("catalog-body").value,
+            }),
+          });
+          alert(result.message || "Catalog item added.");
+        } catch (error) { alert(error.message); }
+      });
     }
 
     if (session) openPortal();
