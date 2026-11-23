@@ -4,177 +4,667 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Portal | Wariara Cars Central Rift</title>
+  <title>Wariara Cars Central Rift | Buy & Sell Cars, Trucks, Bikes & Spare Parts</title>
+  <link rel="preconnect" href="https://carscrawers.onrender.com" />
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.5; }
+    .card-lift { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .card-lift:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08); }
     button:disabled { opacity: 0.65; cursor: not-allowed; }
+    @media (max-width: 639px) {
+      #mobile-market-filters:not(.is-open) #market-filter-controls { display: none; }
+    }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-900 min-h-screen">
-  <header class="bg-slate-900 text-white px-4 sm:px-6 min-h-16 py-2 flex flex-wrap items-center justify-between gap-2">
-    <div class="flex items-center gap-2.5 font-extrabold">
-      <img src="logo.png" alt="Wariara Cars Central Rift Logo" class="w-9 h-9 rounded-lg object-contain bg-white p-0.5" />
-      <span>Wariara Cars Central Rift — <span class="text-amber-400">Admin Portal</span></span>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+  <!-- TOP NAVIGATION (NO ADMIN BUTTON) -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 min-h-16 py-2 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-4 lg:gap-6">
+        <button type="button" onclick="switchPage('market', 'motor')" class="flex items-center gap-2.5 text-left">
+          <img src="logo.png" alt="Wariara Cars Central Rift Logo" class="w-9 h-9 rounded-lg object-contain bg-slate-100 border border-slate-200" />
+          <span>
+            <strong class="block text-sm sm:text-base leading-none text-slate-900">Wariara Cars</strong>
+            <span class="text-[10px] sm:text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Central Rift</span>
+          </span>
+        </button>
+
+        <nav class="hidden lg:flex items-center gap-4 text-sm font-semibold text-slate-600">
+          <button type="button" onclick="switchPage('market', 'motor')" class="hover:text-emerald-700">Motors</button>
+          <button type="button" onclick="switchPage('market', 'part')" class="hover:text-emerald-700">Spare Parts</button>
+          <button type="button" onclick="switchPage('dealers')" class="hover:text-emerald-700">Dealer</button>
+          <button type="button" onclick="openSellerWorkspace()" class="hover:text-emerald-700">My Posts</button>
+          <a href="terms.html" class="hover:text-emerald-700">Terms & Conditions</a>
+        </nav>
+      </div>
+
+      <div class="flex items-center gap-2 text-xs sm:text-sm">
+        <button type="button" onclick="openSellerOnboardingModal(this)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 sm:px-3.5 py-2 rounded-lg shadow-sm">
+          Sell With Us
+        </button>
+        <button type="button" onclick="openSellerWorkspace()" id="seller-pill-btn" class="border border-slate-300 hover:bg-slate-50 font-semibold px-3 py-2 rounded-lg">
+          Seller Account
+        </button>
+      </div>
     </div>
 
-    <div id="sec-subadmins" class="hidden bg-white rounded-xl border p-5 space-y-4">
-      <div>
-        <h3 class="font-extrabold text-base">Sub-admin PIN Logins (maximum 4)</h3>
-        <p class="mt-1 text-xs text-slate-500">Each sub-admin signs in with a unique six-digit PIN. Email codes are optional; when enabled, a 10-minute code is sent through EmailJS. Configure the template recipient as <code>{{to_email}}</code> and include <code>{{passcode}}</code> in its message. Leave an existing PIN blank to keep it.</p>
-      </div>
-      <div id="subadmin-slots" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-          <p id="subadmin-emailjs-status" class="text-xs text-slate-600"></p>
-          <p id="subadmin-status" class="text-xs text-slate-600"></p>
-        </div>
-        <button type="button" onclick="saveSubAdmins(this)" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white">Save Sub-admin Logins</button>
+    <!-- QUICK SELLER & INFO BUTTON BAR (MOBILE & DESKTOP COMPATIBLE) -->
+    <div class="border-t border-slate-100 bg-slate-50 px-4 sm:px-6 py-2">
+      <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2 text-xs font-bold">
+        <button type="button" onclick="startSellingForCategory('motor', this)" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap">
+          Sell Your Car
+        </button>
+        <button type="button" onclick="startSellingForCategory('part', this)" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
+          Spare Parts Sell
+        </button>
+        <button type="button" onclick="switchPage('dealers')" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
+          Dealer
+        </button>
+        <button type="button" onclick="startSellingForCategory('motor', this)" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
+          Advertise With Us
+        </button>
+        <a href="faq.html" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
+          FAQ
+        </a>
+        <button type="button" onclick="openInfoModal('contact')" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
+          Contact Us (0710911645)
+        </button>
+        <a href="terms.html" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
+          Terms & Conditions
+        </a>
       </div>
     </div>
-    <span class="text-xs text-slate-400">Support: 0710911645</span>
   </header>
 
-  <main class="max-w-7xl mx-auto p-4 sm:p-6">
-    <div id="admin-gate" class="bg-white max-w-md mx-auto rounded-2xl border p-6 shadow-sm">
-      <h1 class="text-xl font-extrabold mb-2">Admin Access</h1>
-      <p class="text-xs text-slate-500 mb-4">Enter your <code class="bg-slate-100 px-1 py-0.5 rounded">ADMIN_SECRET</code> configured on your Render API server.</p>
-      <input id="admin-key-input" type="password" placeholder="Admin Secret Key" class="w-full border rounded-lg px-3 py-2 text-sm mb-3" />
-      <button type="button" onclick="unlockAdmin(this)" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg text-sm">Open Admin Portal</button>
-    </div>
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full">
 
-    <div id="admin-panel" class="hidden space-y-6">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <div class="flex flex-wrap gap-2 text-xs sm:text-sm font-bold">
-          <button type="button" onclick="tab('posts')" id="t-posts" class="px-3.5 py-2 rounded-lg bg-emerald-600 text-white">Posts & Expiry</button>
-          <button type="button" onclick="tab('payments')" id="t-payments" class="px-3.5 py-2 rounded-lg bg-white border">Payment Notifications</button>
-          <button type="button" onclick="tab('dealers')" id="t-dealers" class="px-3.5 py-2 rounded-lg bg-white border">Dealers (Add / Remove)</button>
-          <button type="button" onclick="tab('users')" id="t-users" class="px-3.5 py-2 rounded-lg bg-white border">Accounts & Suspensions</button>
-          <button type="button" onclick="tab('config')" id="t-config" class="px-3.5 py-2 rounded-lg bg-white border">Priority Price, Plans & Catalog</button>
-          <button type="button" onclick="tab('subadmins')" id="t-subadmins" class="hidden px-3.5 py-2 rounded-lg bg-white border">Sub-admin PIN Logins</button>
-        </div>
-        <button type="button" onclick="lockAdmin()" class="text-xs text-slate-500 hover:text-red-600 font-semibold">Lock Portal</button>
-      </div>
-
-      <div id="sec-posts" class="space-y-3">
-        <div class="flex flex-wrap gap-2 text-xs font-bold bg-white p-3 rounded-xl border">
-          <button type="button" onclick="setPostFilter('all')" id="pf-all" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white">All Posts</button>
-          <button type="button" onclick="setPostFilter('expired')" id="pf-expired" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200">Expired Posts (70d)</button>
-          <button type="button" onclick="setPostFilter('pending_approval')" id="pf-pending_approval" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">Pending Approval</button>
-          <button type="button" onclick="setPostFilter('active')" id="pf-active" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">Active</button>
-          <button type="button" onclick="setPostFilter('paused')" id="pf-paused" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 border">Paused</button>
-          <button type="button" onclick="setPostFilter('sold')" id="pf-sold" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">Sold</button>
-          <button type="button" onclick="setPostFilter('rejected')" id="pf-rejected" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200">Rejected</button>
-        </div>
-        <div id="admin-posts-list" class="space-y-3"></div>
-      </div>
-
-      <div id="sec-payments" class="hidden bg-white rounded-xl border p-5 space-y-3">
-        <h3 class="font-extrabold text-base">Payment Notifications (Who Paid & What For)</h3>
-        <div id="payment-notifs-list" class="divide-y text-sm"></div>
-      </div>
-
-      <!-- ADMIN DEALER MANAGEMENT (ADD & REMOVE DEALER) -->
-      <div id="sec-dealers" class="hidden space-y-5">
-        <div class="bg-white rounded-xl border p-5">
-          <h3 class="font-extrabold text-base mb-3">Add or Mark Dealer</h3>
-          <form onsubmit="addDealerSubmit(event, this.querySelector('button[type=submit]'))" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 text-xs">
-            <input id="dl-name" type="text" required placeholder="Dealer / Business Name *" class="border rounded-lg px-3 py-2" />
-            <input id="dl-email" type="email" required placeholder="Email *" class="border rounded-lg px-3 py-2" />
-            <input id="dl-wa" type="text" required placeholder="WhatsApp (2547...) *" class="border rounded-lg px-3 py-2" />
-            <input id="dl-call" type="text" required placeholder="Call Phone (07...) *" class="border rounded-lg px-3 py-2" />
-            <div class="flex gap-2">
-              <input id="dl-town" type="text" required value="Nakuru" placeholder="Town *" class="border rounded-lg px-3 py-2 w-full" />
-              <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg whitespace-nowrap">Add Dealer</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="bg-white rounded-xl border p-5">
-          <h3 class="font-extrabold text-base mb-3">Current Dealers (Remove Dealer Status)</h3>
-          <div id="admin-dealers-list" class="divide-y text-xs"></div>
-        </div>
-      </div>
-
-      <div id="sec-users" class="hidden bg-white rounded-xl border p-5 overflow-x-auto">
-        <table class="w-full text-left text-xs">
-          <thead class="border-b uppercase text-slate-400">
-            <tr>
-              <th class="py-2 pr-3">Account</th>
-              <th class="py-2 pr-3">WhatsApp / Call / Email</th>
-              <th class="py-2 pr-3">Free / Credits</th>
-              <th class="py-2 pr-3">Purchased</th>
-              <th class="py-2 pr-3">Status & Appeal</th>
-              <th class="py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="users-rows" class="divide-y"></tbody>
-        </table>
-      </div>
-
-      <div id="sec-config" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div class="bg-white rounded-xl border p-5">
-          <h3 class="font-bold mb-2">Priority Price (Max 20/Day)</h3>
-          <p class="text-xs text-slate-500 mb-3">Minimum daily fee to enter the 20 sponsored slots; higher payments appear higher on top.</p>
-          <input id="cfg-prio" type="number" class="w-full border rounded-lg px-3 py-2 text-sm mb-2" />
-          <button type="button" onclick="savePrio(this)" class="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-lg">Save Priority Fee</button>
-        </div>
-
-        <div class="bg-white rounded-xl border p-5">
-          <h3 class="font-bold mb-2">Post Plans (e.g. 10 = 200, 25 = 500)</h3>
-          <div id="plans-edit" class="space-y-2 mb-3"></div>
-          <div class="grid grid-cols-3 gap-1.5 text-xs">
-            <input id="np-name" placeholder="Name" class="border rounded px-2 py-1" />
-            <input id="np-cnt" type="number" placeholder="Posts" class="border rounded px-2 py-1" />
-            <input id="np-prc" type="number" placeholder="KES" class="border rounded px-2 py-1" />
+    <!-- PAGE 1: PUBLIC MARKETPLACE -->
+    <section id="page-market">
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 mb-6 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h1 class="text-xl sm:text-3xl font-extrabold text-slate-900">Wariara Cars Central Rift</h1>
+            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+              Approved listings only — search by car, spare part, or seller name and contact directly.
+            </p>
           </div>
-          <button type="button" onclick="addPlan(this)" class="mt-2 bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg">+ Add Plan</button>
+          <div class="inline-flex rounded-xl bg-slate-100 p-1 self-start">
+            <button type="button" onclick="setCat('motor')" id="btn-cat-motor" class="px-4 py-2 rounded-lg text-sm font-bold bg-white text-emerald-700 shadow-sm">Motors</button>
+            <button type="button" onclick="setCat('part')" id="btn-cat-part" class="px-4 py-2 rounded-lg text-sm font-bold text-slate-600">Spare Parts</button>
+          </div>
         </div>
 
-        <div class="bg-white rounded-xl border p-5">
-          <h3 class="font-bold mb-2">Add Brand, Model & Body Type</h3>
-          <div class="space-y-2 text-xs">
-            <select id="c-vt" class="w-full border rounded px-2 py-1.5 bg-white">
-              <option>Car</option><option>Truck</option><option>Bike</option>
+        <div id="quick-makes" class="flex flex-wrap gap-2 mb-3"></div>
+
+        <div id="mobile-market-filters" class="mt-3 sm:mt-0">
+          <button type="button" onclick="toggleMobileFilters()" aria-controls="market-filter-controls" aria-expanded="false" class="sm:hidden flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-800">
+            <span class="flex flex-col gap-1" aria-hidden="true"><span class="block h-0.5 w-5 bg-current"></span><span class="block h-0.5 w-5 bg-current"></span><span class="block h-0.5 w-5 bg-current"></span></span>
+            <span id="mobile-filter-label">Search & filters</span>
+          </button>
+          <div id="market-filter-controls" class="pt-3 sm:pt-0">
+        <div class="flex flex-wrap gap-2 mb-4 text-xs">
+          <button type="button" onclick="setBudget('', '')" class="px-3 py-1.5 rounded-full border border-slate-200 hover:border-emerald-600 font-medium">All Prices</button>
+          <button type="button" onclick="setBudget('', 500000)" class="px-3 py-1.5 rounded-full border border-slate-200 hover:border-emerald-600 font-medium">Under 500K</button>
+          <button type="button" onclick="setBudget('', 1000000)" class="px-3 py-1.5 rounded-full border border-slate-200 hover:border-emerald-600 font-medium">Under 1M</button>
+          <button type="button" onclick="setBudget(1000000, 2500000)" class="px-3 py-1.5 rounded-full border border-slate-200 hover:border-emerald-600 font-medium">1M - 2.5M</button>
+          <button type="button" onclick="setBudget(2500000, '')" class="px-3 py-1.5 rounded-full border border-slate-200 hover:border-emerald-600 font-medium">Above 2.5M</button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2.5">
+          <input id="f-q" type="text" placeholder="Search keyword..." class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-600" />
+          <input id="f-seller" type="text" placeholder="Search seller name..." class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-600" />
+          <select id="f-town" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+            <option value="">All Towns</option>
+            <option>Nakuru</option><option>Naivasha</option><option>Eldoret</option>
+            <option>Nyahururu</option><option>Kericho</option><option>Narok</option>
+            <option>Gilgil</option><option>Molo</option><option>Thika</option>
+            <option>Nairobi</option><option>Mombasa</option>
+          </select>
+          <select id="f-brand" onchange="syncFilterModels()" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+            <option value="">All Brands</option>
+          </select>
+          <select id="f-model" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+            <option value="">All Models</option>
+          </select>
+          <input id="f-min-p" type="number" placeholder="Min KES" class="border border-slate-300 rounded-lg px-3 py-2 text-sm" />
+          <input id="f-max-p" type="number" placeholder="Max KES" class="border border-slate-300 rounded-lg px-3 py-2 text-sm" />
+        </div>
+
+        <div id="motor-filters" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mt-2.5 text-xs">
+          <select id="f-vtype" class="border border-slate-200 rounded-lg px-2 py-2 bg-slate-50">
+            <option value="">Type: All</option><option>Car</option><option>Truck</option><option>Bike</option>
+          </select>
+          <select id="f-body" class="border border-slate-200 rounded-lg px-2 py-2 bg-slate-50">
+            <option value="">Body: All</option>
+          </select>
+          <select id="f-cond" class="border border-slate-200 rounded-lg px-2 py-2 bg-slate-50">
+            <option value="">Condition: All</option><option>New</option><option>Used</option><option>Import</option>
+          </select>
+          <select id="f-fuel" class="border border-slate-200 rounded-lg px-2 py-2 bg-slate-50">
+            <option value="">Fuel: All</option><option>Diesel</option><option>Petrol</option><option>Gas</option><option>PHEV</option><option>EV</option><option>REEV</option>
+          </select>
+          <select id="f-trans" class="border border-slate-200 rounded-lg px-2 py-2 bg-slate-50">
+            <option value="">Trans: All</option><option>Manual</option><option>Automatic</option>
+          </select>
+          <select id="f-drive" class="border border-slate-200 rounded-lg px-2 py-2 bg-slate-50">
+            <option value="">Drive: All</option><option>Left</option><option>Right</option>
+          </select>
+          <select id="f-ac" class="border border-slate-200 rounded-lg px-2 py-2 bg-slate-50">
+            <option value="">Air Con: All</option><option>Yes</option><option>No</option>
+          </select>
+          <input id="f-min-yr" type="number" placeholder="Year From" class="border border-slate-200 rounded-lg px-2 py-2 bg-slate-50" />
+        </div>
+
+        <div id="part-filters" class="hidden grid-cols-2 sm:grid-cols-3 gap-2 mt-2.5 text-xs">
+          <select id="f-pcond" class="border border-slate-200 rounded-lg px-2 py-2 bg-slate-50">
+            <option value="">Condition: All</option><option>Used</option><option>New</option><option>Refurbished</option>
+          </select>
+          <select id="f-pauth" class="border border-slate-200 rounded-lg px-2 py-2 bg-slate-50">
+            <option value="">Genuine & Aftermarket</option><option>Genuine</option><option>Aftermarket</option>
+          </select>
+          <input id="f-pyr" type="number" placeholder="Vehicle Year" class="border border-slate-200 rounded-lg px-2 py-2 bg-slate-50" />
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-slate-100">
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="loadListings(this)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-lg">Filter</button>
+            <button type="button" onclick="resetAllFilters()" class="text-sm text-slate-500 hover:text-slate-800 px-2 py-2">Reset</button>
+            <span id="store-filter-tag" class="hidden bg-amber-100 text-amber-900 text-xs font-bold px-3 py-1 rounded-full"></span>
+          </div>
+          <div class="flex items-center gap-2 text-sm">
+            <label for="f-sort" class="text-slate-500">Sort:</label>
+            <select id="f-sort" onchange="loadListings()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white font-medium">
+              <option value="featured">Sponsored Top 20 & Fair Feed</option>
+              <option value="newest">Newest</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="mileage_asc">Lowest Mileage</option>
+              <option value="year_desc">Newest Year</option>
             </select>
-            <input id="c-br" placeholder="Brand (e.g. Toyota, Audi)" class="w-full border rounded px-2 py-1.5" />
-            <input id="c-mo" placeholder="Model (e.g. Harrier, A4)" class="w-full border rounded px-2 py-1.5" />
-            <input id="c-bo" placeholder="Body Type (e.g. SUV, Saloon)" class="w-full border rounded px-2 py-1.5" />
-            <button type="button" onclick="addCat(this)" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg">Add Brand/Model/Body</button>
+          </div>
+        </div>
           </div>
         </div>
       </div>
-    </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3 text-xs text-slate-500">
+        <span><strong id="count-label" class="text-slate-800">0</strong> active approved posts</span>
+        <span>Max 20 Sponsored posts per day · Paid posts run for 70 days</span>
+      </div>
+
+      <div id="market-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"></div>
+    </section>
+
+    <!-- PAGE 2: DEALERS & SHOWROOMS -->
+    <section id="page-dealers" class="hidden">
+      <div class="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h2 class="text-2xl font-extrabold">Verified Dealers & Sellers</h2>
+          <p class="text-xs text-slate-500">Browse listings by dealer or seller across Central Rift and Kenya.</p>
+        </div>
+        <button type="button" onclick="startSellingForCategory('motor', this)" class="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-lg self-start">
+          Sell With Us
+        </button>
+      </div>
+      <div id="dealers-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
+
+    <!-- PAGE 3A: SELLER ACCOUNT AUTH GATE -->
+    <section id="page-account-gate" class="hidden max-w-xl mx-auto">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <span class="inline-block bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full mb-2">
+          Seller Account Required to Sell
+        </span>
+        <h2 class="text-2xl font-extrabold text-slate-900">Seller Account</h2>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1 mb-4">
+          Create a seller account first before posting motors or spare parts.
+        </p>
+
+        <div class="grid grid-cols-3 gap-2 mb-5 text-xs font-bold">
+          <button type="button" onclick="setAuthTab('register')" id="tab-register" class="py-2 rounded-lg bg-emerald-600 text-white">Create Account</button>
+          <button type="button" onclick="setAuthTab('login')" id="tab-login" class="py-2 rounded-lg bg-slate-100 text-slate-700">Sign In</button>
+          <button type="button" onclick="setAuthTab('forgot')" id="tab-forgot" class="py-2 rounded-lg bg-slate-100 text-slate-700">Forgot Password</button>
+        </div>
+
+        <!-- Create Seller Account (Password Twice + Must Accept Terms) -->
+        <form id="form-register" onsubmit="saveSellerAccount(event, this.querySelector('button[type=submit]'))" class="space-y-3 text-sm">
+          <div>
+            <label class="block text-xs font-bold mb-1">Your Name or Business Name *</label>
+            <input id="s-name" type="text" required placeholder="e.g. Rift Auto Sales" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Email Address *</label>
+            <input id="s-email" type="email" required placeholder="you@example.com" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold mb-1">WhatsApp Number *</label>
+              <input id="s-wa" type="text" required placeholder="254712345678" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold mb-1">Phone Call Number *</label>
+              <input id="s-call" type="text" required placeholder="0712345678" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+            </div>
+          </div>
+          <div id="s-password-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold mb-1">Seller Type *</label>
+              <select id="s-role" required class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white">
+                <option value="private">Private Seller</option>
+                <option value="dealer">Dealer</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold mb-1">Town *</label>
+              <input id="s-town" type="text" required value="Nakuru" placeholder="Town *" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold mb-1">Password *</label>
+              <input id="s-pass" type="password" required minlength="6" placeholder="Min 6 characters" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold mb-1">Confirm Password *</label>
+              <input id="s-pass-confirm" type="password" required minlength="6" placeholder="Re-enter password" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+            </div>
+          </div>
+
+          <label class="flex items-start gap-2.5 text-xs text-slate-700 pt-1 cursor-pointer">
+            <input id="s-terms" type="checkbox" required class="mt-0.5 w-4 h-4 rounded border-slate-300 text-emerald-600" />
+            <span>
+              I accept the <a href="terms.html" target="_blank" rel="noopener" class="text-emerald-700 font-bold underline">Terms and Conditions</a> *
+            </span>
+          </label>
+
+          <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm">
+            Create Account & Continue
+          </button>
+          <button type="button" onclick="signInWithGoogle(this)" class="w-full border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold py-3 rounded-xl text-sm">
+            Sign up with Google
+          </button>
+        </form>
+
+        <!-- Sign In Existing Seller -->
+        <form id="form-login" onsubmit="loginSellerAccount(event, this.querySelector('button[type=submit]'))" class="hidden space-y-3 text-sm">
+          <div>
+            <label class="block text-xs font-bold mb-1">Email Address *</label>
+            <input id="l-email" type="email" required placeholder="you@example.com" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Password *</label>
+            <input id="l-pass" type="password" required placeholder="Your password" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+          </div>
+          <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl text-sm">
+            Sign In
+          </button>
+          <button type="button" onclick="signInWithGoogle(this)" class="w-full border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold py-3 rounded-xl text-sm">
+            Sign in with Google
+          </button>
+        </form>
+
+        <!-- Forgot Password (Firebase sends a secure reset link) -->
+        <form id="form-forgot" onsubmit="requestPasswordReset(event, this.querySelector('button[type=submit]'))" class="hidden space-y-3 text-sm">
+          <p class="text-xs text-slate-500">Firebase will email you a secure password reset link.</p>
+          <div>
+            <label class="block text-xs font-bold mb-1">Account Email Address *</label>
+            <input id="fp-email" type="email" required placeholder="you@example.com" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+          </div>
+          <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm">
+            Send One-Time Reset Link
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- PAGE 3B: SELLER WORKSPACE -->
+    <section id="page-seller" class="hidden space-y-6">
+      <div id="seller-suspended-box" class="hidden bg-red-50 border border-red-300 rounded-xl p-5">
+        <h3 class="font-extrabold text-red-800">Account Suspended</h3>
+        <p id="seller-susp-reason" class="text-sm text-red-700 mt-1"></p>
+        <div class="flex flex-col sm:flex-row gap-2 mt-3">
+          <input id="appeal-msg" type="text" placeholder="Write review request to Admin..." class="flex-1 border border-red-300 rounded-lg px-3 py-2 text-sm bg-white" />
+          <button type="button" onclick="sendAppeal(this)" class="bg-red-700 hover:bg-red-800 text-white text-sm font-bold px-4 py-2 rounded-lg">Request Review</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div class="space-y-4">
+          <div class="bg-white rounded-xl border border-slate-200 p-5">
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <div>
+                <h3 id="active-seller-name" class="font-extrabold text-lg">Seller Profile</h3>
+                <p id="active-seller-meta" class="text-xs text-slate-500"></p>
+              </div>
+              <button type="button" onclick="signOutSeller()" class="text-xs font-bold text-slate-600 hover:text-slate-900 underline">
+                Sign Out
+              </button>
+            </div>
+
+            <div id="seller-quota-box" class="grid grid-cols-2 gap-2 text-center pt-3 border-t border-slate-100">
+              <div class="bg-emerald-50 p-2.5 rounded-lg">
+                <div id="q-free" class="text-xl font-black text-emerald-700">6</div>
+                <div class="text-[11px] text-emerald-800">Free Posts Left (of 6)</div>
+              </div>
+              <div class="bg-slate-100 p-2.5 rounded-lg">
+                <div id="q-paid" class="text-xl font-black text-slate-800">0</div>
+                <div class="text-[11px] text-slate-600">Purchased / Gift Posts</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-slate-200 p-5">
+            <h4 class="font-bold text-sm mb-2">Account Notifications (Deductions & Payments)</h4>
+            <div id="seller-notifications-list" class="space-y-2 max-h-64 overflow-y-auto text-xs text-slate-600"></div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 class="font-extrabold text-lg">Post Plans (M-Pesa via PayHero)</h3>
+              <p class="text-xs text-slate-500">First 6 posts are free. Paid post credits run for <strong>70 days</strong> once published.</p>
+            </div>
+            <button type="button" onclick="startSellingFlow(this)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-lg">
+              + Create Post
+            </button>
+          </div>
+          <div id="plans-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6"></div>
+
+          <h4 class="font-bold text-sm mb-2">My Posts (Pending Approval, Active, Paused, Expired, Reported)</h4>
+          <div id="my-posts-list" class="space-y-2.5"></div>
+        </div>
+      </div>
+      <section class="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 class="font-extrabold text-lg mb-3">More Marketplace Posts</h3>
+        <div id="seller-market-posts" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+      </section>
+    </section>
+
   </main>
 
-  <div id="admin-edit-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4">
-    <div class="relative my-auto max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
-      <button type="button" onclick="closeAdminEdit()" class="absolute right-4 top-4 rounded-full bg-slate-100 px-3 py-1 font-bold">Close</button>
-      <h2 class="mb-1 pr-20 text-xl font-extrabold">Edit Listing</h2>
-      <p class="mb-4 text-xs text-slate-500">Update listing details, contacts, and replace photos (up to 6).</p>
-      <form id="admin-edit-form" onsubmit="saveAdminListing(event, this.querySelector('button[type=submit]'))" class="space-y-4">
-        <input id="admin-edit-id" type="hidden" />
-        <div id="admin-edit-fields" class="grid grid-cols-1 gap-3 sm:grid-cols-2"></div>
-        <div id="admin-edit-photos" class="grid grid-cols-4 gap-2"></div>
-        <label class="block text-xs font-bold">Replace photos
-          <input id="admin-edit-files" type="file" accept="image/*" multiple class="mt-1 w-full rounded-lg border px-3 py-2" />
-        </label>
-        <div class="flex justify-end gap-2">
-          <button type="button" onclick="closeAdminEdit()" class="rounded-lg border px-4 py-2 text-sm font-bold">Cancel</button>
-          <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white">Save Listing</button>
+  <!-- SELLER ONBOARDING MODAL (SELL YOUR CAR / SPARE PARTS SELL) -->
+  <div id="modal-sell-with-us" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 relative shadow-xl">
+      <button type="button" onclick="closeM('modal-sell-with-us')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 font-bold">✕</button>
+      <div class="flex items-center gap-2.5 mb-2">
+        <img src="logo.png" alt="Logo" class="w-8 h-8 rounded-lg object-contain bg-slate-100" />
+        <h2 class="text-xl font-extrabold text-slate-900">Sell With Wariara Cars Central Rift</h2>
+      </div>
+      <p class="text-xs sm:text-sm text-slate-600 mb-4">
+        Start with <strong>6 free posts</strong>, or buy post credits that run for <strong>70 days</strong>. Choose what you are posting:
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button type="button" onclick="closeM('modal-sell-with-us'); startSellingForCategory('motor', this)" class="p-4 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-left hover:bg-emerald-100">
+          <div class="font-extrabold text-emerald-900 text-sm">Sell Your Car / Motor</div>
+          <div class="text-xs text-emerald-800 mt-1">Cars, trucks, bikes, imports & local units.</div>
+        </button>
+        <button type="button" onclick="closeM('modal-sell-with-us'); startSellingForCategory('part', this)" class="p-4 rounded-xl border-2 border-slate-300 bg-slate-50 text-left hover:border-emerald-600">
+          <div class="font-extrabold text-slate-900 text-sm">Spare Parts Sell</div>
+          <div class="text-xs text-slate-600 mt-1">Genuine & aftermarket parts by make, model & year.</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INFO MODAL (ADVERTISE WITH US, FAQ, CONTACT US 0710911645) -->
+  <div id="modal-info" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 relative shadow-xl">
+      <button type="button" onclick="closeM('modal-info')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 font-bold">✕</button>
+      <div id="info-modal-body" class="space-y-3 text-sm"></div>
+    </div>
+  </div>
+
+  <!-- DETAIL MODAL (SHOWS ALL FILLED INFO FOR APPROVED POSTS WITH CLEAR LABELS) -->
+  <div id="modal-detail" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 relative">
+      <button type="button" onclick="closeM('modal-detail')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 font-bold">✕</button>
+      <div id="detail-body"></div>
+    </div>
+  </div>
+
+  <!-- CREATE / EDIT POST MODAL (EVERY FIELD REQUIRED) -->
+  <div id="modal-post" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-6 relative">
+      <button type="button" onclick="closeM('modal-post')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 font-bold">✕</button>
+      <h2 id="post-modal-title" class="text-xl font-extrabold mb-3">Create New Post (Description required)</h2>
+      <input type="hidden" id="edit-id" />
+
+      <div id="post-cat-toggle" class="grid grid-cols-2 gap-2 mb-4">
+        <button type="button" onclick="setPostCat('motor')" id="pcat-motor" class="py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white">Motors</button>
+        <button type="button" onclick="setPostCat('part')" id="pcat-part" class="py-2 rounded-lg font-bold text-sm bg-slate-100">Spare Parts</button>
+      </div>
+
+      <form onsubmit="submitPost(event, this.querySelector('button[type=submit]'))" class="space-y-3 text-sm">
+        <div id="motor-form" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold mb-1">Type</label>
+            <select id="m-type" onchange="fillPostBrands()" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select type</option>
+              <option>Car</option><option>Truck</option><option>Bike</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Condition</label>
+            <select id="m-cond" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select condition</option>
+              <option>New</option><option>Used</option><option>Import</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Brand</label>
+            <select id="m-brand" onchange="fillPostModels()" class="w-full border rounded-lg px-3 py-2 bg-white"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Model</label>
+            <select id="m-model" onchange="fillPostBody()" class="w-full border rounded-lg px-3 py-2 bg-white"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Body Type</label>
+            <input id="m-body" type="text" class="w-full border rounded-lg px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Year</label>
+            <input id="m-year" type="number" min="1970" max="2027" class="w-full border rounded-lg px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Vehicle Registration No.</label>
+            <input id="m-reg" type="text" placeholder="e.g. KDN 412B" class="w-full border rounded-lg px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Fuel</label>
+            <select id="m-fuel" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select fuel</option>
+              <option>Diesel</option><option>Petrol</option><option>Gas</option><option>PHEV</option><option>EV</option><option>REEV</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Transmission</label>
+            <select id="m-trans" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select transmission</option>
+              <option>Manual</option><option>Automatic</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Drive Type</label>
+            <select id="m-drive" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select drive type</option>
+              <option>Right</option><option>Left</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Air Con</label>
+            <select id="m-ac" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select option</option>
+              <option>Yes</option><option>No</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Engine Size (cc)</label>
+            <input id="m-cc" type="number" placeholder="2000" class="w-full border rounded-lg px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Mileage (km)</label>
+            <input id="m-km" type="number" placeholder="70000" class="w-full border rounded-lg px-3 py-2" />
+          </div>
         </div>
+
+        <div id="part-form" class="hidden grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold mb-1">Part Name</label>
+            <input id="p-name" type="text" placeholder="e.g. Alternator, Shock Absorber" class="w-full border rounded-lg px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Car Used For (Make)</label>
+            <input id="p-make" type="text" placeholder="Toyota, Audi..." class="w-full border rounded-lg px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Model</label>
+            <input id="p-model" type="text" placeholder="Fielder, A4..." class="w-full border rounded-lg px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Year From</label>
+            <input id="p-yfrom" type="number" placeholder="2012" class="w-full border rounded-lg px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Year To</label>
+            <input id="p-yto" type="number" placeholder="2020" class="w-full border rounded-lg px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Condition</label>
+            <select id="p-cond" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select condition</option>
+              <option>Used</option><option>New</option><option>Refurbished</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Genuine or Aftermarket</label>
+            <select id="p-auth" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select type</option>
+              <option>Genuine</option><option>Aftermarket</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t">
+          <div>
+            <label class="block text-xs font-bold mb-1">Price (KES)</label>
+            <input id="c-price" type="number" min="1" class="w-full border rounded-lg px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Negotiate</label>
+            <select id="c-neg" class="w-full border rounded-lg px-3 py-2 bg-white">
+              <option value="">Select option</option>
+              <option>Yes</option><option>No</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Location</label>
+            <input id="c-town" type="text" class="w-full border rounded-lg px-3 py-2" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold mb-1">Description *</label>
+          <textarea id="c-desc" rows="2" required class="w-full border rounded-lg px-3 py-2"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold mb-1">Photos (up to 6)</label>
+          <input id="c-files" type="file" accept="image/*" multiple onchange="onFilesSelected(event)" class="w-full border rounded-lg px-3 py-2 text-xs" />
+          <div id="c-previews" class="grid grid-cols-6 gap-2 mt-2"></div>
+        </div>
+
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl">Submit Post</button>
       </form>
     </div>
   </div>
 
+  <!-- PAYHERO M-PESA PAYMENT MODAL (FOR POST PLANS & PRIORITISE) -->
+  <div id="modal-payhero" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 relative shadow-xl">
+      <button type="button" onclick="closePayHeroModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 font-bold">✕</button>
+      <h2 id="ph-title" class="text-xl font-extrabold text-slate-900">Pay with M-Pesa</h2>
+      <p class="text-xs text-slate-600 mt-1">
+        Do not refresh the page after entering your M-Pesa PIN. Wait until payment confirmation completes.
+      </p>
+      <p id="ph-purpose-label" class="text-xs font-bold text-emerald-700 mt-2"></p>
+
+      <div class="space-y-3 mt-4 text-sm">
+        <div>
+          <label for="ph-amount" class="block text-xs font-bold mb-1">Amount (KES)</label>
+          <input id="ph-amount" type="text" readonly class="w-full border border-slate-300 rounded-lg px-3 py-2 font-extrabold bg-slate-50" />
+        </div>
+        <div>
+          <label for="ph-phone" class="block text-xs font-bold mb-1">M-Pesa Phone Number *</label>
+          <input id="ph-phone" type="text" placeholder="0712345678" maxlength="12" inputmode="numeric" class="w-full border border-slate-300 rounded-lg px-3 py-2" />
+        </div>
+        <button id="phPayBtn" type="button" onclick="startPayHeroPayment(this)" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl">
+          Pay with M-Pesa
+        </button>
+        <div id="ph-status" class="text-xs rounded-lg p-3 hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRIORITIZE MODAL -->
+  <div id="modal-prio" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 relative">
+      <button type="button" onclick="closeM('modal-prio')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 font-bold">✕</button>
+      <h2 class="text-xl font-extrabold">Prioritize Post (Sponsored)</h2>
+      <p class="text-xs bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-lg mt-2">
+        Only <strong>20 posts/day</strong> can be prioritized. <strong>Whoever pays more is shown higher on top!</strong>
+      </p>
+      <input type="hidden" id="prio-id" />
+      <div id="prio-summary" class="grid grid-cols-3 gap-2 my-3 text-center text-xs"></div>
+      <div class="flex gap-2 mb-4">
+        <input id="prio-bid" type="number" class="flex-1 border rounded-lg px-3 py-2 font-bold" />
+        <button type="button" onclick="openPrioritizePayment(this)" class="bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold px-4 py-2 rounded-lg">Pay & Sponsor</button>
+      </div>
+      <div class="text-xs font-bold uppercase text-slate-400 mb-1">Who Prioritized Today (Highest First)</div>
+      <div id="prio-list" class="max-h-48 overflow-y-auto border rounded-lg divide-y text-xs"></div>
+    </div>
+  </div>
+
+  <footer class="bg-white border-t border-slate-200 py-5 px-4 text-center text-xs text-slate-500 mt-10">
+    <div class="flex flex-wrap items-center justify-center gap-4 mb-1 font-semibold text-slate-600">
+      <a href="terms.html" class="hover:text-emerald-700 underline">Terms & Conditions</a>
+      <a href="faq.html" class="hover:text-emerald-700 underline">FAQ</a>
+      <button type="button" onclick="startSellingForCategory('motor', this)" class="hover:text-emerald-700 underline">Advertise With Us</button>
+      <button type="button" onclick="openInfoModal('contact')" class="hover:text-emerald-700 underline">Contact: 0710911645</button>
+    </div>
+    <div>Wariara Cars Central Rift · Call / WhatsApp: 0710911645</div>
+  </footer>
+
+  <aside id="cookie-notice" class="hidden fixed bottom-3 left-3 right-3 z-40 mx-auto max-w-xl rounded-xl border border-slate-300 bg-white p-4 shadow-xl" role="dialog" aria-label="Cookie and storage notice">
+    <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+      <p class="flex-1 text-sm text-slate-700">This site uses essential browser storage to keep you signed in and remember your preferences. No advertising cookies are used.</p>
+      <div class="flex gap-2 text-xs font-bold">
+        <button type="button" onclick="dismissCookieNotice()" class="rounded-lg bg-emerald-600 px-3 py-2 text-white">Okay</button>
+        <button type="button" onclick="dismissCookieNotice()" class="rounded-lg border border-slate-300 px-3 py-2 text-slate-700">Dismiss</button>
+      </div>
+    </div>
+  </aside>
+
   <script>
     const API_BASE = window.WARIARA_API_BASE || "https://carscrawers.onrender.com";
+    const PAYHERO_BACKEND_URL = window.PAYHERO_BACKEND_URL || "https://parero.vercel.app";
     const apiUrl = (path) => `${API_BASE}${path}`;
-    const subAdminSession = localStorage.getItem("wariara_sub_session") || "";
-    const isPrimaryAdmin = !subAdminSession;
-    let key = subAdminSession || localStorage.getItem("wariara_admin_key") || "";
-    let cachedOverview = null;
-    let postFilter = "all";
-    let adminReplacementPhotos = null;
+
+    let seller = JSON.parse(localStorage.getItem("wariara_seller") || "null");
+    let meta = { catalog: [], plans: [], settings: {} };
+    let cat = "motor";
+    let postCat = "motor";
+    let storeSlug = "";
+    let photos = [];
+    let pendingOpenPostModalAfterAccount = false;
+    let payHeroContext = null;
+    let pollTimer = null;
+    let firebaseAuthPromise = null;
+    let pendingFirebaseUser = null;
 
     async function runWithButtonLock(btn, fn) {
       const prevText = btn ? btn.textContent : "";
@@ -192,59 +682,20 @@
       }
     }
 
-    async function adminFetch(path, options = {}) {
-      const headers = {
-        ...(options.headers || {}),
-        "x-admin-key": key,
-      };
+    async function apiFetch(path, options = {}) {
+      const headers = { ...(options.headers || {}) };
       if (options.body && !headers["Content-Type"]) {
         headers["Content-Type"] = "application/json";
       }
       const res = await fetch(apiUrl(path), { ...options, headers });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const err = new Error(data.error || `Admin request failed (${res.status})`);
+        const err = new Error(data.error || `Request failed (${res.status})`);
         err.status = res.status;
+        err.data = data;
         throw err;
       }
       return data;
-    }
-
-    async function unlockAdmin(btn = null) {
-      await runWithButtonLock(btn, async () => {
-        key = document.getElementById("admin-key-input").value.trim();
-        localStorage.setItem("wariara_admin_key", key);
-        await loadAdmin();
-      });
-    }
-
-    function lockAdmin() {
-      if (subAdminSession) {
-        fetch(apiUrl("/api/admin/sub/logout"), {
-          method: "POST",
-          headers: { "x-admin-key": subAdminSession },
-          keepalive: true,
-        }).catch((error) => console.error("Could not revoke sub-admin session:", error));
-      }
-      key = "";
-      localStorage.removeItem("wariara_admin_key");
-      localStorage.removeItem("wariara_sub_session");
-      document.getElementById("admin-panel").classList.add("hidden");
-      document.getElementById("admin-gate").classList.remove("hidden");
-    }
-
-    function tab(t) {
-      ["posts", "payments", "dealers", "users", "config", "subadmins"].forEach((x) => {
-        document.getElementById(`sec-${x}`).classList.toggle("hidden", x !== t);
-        document.getElementById(`t-${x}`).className = x === t
-          ? "px-3.5 py-2 rounded-lg bg-emerald-600 text-white"
-          : "px-3.5 py-2 rounded-lg bg-white border";
-      });
-    }
-
-    function setPostFilter(f) {
-      postFilter = f;
-      renderAdminPosts();
     }
 
     function escapeHtml(value) {
@@ -253,517 +704,1066 @@
       })[char]);
     }
 
-    function formatAdminPostDetails(l) {
-      if (l.category === "motor") {
-        const parts = [
-          l.vehicle_type ? `Type: ${l.vehicle_type}` : "",
-          l.condition_type ? `Condition: ${l.condition_type}` : "",
-          l.body_type ? `Body: ${l.body_type}` : "",
-          l.year ? `Year: ${l.year}` : "",
-          l.reg_number ? `Reg: ${l.reg_number}` : "",
-          l.fuel_type ? `Fuel: ${l.fuel_type}` : "",
-          l.transmission ? `Trans: ${l.transmission}` : "",
-          l.drive_type ? `Drive: ${l.drive_type}-Hand` : "",
-          l.air_con ? `A/C: ${l.air_con}` : "",
-          l.engine_cc ? `Engine: ${l.engine_cc}cc` : "",
-          l.mileage_km ? `Mileage: ${Number(l.mileage_km).toLocaleString()} km` : "",
-          l.negotiable ? `Price: ${l.negotiable === "Yes" ? "Negotiable" : "Fixed"}` : "",
-        ].filter(Boolean);
-        return parts.join(" · ");
+    async function getFirebaseAuth() {
+      if (!firebaseAuthPromise) {
+        firebaseAuthPromise = (async () => {
+          const response = await fetch(apiUrl("/api/config"), { cache: "no-store" });
+          const config = await response.json().catch(() => ({}));
+          if (!response.ok || !config.firebase?.apiKey || !config.firebase?.projectId) {
+            throw new Error(config.error || "Firebase sign-in configuration is unavailable.");
+          }
+          const [appSdk, authSdk] = await Promise.all([
+            import("https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js"),
+            import("https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js"),
+          ]);
+          const app = appSdk.initializeApp(config.firebase);
+          const auth = authSdk.getAuth(app);
+          return {
+            auth,
+            createAccount: (email, password) => authSdk.createUserWithEmailAndPassword(auth, email, password),
+            signIn: (email, password) => authSdk.signInWithEmailAndPassword(auth, email, password),
+            signInWithGoogle: () => authSdk.signInWithPopup(auth, new authSdk.GoogleAuthProvider()),
+            sendPasswordReset: (email) => authSdk.sendPasswordResetEmail(auth, email),
+            signOut: () => authSdk.signOut(auth),
+          };
+        })();
       }
-      const partSpecs = [
-        l.part_name ? `Part: ${l.part_name}` : "",
-        l.part_make ? `Make: ${l.part_make}` : "",
-        l.part_model ? `Model: ${l.part_model}` : "",
-        l.year_from && l.year_to ? `Years: ${l.year_from}-${l.year_to}` : "",
-        l.part_condition ? `Condition: ${l.part_condition}` : "",
-        l.part_authenticity ? `Type: ${l.part_authenticity}` : "",
-        l.negotiable ? `Price: ${l.negotiable === "Yes" ? "Negotiable" : "Fixed"}` : "",
-      ].filter(Boolean);
-      return partSpecs.join(" · ");
+      try {
+        return await firebaseAuthPromise;
+      } catch (error) {
+        firebaseAuthPromise = null;
+        throw error;
+      }
     }
 
-    function renderAdminPosts() {
-      if (!cachedOverview) return;
-      const list = postFilter === "all"
-        ? cachedOverview.listings
-        : cachedOverview.listings.filter((l) => l.status === postFilter);
+    function firebaseAuthErrorMessage(error) {
+      if (error?.code === "auth/configuration-not-found") {
+        return "Firebase Authentication is not configured for this project. In Firebase Console, open Build > Authentication, click Get started, then enable Email/Password and Google sign-in providers.";
+      }
+      return error?.message || "Firebase sign-in is unavailable right now. Please try again.";
+    }
 
-      document.getElementById("admin-posts-list").innerHTML = list.map((l) => {
-        const remainingBadge = l.days_remaining !== null
-          ? `<span class="text-xs font-bold px-2 py-0.5 rounded ${l.days_remaining === 0 ? "bg-red-100 text-red-800" : "bg-emerald-50 text-emerald-800"}">${l.days_remaining} days remaining (70d)</span>`
-          : `<span class="text-xs text-slate-400">Free post</span>`;
+    async function boot() {
+      try {
+        meta = await apiFetch("/api/meta");
+        const brands = [...new Set(meta.catalog.map((x) => x.brand))];
+        document.getElementById("quick-makes").innerHTML =
+          `<button type="button" onclick="pickBrand('')" class="px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-semibold">All</button>` +
+          brands.slice(0, 8).map((b) => `<button type="button" onclick="pickBrand('${b}')" class="px-3 py-1 rounded-full bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-xs font-semibold">${b}</button>`).join("");
+        document.getElementById("f-brand").innerHTML = `<option value="">All Brands</option>` + brands.map((b) => `<option value="${b}">${b}</option>`).join("");
+        const bodies = [...new Set(meta.catalog.map((x) => x.body_type))];
+        document.getElementById("f-body").innerHTML = `<option value="">Body: All</option>` + bodies.map((b) => `<option value="${b}">${b}</option>`).join("");
+        fillPostBrands();
+        updateSellerPill();
 
-        return `
-          <div class="bg-white rounded-xl border ${l.status === "reported_suspended" || l.status === "rejected" ? "border-red-400" : l.status === "expired" ? "border-amber-300" : ""} p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div class="flex items-start gap-3">
-              <img src="${l.cover_photo || ""}" loading="lazy" class="w-20 h-16 object-cover rounded-lg bg-slate-100 shrink-0" />
-              <div>
-                <div class="font-bold flex flex-wrap items-center gap-1.5">
-                  <span>${l.title}</span>
-                  <span class="text-xs px-2 py-0.5 rounded bg-slate-100 uppercase">${l.status}</span>
-                  ${remainingBadge}
-                </div>
-                <div class="text-xs text-slate-700 font-semibold mt-0.5">KES ${Number(l.price_kes).toLocaleString()} · Location: ${l.town} · Seller: <strong>${l.seller_name}</strong> (WA: ${l.whatsapp_phone} | Call: ${l.call_phone})</div>
-                <div class="text-xs text-slate-600 mt-1">${formatAdminPostDetails(l)}</div>
-                ${l.description ? `<div class="text-xs text-slate-500 mt-1">Notes: ${l.description}</div>` : ""}
-                ${l.rejection_reason ? `<div class="text-xs text-red-700 font-bold mt-1">Rejection reason: ${escapeHtml(l.rejection_reason)}</div>` : ""}
-                ${l.report_reason ? `<div class="text-xs text-red-700 font-bold mt-0.5">Report Reason: ${l.report_reason}</div>` : ""}
-              </div>
-            </div>
-            <div class="flex flex-wrap gap-1.5 text-xs font-bold shrink-0">
-              ${l.status === "pending_approval" ? `
-                <button type="button" onclick="modPost('${l.id}','approve', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Accept</button>
-                <button type="button" onclick="modPost('${l.id}','reject', this)" class="bg-red-600 text-white px-3 py-1.5 rounded-lg">Reject</button>
-              ` : ""}
-              ${l.status === "reported_suspended" ? `
-                <button type="button" onclick="modPost('${l.id}','mark_safe', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Mark Safe (Restore)</button>
-                <button type="button" onclick="modPost('${l.id}','mark_unsafe', this)" class="bg-red-600 text-white px-3 py-1.5 rounded-lg">Mark Unsafe</button>
-              ` : ""}
-              ${l.status === "active" ? `<button type="button" onclick="modPost('${l.id}','pause', this)" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg">Pause Post</button>` : ""}
-              ${l.status === "paused" ? `<button type="button" onclick="modPost('${l.id}','unpause', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Unpause</button>` : ""}
-              ${["active", "paused"].includes(l.status) ? `<button type="button" onclick="modPost('${l.id}','sold', this)" class="bg-amber-500 text-white px-3 py-1.5 rounded-lg">Mark Sold</button>` : ""}
-              ${l.status !== "pending_approval" ? `<button type="button" onclick="editAdminListing('${l.id}')" class="rounded-lg border border-slate-300 px-3 py-1.5">Edit All</button>` : ""}
-            </div>
+        await loadListings();
+        const linkedPostId = new URLSearchParams(window.location.search).get("post");
+        if (linkedPostId) await openDetail(linkedPostId);
+        if (!localStorage.getItem("wariara_cookie_notice")) {
+          document.getElementById("cookie-notice").classList.remove("hidden");
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function updateSellerPill() {
+      document.getElementById("seller-pill-btn").textContent = seller ? seller.name : "Seller Account";
+    }
+
+    function switchPage(p, newCat = null) {
+      ["market", "dealers", "account-gate", "seller"].forEach((x) => {
+        document.getElementById(`page-${x}`).classList.add("hidden");
+      });
+      document.getElementById(`page-${p}`).classList.remove("hidden");
+      if (p === "market") {
+        if (newCat) setCat(newCat);
+        else loadListings();
+      }
+      if (p === "dealers") loadDealers();
+      if (p === "seller") renderSellerPage();
+    }
+
+    function setAuthTab(mode) {
+      const tabs = ["register", "login", "forgot"];
+      for (const t of tabs) {
+        document.getElementById(`form-${t}`).classList.toggle("hidden", t !== mode);
+        document.getElementById(`tab-${t}`).className = t === mode
+          ? "py-2 rounded-lg bg-emerald-600 text-white"
+          : "py-2 rounded-lg bg-slate-100 text-slate-700";
+      }
+      setFirebaseRegistrationMode(mode === "register" && Boolean(pendingFirebaseUser));
+    }
+
+    function setFirebaseRegistrationMode(enabled) {
+      const passwordFields = document.getElementById("s-password-fields");
+      const emailInput = document.getElementById("s-email");
+      const password = document.getElementById("s-pass");
+      const passwordConfirm = document.getElementById("s-pass-confirm");
+      passwordFields.classList.toggle("hidden", enabled);
+      password.required = !enabled;
+      passwordConfirm.required = !enabled;
+      emailInput.readOnly = enabled;
+      if (enabled && pendingFirebaseUser) {
+        emailInput.value = pendingFirebaseUser.email || "";
+        document.getElementById("s-name").value ||= pendingFirebaseUser.displayName || "";
+      }
+    }
+
+    async function signInWithGoogle(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        try {
+          const { signInWithGoogle: googlePopup } = await getFirebaseAuth();
+          const credential = await googlePopup();
+          const firebaseUser = credential.user;
+          const idToken = await firebaseUser.getIdToken();
+          try {
+            const result = await apiFetch("/api/sellers/login", {
+              method: "POST",
+              body: JSON.stringify({ firebase_id_token: idToken }),
+            });
+            pendingFirebaseUser = null;
+            setFirebaseRegistrationMode(false);
+            await completeSellerLogin(result.user);
+          } catch (error) {
+            if (error.status !== 404) throw error;
+            pendingFirebaseUser = firebaseUser;
+            setAuthTab("register");
+            switchPage("account-gate");
+            alert("Google sign-up started. Complete your seller profile and accept the Terms to continue.");
+          }
+        } catch (error) {
+          alert(firebaseAuthErrorMessage(error));
+        }
+      });
+    }
+
+    function openSellerWorkspace() {
+      if (!seller) {
+        switchPage("account-gate");
+        return;
+      }
+      switchPage("seller");
+    }
+
+    async function signOutSeller() {
+      try {
+        const firebase = await getFirebaseAuth();
+        await firebase.signOut();
+      } catch (error) {
+        console.error("Could not sign out from Firebase.", error);
+      }
+      seller = null;
+      pendingFirebaseUser = null;
+      setFirebaseRegistrationMode(false);
+      localStorage.removeItem("wariara_seller");
+      updateSellerPill();
+      switchPage("account-gate");
+    }
+
+    function openInfoModal(kind) {
+      if (kind === "advertise") {
+        startSellingForCategory("motor");
+        return;
+      }
+      if (kind === "faq") {
+        window.location.href = "faq.html";
+        return;
+      }
+      const body = document.getElementById("info-modal-body");
+      body.innerHTML = `
+          <h2 class="text-xl font-extrabold text-slate-900">Contact Us</h2>
+          <p class="text-slate-600">Reach Wariara Cars Central Rift support, dealer desk, or advertising team:</p>
+          <div class="p-3.5 rounded-xl bg-slate-50 border text-xs space-y-1">
+            <div><strong>Phone:</strong> 0710911645</div>
+            <div><strong>Terms & Conditions:</strong> <a href="terms.html" class="text-emerald-700 underline font-bold">View terms.html</a></div>
+          </div>
+          <div class="text-xs font-bold">
+            <a href="tel:0710911645" class="bg-slate-900 text-white text-center py-2.5 rounded-lg">Call 0710911645</a>
           </div>
         `;
-      }).join("");
+      document.getElementById("modal-info").classList.remove("hidden");
     }
 
-    function renderDealersTab() {
-      if (!cachedOverview) return;
-      const dealers = (cachedOverview.users || []).filter((u) => u.role === "dealer");
-      document.getElementById("admin-dealers-list").innerHTML =
-        dealers.length === 0
-          ? `<div class="py-4 text-slate-500">No dealers marked yet.</div>`
-          : dealers.map((d) => `
-              <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <strong class="text-sm text-slate-900">${d.name}</strong>
-                  <span class="ml-2 text-xs text-slate-500">${d.town} · ${d.email || ""} · WA: ${d.whatsapp_phone}</span>
-                </div>
-                <button type="button" onclick="removeDealer('${d.id}', this)" class="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg self-start sm:self-auto">
-                  Remove Dealer
-                </button>
+    function setCat(c) {
+      cat = c;
+      document.getElementById("btn-cat-motor").className = c === "motor"
+        ? "px-4 py-2 rounded-lg text-sm font-bold bg-white text-emerald-700 shadow-sm"
+        : "px-4 py-2 rounded-lg text-sm font-bold text-slate-600";
+      document.getElementById("btn-cat-part").className = c === "part"
+        ? "px-4 py-2 rounded-lg text-sm font-bold bg-white text-emerald-700 shadow-sm"
+        : "px-4 py-2 rounded-lg text-sm font-bold text-slate-600";
+      document.getElementById("motor-filters").classList.toggle("hidden", c !== "motor");
+      document.getElementById("part-filters").classList.toggle("hidden", c !== "part");
+      document.getElementById("part-filters").classList.toggle("grid", c === "part");
+      loadListings();
+    }
+
+    function pickBrand(b) {
+      document.getElementById("f-brand").value = b;
+      syncFilterModels();
+      loadListings();
+    }
+
+    function syncFilterModels() {
+      const b = document.getElementById("f-brand").value;
+      const ms = [...new Set(meta.catalog.filter((x) => !b || x.brand === b).map((x) => x.model))];
+      document.getElementById("f-model").innerHTML = `<option value="">All Models</option>` + ms.map((m) => `<option value="${m}">${m}</option>`).join("");
+    }
+
+    function setBudget(min, max) {
+      document.getElementById("f-min-p").value = min;
+      document.getElementById("f-max-p").value = max;
+      loadListings();
+    }
+
+    function resetAllFilters() {
+      storeSlug = "";
+      document.getElementById("store-filter-tag").classList.add("hidden");
+      ["f-q","f-seller","f-town","f-brand","f-model","f-min-p","f-max-p","f-vtype","f-body","f-cond","f-fuel","f-trans","f-drive","f-ac","f-min-yr","f-pcond","f-pauth","f-pyr"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+      loadListings();
+    }
+
+    function buildSpecsBadges(item) {
+      if (item.category === "motor") {
+        return [
+          item.vehicle_type ? `Type: ${item.vehicle_type}` : "",
+          item.condition_type ? `Condition: ${item.condition_type}` : "",
+          item.body_type ? `Body: ${item.body_type}` : "",
+          item.year ? `Year: ${item.year}` : "",
+          item.reg_number ? `Reg: ${item.reg_number}` : "",
+          item.fuel_type ? `Fuel: ${item.fuel_type}` : "",
+          item.transmission ? `Trans: ${item.transmission}` : "",
+          item.drive_type ? `Drive: ${item.drive_type}-Hand` : "",
+          item.air_con ? `A/C: ${item.air_con}` : "",
+          item.engine_cc ? `Engine: ${item.engine_cc}cc` : "",
+          item.mileage_km ? `Mileage: ${Number(item.mileage_km).toLocaleString()} km` : "",
+        ].filter(Boolean);
+      }
+      return [
+        item.part_name ? `Part: ${item.part_name}` : "",
+        item.part_make ? `Make: ${item.part_make}` : "",
+        item.part_model ? `Model: ${item.part_model}` : "",
+        item.year_from && item.year_to ? `Years: ${item.year_from}-${item.year_to}` : "",
+        item.part_condition ? `Condition: ${item.part_condition}` : "",
+        item.part_authenticity ? `Type: ${item.part_authenticity}` : "",
+      ].filter(Boolean);
+    }
+
+    async function loadListings(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        const qs = new URLSearchParams({ category: cat, sort: document.getElementById("f-sort").value });
+        const fields = {
+          q: "f-q", seller: "f-seller", town: "f-town", brand: "f-brand", model: "f-model",
+          min_price: "f-min-p", max_price: "f-max-p", vehicle_type: "f-vtype",
+          body_type: "f-body", condition_type: cat === "motor" ? "f-cond" : "f-pcond",
+          fuel_type: "f-fuel", transmission: "f-trans", drive_type: "f-drive",
+          air_con: "f-ac", min_year: cat === "motor" ? "f-min-yr" : "f-pyr",
+          part_authenticity: "f-pauth",
+        };
+        for (const [k, id] of Object.entries(fields)) {
+          const v = document.getElementById(id)?.value;
+          if (v) qs.set(k, v);
+        }
+        if (storeSlug) qs.set("seller_slug", storeSlug);
+
+        const { listings = [] } = await apiFetch(`/api/listings?${qs.toString()}`);
+        document.getElementById("count-label").textContent = listings.length;
+
+        if (listings.length === 0) {
+          document.getElementById("market-grid").innerHTML =
+            `<div class="col-span-full bg-white rounded-xl border border-slate-200 p-8 text-center text-sm text-slate-500">No approved active listings match your filters.</div>`;
+          return;
+        }
+
+        document.getElementById("market-grid").innerHTML = listings.map((item) => {
+          const specs = buildSpecsBadges(item);
+          return `
+            <div class="bg-white rounded-xl border ${item.is_sponsored ? "border-amber-400 ring-1 ring-amber-300" : "border-slate-200"} overflow-hidden flex flex-col card-lift">
+              <div class="relative aspect-[16/10] bg-slate-100 cursor-pointer" onclick="openDetail('${item.id}')">
+                <img src="${item.cover_photo || ""}" alt="${item.title}" loading="lazy" class="w-full h-full object-cover" />
+                ${item.is_sponsored ? `<span class="absolute top-2 left-2 bg-amber-400 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase">Sponsored</span>` : ""}
+                <span class="absolute bottom-2 right-2 bg-black/65 text-white text-[10px] px-2 py-0.5 rounded">${item.photo_count}/6 photos</span>
               </div>
-            `).join("");
-    }
-
-    async function loadAdmin() {
-      if (!key) return;
-      try {
-        const d = await adminFetch("/api/admin/overview");
-        cachedOverview = d;
-        document.getElementById("admin-gate").classList.add("hidden");
-        document.getElementById("admin-panel").classList.remove("hidden");
-
-        renderAdminPosts();
-        renderDealersTab();
-        if (isPrimaryAdmin) {
-          document.getElementById("t-subadmins").classList.remove("hidden");
-          await loadSubAdmins();
-        } else {
-          document.getElementById("t-subadmins").classList.add("hidden");
-        }
-
-        document.getElementById("payment-notifs-list").innerHTML =
-          (d.paymentNotifications || []).length === 0
-            ? `<div class="py-4 text-slate-500 text-xs">No confirmed payments yet.</div>`
-            : d.paymentNotifications.map((n) => `
-                <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <div class="font-bold text-slate-900">${n.payer_name} <span class="text-xs font-normal text-slate-500">(${n.payer_phone || n.payer_email || ""})</span></div>
-                    <div class="text-xs text-slate-600">Paid for: <strong>${n.purpose}</strong> · Ref: ${n.payment_ref || "-"}</div>
-                  </div>
-                  <div class="text-right">
-                    <span class="font-black text-emerald-700">KES ${Number(n.amount_kes).toLocaleString()}</span>
-                    <div class="text-[11px] text-slate-400">${n.created_at || ""}</div>
+              <div class="p-4 flex-1 flex flex-col justify-between">
+                <div>
+                  <h3 onclick="openDetail('${item.id}')" class="font-bold text-slate-900 cursor-pointer hover:text-emerald-700">${item.title}</h3>
+                  <p class="text-xs text-slate-500 mt-0.5">Location: ${item.town} · Seller: <button type="button" onclick="filterStore('${item.seller_slug}','${item.seller_name}')" class="underline font-semibold text-slate-700">${item.seller_name}</button></p>
+                  <div class="flex flex-wrap gap-1 mt-2">
+                    ${specs.map((s) => `<span class="text-[10px] font-semibold bg-slate-100 text-slate-800 px-2 py-0.5 rounded">${s}</span>`).join("")}
                   </div>
                 </div>
-              `).join("");
+                <div class="mt-3 pt-3 border-t border-slate-100">
+                  <div class="flex items-baseline justify-between">
+                    <span class="font-extrabold text-emerald-700 text-base">KES ${Number(item.price_kes).toLocaleString()}</span>
+                    <span class="text-[11px] text-slate-500">Price: ${item.negotiable === "Yes" ? "Negotiable" : "Fixed"}</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-1.5 mt-2.5 text-xs font-bold">
+                    <a href="tel:${item.call_phone}" class="bg-slate-900 hover:bg-slate-800 text-white text-center py-1.5 rounded-lg">Call Seller</a>
+                    <button type="button" onclick="reportPost('${item.id}', this)" class="border border-red-200 text-red-600 hover:bg-red-50 py-1.5 rounded-lg">Report</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("");
+      });
+    }
 
-        document.getElementById("users-rows").innerHTML = d.users.map((u) => `
-          <tr>
-            <td class="py-2.5 pr-3"><strong>${u.name}</strong><div class="text-slate-400">${u.role} · ${u.town}</div></td>
-            <td class="py-2.5 pr-3">${u.email}<div>WA: ${u.whatsapp_phone} | Call: ${u.call_phone}</div></td>
-            <td class="py-2.5 pr-3">Free: <strong>${u.free_posts_used}/6</strong><div>Credits: <strong>${u.paid_post_credits}</strong></div></td>
-            <td class="py-2.5 pr-3"><strong>${u.total_purchased_posts}</strong> posts (KES ${Number(u.total_spent_kes).toLocaleString()})</td>
-            <td class="py-2.5 pr-3">
-              ${u.is_suspended ? `<span class="text-red-700 font-bold">SUSPENDED</span> (${u.suspension_reason || ""})` : `<span class="text-emerald-700 font-bold">Active</span>`}
-              ${u.appeal_status === "pending" ? `<div class="bg-amber-50 border p-1.5 rounded mt-1">Appeal: ${u.appeal_text}</div>` : ""}
-            </td>
-            <td class="py-2.5 space-y-1">
-              <button type="button" onclick="gift('${u.id}','${u.name}', this)" class="block w-full bg-emerald-600 text-white font-bold px-2 py-1 rounded">Gift Posts</button>
-              ${u.role !== "dealer"
-                ? `<button type="button" onclick="markExistingDealer('${u.id}', this)" class="block w-full bg-amber-500 text-slate-950 font-bold px-2 py-1 rounded">Make Dealer</button>`
-                : `<button type="button" onclick="removeDealer('${u.id}', this)" class="block w-full bg-slate-600 text-white font-bold px-2 py-1 rounded">Remove Dealer</button>`}
-              ${u.is_suspended
-                ? `<button type="button" onclick="susp('${u.id}',false, this)" class="block w-full bg-slate-900 text-white font-bold px-2 py-1 rounded">Restore</button>`
-                : `<button type="button" onclick="susp('${u.id}',true, this)" class="block w-full bg-red-600 text-white font-bold px-2 py-1 rounded">Suspend</button>`}
-            </td>
-          </tr>
-        `).join("");
+    function filterStore(slug, name) {
+      storeSlug = slug;
+      const t = document.getElementById("store-filter-tag");
+      t.textContent = `Seller: ${name}`;
+      t.classList.remove("hidden");
+      loadListings();
+    }
 
-        document.getElementById("cfg-prio").value = d.settings.base_priority_price_kes || 300;
-        document.getElementById("plans-edit").innerHTML = d.plans.map((p) => `
-          <div class="grid grid-cols-4 gap-1.5 text-xs">
-            <input id="pn-${p.id}" value="${p.name}" class="border rounded px-2 py-1" />
-            <input id="pc-${p.id}" type="number" value="${p.post_count}" class="border rounded px-2 py-1" />
-            <input id="pp-${p.id}" type="number" value="${p.price_kes}" class="border rounded px-2 py-1" />
-            <button type="button" onclick="updPlan('${p.id}', this)" class="bg-emerald-600 text-white font-bold rounded">Save</button>
+    async function openDetail(id) {
+      const { listing } = await apiFetch(`/api/listings/${id}`);
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set("post", id);
+      history.replaceState(null, "", currentUrl);
+      const specs = buildSpecsBadges(listing);
+      document.getElementById("detail-body").innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <img id="main-p" src="${listing.photos[0]?.photo_data || ""}" loading="lazy" class="w-full aspect-[4/3] object-cover rounded-xl border" />
+            <div class="grid grid-cols-6 gap-2 mt-2">
+              ${listing.photos.map((p) => `<img src="${p.photo_data}" loading="lazy" onclick="document.getElementById('main-p').src=this.src" class="aspect-square object-cover rounded-lg cursor-pointer border" />`).join("")}
+            </div>
           </div>
-        `).join("");
-      } catch {
-        lockAdmin();
-      }
+          <div>
+            <span class="text-xs font-bold text-emerald-700 uppercase">Location: ${listing.town} · Price: ${listing.negotiable === "Yes" ? "Negotiable" : "Fixed Price"}</span>
+            <h2 class="text-2xl font-extrabold mt-1">${listing.title}</h2>
+            <div class="text-2xl font-black text-emerald-700 my-2">KES ${Number(listing.price_kes).toLocaleString()}</div>
+            <div class="flex flex-wrap gap-1.5 mb-3">
+              ${specs.map((s) => `<span class="text-xs bg-slate-100 text-slate-800 px-2.5 py-1 rounded-md font-semibold">${s}</span>`).join("")}
+            </div>
+            <p class="text-sm text-slate-600 whitespace-pre-line">${listing.description || ""}</p>
+            <div class="mt-4 p-4 rounded-xl bg-slate-50 border">
+              <div class="font-bold">Seller: ${listing.seller_name}</div>
+              <div class="text-xs text-slate-500 mt-0.5">Call: ${listing.call_phone}</div>
+              <div class="mt-3 text-sm font-bold">
+                <a href="tel:${listing.call_phone}" class="block bg-slate-900 text-white text-center py-2.5 rounded-lg">Call ${listing.call_phone}</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById("modal-detail").classList.remove("hidden");
     }
 
-    async function addDealerSubmit(e, btn = null) {
-      e.preventDefault();
+    async function reportPost(id, btn = null) {
+      const reason = prompt("Reason for reporting (post is automatically suspended for Admin review):");
+      if (!reason) return;
       await runWithButtonLock(btn, async () => {
-        const d = await adminFetch("/api/admin/dealers", {
+        const d = await apiFetch(`/api/listings/${id}/report`, {
           method: "POST",
-          body: JSON.stringify({
-            name: document.getElementById("dl-name").value,
-            email: document.getElementById("dl-email").value,
-            whatsapp_phone: document.getElementById("dl-wa").value,
-            call_phone: document.getElementById("dl-call").value,
-            town: document.getElementById("dl-town").value,
-          }),
+          body: JSON.stringify({ reason }),
         });
         alert(d.message);
-        e.target.reset();
-        document.getElementById("dl-town").value = "Nakuru";
-        await loadAdmin();
+        await loadListings();
       });
     }
 
-    async function markExistingDealer(userId, btn = null) {
+    async function loadDealers() {
+      const { dealers = [] } = await apiFetch("/api/dealers");
+      document.getElementById("dealers-list").innerHTML = dealers.length === 0
+        ? `<div class="col-span-full bg-white rounded-xl border p-6 text-center text-xs text-slate-500">No dealers listed yet.</div>`
+        : dealers.map((d) => `
+            <div class="bg-white rounded-xl border p-4">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-bold text-emerald-700">${d.town}</span>
+                <span class="text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Verified Dealer</span>
+              </div>
+              <div class="font-extrabold text-lg mt-0.5">${d.name}</div>
+              <div class="text-xs text-slate-500 mb-3">${d.active_listings} approved active posts · Call: ${d.call_phone}</div>
+              <button type="button" onclick="switchPage('market'); filterStore('${d.shop_slug}','${d.name}')" class="bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded-lg">View Posts</button>
+            </div>
+          `).join("");
+    }
+
+    async function openSellerOnboardingModal(btn = null) {
       await runWithButtonLock(btn, async () => {
-        const d = await adminFetch("/api/admin/dealers", {
-          method: "POST",
-          body: JSON.stringify({ user_id: userId }),
-        });
-        alert(d.message);
-        await loadAdmin();
+        document.getElementById("modal-sell-with-us").classList.remove("hidden");
       });
     }
 
-    async function removeDealer(userId, btn = null) {
-      await runWithButtonLock(btn, async () => {
-        const d = await adminFetch(`/api/admin/dealers/${userId}`, {
-          method: "DELETE",
-        });
-        alert(d.message);
-        await loadAdmin();
-      });
+    async function startSellingForCategory(selectedCat, btn = null) {
+      postCat = selectedCat === "part" ? "part" : "motor";
+      await startSellingFlow(btn);
     }
 
-    async function modPost(id, action, btn = null) {
+    async function startSellingFlow(btn = null) {
       await runWithButtonLock(btn, async () => {
-        const payload = { action };
-        if (action === "reject") {
-          const reason = prompt("Enter the reason for rejecting this post:");
-          if (reason === null) return;
-          payload.reason = reason.trim();
-          if (!payload.reason) return alert("A rejection reason is required.");
+        if (!seller) {
+          pendingOpenPostModalAfterAccount = true;
+          switchPage("account-gate");
+          return;
         }
-        await adminFetch(`/api/admin/listings/${id}/moderate`, { method: "POST", body: JSON.stringify(payload) });
-        await loadAdmin();
+        if (seller.is_suspended) {
+          alert("Your account is suspended. Submit a review request on your Seller page.");
+          switchPage("seller");
+          return;
+        }
+        openCreatePostModal(postCat);
       });
     }
 
-    async function loadSubAdmins() {
-      const { accounts, emailjs_configured } = await adminFetch("/api/admin/sub-accounts");
-      document.getElementById("subadmin-emailjs-status").textContent = emailjs_configured
-        ? "EmailJS is configured for verification codes."
-        : "EmailJS is not fully configured on the API server. PIN-only logins still work.";
-      const container = document.getElementById("subadmin-slots");
-      container.replaceChildren();
-      for (const account of accounts) {
-        const card = document.createElement("section");
-        card.className = "rounded-xl border border-slate-200 p-4 space-y-2";
-        const heading = document.createElement("h4");
-        heading.className = "font-bold text-sm";
-        heading.textContent = `Sub-admin ${account.slot}`;
-        card.append(heading);
+    function openCreatePostModal(initialCat = "motor") {
+      document.querySelector("#modal-post form").reset();
+      document.getElementById("edit-id").value = "";
+      document.getElementById("post-modal-title").textContent = "Create New Post (Description required)";
+      document.getElementById("post-cat-toggle").classList.remove("hidden");
+      photos = [];
+      document.getElementById("c-files").value = "";
+      document.getElementById("c-previews").innerHTML = "";
+      setPostCat(initialCat);
+      document.getElementById("modal-post").classList.remove("hidden");
+    }
 
-        const activeLabel = document.createElement("label");
-        activeLabel.className = "flex items-center gap-2 text-xs font-semibold";
-        const active = document.createElement("input");
-        active.type = "checkbox";
-        active.dataset.subadminActive = "";
-        active.checked = account.active;
-        const activeText = document.createElement("span");
-        activeText.textContent = "Enable this login";
-        activeLabel.append(active, activeText);
-        card.append(activeLabel);
-
-        const pin = document.createElement("input");
-        pin.type = "password";
-        pin.inputMode = "numeric";
-        pin.pattern = "[0-9]{6}";
-        pin.maxLength = 6;
-        pin.placeholder = account.active ? "New 6-digit PIN (blank keeps current)" : "New 6-digit PIN";
-        pin.dataset.subadminPin = "";
-        pin.className = "w-full rounded-lg border px-3 py-2 text-sm";
-        card.append(pin);
-
-        const email = document.createElement("input");
-        email.type = "email";
-        email.value = account.email;
-        email.placeholder = "Email for optional sign-in code";
-        email.dataset.subadminEmail = "";
-        email.className = "w-full rounded-lg border px-3 py-2 text-sm";
-        card.append(email);
-
-        const codeLabel = document.createElement("label");
-        codeLabel.className = "flex items-center gap-2 text-xs";
-        const code = document.createElement("input");
-        code.type = "checkbox";
-        code.checked = account.email_code_enabled;
-        code.dataset.subadminEmailCode = "";
-        const codeText = document.createElement("span");
-        codeText.textContent = "Require a one-time email code at login";
-        codeLabel.append(code, codeText);
-        card.append(codeLabel);
-
-        const slot = document.createElement("input");
-        slot.type = "hidden";
-        slot.value = String(account.slot);
-        slot.dataset.subadminSlot = "";
-        card.append(slot);
-        container.append(card);
+    async function openEditPost(id) {
+      const { listing } = await apiFetch(`/api/listings/${id}`);
+      document.getElementById("edit-id").value = listing.id;
+      document.getElementById("post-modal-title").textContent = "Edit Post Info";
+      document.getElementById("post-cat-toggle").classList.add("hidden");
+      setPostCat(listing.category);
+      document.getElementById("c-price").value = listing.price_kes ?? "";
+      document.getElementById("c-neg").value = listing.negotiable || "";
+      document.getElementById("c-town").value = listing.town || "";
+      document.getElementById("c-desc").value = listing.description || "";
+      if (listing.category === "motor") {
+        document.getElementById("m-type").value = listing.vehicle_type || "";
+        fillPostBrands();
+        document.getElementById("m-brand").value = listing.brand || "";
+        fillPostModels();
+        document.getElementById("m-model").value = listing.model || "";
+        document.getElementById("m-body").value = listing.body_type || "";
+        document.getElementById("m-cond").value = listing.condition_type || "";
+        document.getElementById("m-year").value = listing.year || "";
+        document.getElementById("m-reg").value = listing.reg_number || "";
+        document.getElementById("m-fuel").value = listing.fuel_type || "";
+        document.getElementById("m-trans").value = listing.transmission || "";
+        document.getElementById("m-drive").value = listing.drive_type || "";
+        document.getElementById("m-ac").value = listing.air_con || "";
+        document.getElementById("m-cc").value = listing.engine_cc || "";
+        document.getElementById("m-km").value = listing.mileage_km || "";
+      } else {
+        document.getElementById("p-name").value = listing.part_name || "";
+        document.getElementById("p-make").value = listing.part_make || "";
+        document.getElementById("p-model").value = listing.part_model || "";
+        document.getElementById("p-yfrom").value = listing.year_from || "";
+        document.getElementById("p-yto").value = listing.year_to || "";
+        document.getElementById("p-cond").value = listing.part_condition || "";
+        document.getElementById("p-auth").value = listing.part_authenticity || "";
       }
+      photos = listing.photos.map((p) => p.photo_data);
+      renderPreviews();
+      document.getElementById("modal-post").classList.remove("hidden");
     }
 
-    async function saveSubAdmins(btn = null) {
-      await runWithButtonLock(btn, async () => {
-        const accounts = [...document.querySelectorAll("#subadmin-slots [data-subadmin-slot]")].map((slot) => {
-          const card = slot.closest("section");
-          return {
-            slot: Number(slot.value),
-            active: card.querySelector("[data-subadmin-active]").checked,
-            pin: card.querySelector("[data-subadmin-pin]").value,
-            email: card.querySelector("[data-subadmin-email]").value.trim(),
-            email_code_enabled: card.querySelector("[data-subadmin-email-code]").checked,
-          };
-        });
-        const status = document.getElementById("subadmin-status");
-        status.textContent = "";
-        try {
-          const result = await adminFetch("/api/admin/sub-accounts", {
-            method: "PUT",
-            body: JSON.stringify({ accounts }),
-          });
-          status.textContent = result.message;
-          await loadSubAdmins();
-        } catch (error) {
-          status.textContent = error.message;
-        }
-      });
+    function setPostCat(c) {
+      postCat = c;
+      const isMotor = c === "motor";
+      document.getElementById("motor-form").classList.toggle("hidden", !isMotor);
+      document.getElementById("part-form").classList.toggle("hidden", isMotor);
+      document.getElementById("part-form").classList.toggle("grid", !isMotor);
+
+      document.querySelectorAll("#motor-form input, #motor-form select, #part-form input, #part-form select, #c-price, #c-neg, #c-town, #c-files")
+        .forEach((el) => { el.required = false; });
+
+      document.getElementById("pcat-motor").className = isMotor
+        ? "py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white"
+        : "py-2 rounded-lg font-bold text-sm bg-slate-100";
+      document.getElementById("pcat-part").className = !isMotor
+        ? "py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white"
+        : "py-2 rounded-lg font-bold text-sm bg-slate-100";
     }
 
-    async function editAdminListing(id) {
-      try {
-        const { listing } = await adminFetch(`/api/listings/${encodeURIComponent(id)}`);
-        const fields = [
-          ["title", "Title", "text"], ["seller_name", "Seller name", "text"],
-          ["seller_slug", "Seller profile slug", "text"], ["whatsapp_phone", "WhatsApp contact", "text"],
-          ["call_phone", "Phone contact", "text"], ["town", "Town", "text"],
-          ["price_kes", "Price (KES)", "number"], ["negotiable", "Negotiable", "text"],
-        ];
-        if (listing.category === "motor") {
-          fields.push(
-            ["vehicle_type", "Vehicle type", "text"], ["condition_type", "Condition", "text"],
-            ["brand", "Brand", "text"], ["model", "Model", "text"], ["body_type", "Body type", "text"],
-            ["year", "Year", "number"], ["reg_number", "Registration number", "text"],
-            ["fuel_type", "Fuel", "text"], ["transmission", "Transmission", "text"],
-            ["drive_type", "Drive type", "text"], ["air_con", "Air conditioning", "text"],
-            ["engine_cc", "Engine size (cc)", "number"], ["mileage_km", "Mileage (km)", "number"],
-          );
-        } else {
-          fields.push(
-            ["part_name", "Part name", "text"], ["part_make", "Vehicle make", "text"],
-            ["part_model", "Vehicle model", "text"], ["year_from", "Year from", "number"],
-            ["year_to", "Year to", "number"], ["part_condition", "Condition", "text"],
-            ["part_authenticity", "Authenticity", "text"],
-          );
-        }
-
-        const container = document.getElementById("admin-edit-fields");
-        container.replaceChildren();
-        for (const [name, label, type] of fields) {
-          const wrap = document.createElement("label");
-          wrap.className = "text-xs font-bold";
-          wrap.textContent = label;
-          const input = document.createElement("input");
-          input.type = type;
-          input.id = `admin-edit-${name}`;
-          input.value = listing[name] ?? "";
-          input.className = "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal";
-          wrap.append(input);
-          container.append(wrap);
-        }
-        const descriptionWrap = document.createElement("label");
-        descriptionWrap.className = "text-xs font-bold sm:col-span-2";
-        descriptionWrap.textContent = "Description";
-        const description = document.createElement("textarea");
-        description.id = "admin-edit-description";
-        description.rows = 4;
-        description.value = listing.description || "";
-        description.className = "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal";
-        descriptionWrap.append(description);
-        container.append(descriptionWrap);
-
-        const photoContainer = document.getElementById("admin-edit-photos");
-        photoContainer.replaceChildren();
-        for (const photo of listing.photos || []) {
-          const image = document.createElement("img");
-          image.src = photo.photo_data;
-          image.alt = "Current listing photo";
-          image.loading = "lazy";
-          image.className = "aspect-square w-full rounded-lg border object-cover";
-          photoContainer.append(image);
-        }
-        adminReplacementPhotos = null;
-        document.getElementById("admin-edit-id").value = id;
-        document.getElementById("admin-edit-files").value = "";
-        document.getElementById("admin-edit-modal").classList.remove("hidden");
-      } catch (error) {
-        alert(error.message);
-      }
+    function fillPostBrands() {
+      const vt = document.getElementById("m-type").value;
+      const bs = [...new Set(meta.catalog.filter((x) => x.vehicle_type === vt).map((x) => x.brand))];
+      document.getElementById("m-brand").innerHTML =
+        `<option value="">Select brand</option>` + bs.map((b) => `<option value="${b}">${b}</option>`).join("");
+      fillPostModels();
     }
 
-    async function compressAdminPhoto(file) {
-      return new Promise((resolve, reject) => {
+    function fillPostModels() {
+      const vt = document.getElementById("m-type").value;
+      const br = document.getElementById("m-brand").value;
+      const ms = [...new Set(meta.catalog.filter((x) => x.vehicle_type === vt && x.brand === br).map((x) => x.model))];
+      document.getElementById("m-model").innerHTML =
+        `<option value="">Select model</option>` + ms.map((m) => `<option value="${m}">${m}</option>`).join("");
+      fillPostBody();
+    }
+
+    function fillPostBody() {
+      const vt = document.getElementById("m-type").value;
+      const br = document.getElementById("m-brand").value;
+      const mo = document.getElementById("m-model").value;
+      const match = meta.catalog.find((x) => x.vehicle_type === vt && x.brand === br && x.model === mo);
+      document.getElementById("m-body").value = match?.body_type || "";
+    }
+
+    async function onFilesSelected(e) {
+      const list = Array.from(e.target.files).slice(0, 6);
+      if (e.target.files.length > 6) alert("Maximum 6 photos per post.");
+      photos = [];
+      for (const f of list) photos.push(await compress(f));
+      renderPreviews();
+    }
+
+    function compress(file) {
+      return new Promise((res) => {
         const reader = new FileReader();
-        reader.onerror = () => reject(new Error("Could not read the selected photo."));
-        reader.onload = () => {
-          const image = new Image();
-          image.onerror = () => reject(new Error("The selected file is not a valid image."));
-          image.onload = () => {
-            const scale = Math.min(1, 1050 / image.width);
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            const scale = Math.min(1, 1050 / img.width);
             const canvas = document.createElement("canvas");
-            canvas.width = image.width * scale;
-            canvas.height = image.height * scale;
-            canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
-            resolve(canvas.toDataURL("image/jpeg", 0.78));
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+            res(canvas.toDataURL("image/jpeg", 0.78));
           };
-          image.src = reader.result;
+          img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
       });
     }
 
-    async function saveAdminListing(event, btn = null) {
-      event.preventDefault();
+    function renderPreviews() {
+      document.getElementById("c-previews").innerHTML = photos.map((p) => `<img src="${p}" class="w-full aspect-square object-cover rounded-lg border" />`).join("");
+    }
+
+    async function submitPost(e, btn = null) {
+      e.preventDefault();
+      if (!seller) {
+        pendingOpenPostModalAfterAccount = true;
+        closeM("modal-post");
+        switchPage("account-gate");
+        return;
+      }
       await runWithButtonLock(btn, async () => {
+        const editId = document.getElementById("edit-id").value;
+        const payload = {
+          seller_id: seller.id,
+          category: postCat,
+          price_kes: document.getElementById("c-price").value,
+          negotiable: document.getElementById("c-neg").value,
+          town: document.getElementById("c-town").value,
+          description: document.getElementById("c-desc").value,
+          photos,
+        };
+        if (postCat === "motor") {
+          Object.assign(payload, {
+            vehicle_type: document.getElementById("m-type").value,
+            condition_type: document.getElementById("m-cond").value,
+            brand: document.getElementById("m-brand").value,
+            model: document.getElementById("m-model").value,
+            body_type: document.getElementById("m-body").value,
+            year: document.getElementById("m-year").value,
+            reg_number: document.getElementById("m-reg").value,
+            fuel_type: document.getElementById("m-fuel").value,
+            transmission: document.getElementById("m-trans").value,
+            drive_type: document.getElementById("m-drive").value,
+            air_con: document.getElementById("m-ac").value,
+            engine_cc: document.getElementById("m-cc").value,
+            mileage_km: document.getElementById("m-km").value,
+          });
+        } else {
+          Object.assign(payload, {
+            part_name: document.getElementById("p-name").value,
+            part_make: document.getElementById("p-make").value,
+            part_model: document.getElementById("p-model").value,
+            year_from: document.getElementById("p-yfrom").value,
+            year_to: document.getElementById("p-yto").value,
+            part_condition: document.getElementById("p-cond").value,
+            part_authenticity: document.getElementById("p-auth").value,
+          });
+        }
+
         try {
-          const id = document.getElementById("admin-edit-id").value;
-          const payload = { description: document.getElementById("admin-edit-description").value };
-          for (const input of document.querySelectorAll("#admin-edit-fields input")) {
-            payload[input.id.replace("admin-edit-", "")] = input.value;
-          }
-          if (adminReplacementPhotos !== null) payload.photos = adminReplacementPhotos;
-          await adminFetch(`/api/admin/listings/${encodeURIComponent(id)}`, {
-            method: "PUT",
+          const d = await apiFetch(editId ? `/api/listings/${editId}` : "/api/listings", {
+            method: editId ? "PUT" : "POST",
             body: JSON.stringify(payload),
           });
-          closeAdminEdit();
-          await loadAdmin();
-        } catch (error) {
-          alert(error.message);
+          alert(d.message);
+          closeM("modal-post");
+          switchPage("seller");
+        } catch (err) {
+          alert(firebaseAuthErrorMessage(err));
+          if (err.data?.needs_plan) {
+            closeM("modal-post");
+            switchPage("seller");
+          }
         }
       });
     }
 
-    function closeAdminEdit() {
-      document.getElementById("admin-edit-modal").classList.add("hidden");
-    }
-
-    document.getElementById("admin-edit-files").addEventListener("change", async (event) => {
-      try {
-        const files = Array.from(event.target.files || []);
-        if (files.length > 6) {
-          event.target.value = "";
-          throw new Error("Please choose no more than 6 photos.");
+    async function completeSellerLogin(user) {
+      seller = user;
+      pendingFirebaseUser = null;
+      setFirebaseRegistrationMode(false);
+      localStorage.setItem("wariara_seller", JSON.stringify(seller));
+      updateSellerPill();
+      if (pendingOpenPostModalAfterAccount) {
+        pendingOpenPostModalAfterAccount = false;
+        switchPage("seller");
+        if (!seller.is_suspended) {
+          openCreatePostModal(postCat);
         }
-        adminReplacementPhotos = await Promise.all(files.map(compressAdminPhoto));
-      } catch (error) {
-        alert(error.message);
+        return;
       }
-    });
+      switchPage("seller");
+    }
 
-    async function gift(id, name, btn = null) {
-      const posts_count = Number(prompt(`Gift how many posts to ${name}?`, "5"));
-      if (!posts_count) return;
+    async function saveSellerAccount(e, btn = null) {
+      e.preventDefault();
+      const acceptedTerms = document.getElementById("s-terms").checked;
+
+      if (!acceptedTerms) {
+        return alert("Please tick the box to accept the Terms and Conditions.");
+      }
+
       await runWithButtonLock(btn, async () => {
-        await adminFetch(`/api/admin/users/${id}/gift-posts`, { method: "POST", body: JSON.stringify({ posts_count }) });
-        await loadAdmin();
+        try {
+          let firebaseUser = pendingFirebaseUser;
+          if (!firebaseUser) {
+            const pass = document.getElementById("s-pass").value;
+            const passConfirm = document.getElementById("s-pass-confirm").value;
+            if (pass !== passConfirm) {
+              return alert("Passwords do not match. Please enter the same password twice.");
+            }
+            const firebase = await getFirebaseAuth();
+            const credential = await firebase.createAccount(
+              document.getElementById("s-email").value.trim(),
+              pass,
+            );
+            firebaseUser = credential.user;
+            pendingFirebaseUser = firebaseUser;
+          }
+          const idToken = await firebaseUser.getIdToken();
+          const d = await apiFetch("/api/sellers/account", {
+            method: "POST",
+            body: JSON.stringify({
+              name: document.getElementById("s-name").value,
+              email: firebaseUser.email,
+              firebase_id_token: idToken,
+              whatsapp_phone: document.getElementById("s-wa").value,
+              call_phone: document.getElementById("s-call").value,
+              role: document.getElementById("s-role").value,
+              town: document.getElementById("s-town").value,
+              accepted_terms: true,
+            }),
+          });
+          await completeSellerLogin(d.user);
+        } catch (err) {
+          alert(err.message);
+        }
       });
     }
 
-    async function susp(id, suspend, btn = null) {
-      const reason = suspend ? prompt("Reason (e.g. Scamming / irregular activity):", "Scamming / irregular activity") : null;
-      if (suspend && !reason) return;
+    async function loginSellerAccount(e, btn = null) {
+      e.preventDefault();
       await runWithButtonLock(btn, async () => {
-        await adminFetch(`/api/admin/users/${id}/suspension`, { method: "POST", body: JSON.stringify({ suspend, reason }) });
-        await loadAdmin();
+        try {
+          const firebase = await getFirebaseAuth();
+          const credential = await firebase.signIn(
+            document.getElementById("l-email").value.trim(),
+            document.getElementById("l-pass").value,
+          );
+          const idToken = await credential.user.getIdToken();
+          const d = await apiFetch("/api/sellers/login", {
+            method: "POST",
+            body: JSON.stringify({ firebase_id_token: idToken }),
+          });
+          await completeSellerLogin(d.user);
+        } catch (err) {
+          if (err.status === 404) {
+            pendingFirebaseUser = (await getFirebaseAuth()).auth.currentUser;
+            setAuthTab("register");
+            switchPage("account-gate");
+            alert("Sign-in succeeded. Complete your seller profile to finish setting up your account.");
+          } else {
+            alert(firebaseAuthErrorMessage(err));
+          }
+        }
       });
     }
 
-    async function savePrio(btn = null) {
+    async function requestPasswordReset(e, btn = null) {
+      e.preventDefault();
       await runWithButtonLock(btn, async () => {
-        await adminFetch("/api/admin/settings", { method: "POST", body: JSON.stringify({ base_priority_price_kes: Number(document.getElementById("cfg-prio").value) }) });
-        alert("Saved.");
+        try {
+          const firebase = await getFirebaseAuth();
+          await firebase.sendPasswordReset(document.getElementById("fp-email").value.trim());
+          alert("Firebase password reset link sent. Check your email.");
+        } catch (err) {
+          alert(firebaseAuthErrorMessage(err));
+        }
       });
     }
 
-    async function updPlan(id, btn = null) {
-      await runWithButtonLock(btn, async () => {
-        await adminFetch(`/api/admin/plans/${id}`, {
-          method: "PUT",
-          body: JSON.stringify({
-            name: document.getElementById(`pn-${id}`).value,
-            post_count: Number(document.getElementById(`pc-${id}`).value),
-            price_kes: Number(document.getElementById(`pp-${id}`).value),
-          }),
+    async function renderSellerPage() {
+      if (!seller) {
+        switchPage("account-gate");
+        return;
+      }
+
+      document.getElementById("plans-grid").innerHTML = meta.plans.map((p) => `
+        <div class="border rounded-xl p-4 flex items-center justify-between gap-2">
+          <div>
+            <div class="font-bold">${p.name} — ${p.post_count} Posts</div>
+            <div class="text-xs text-emerald-700 font-extrabold">KES ${p.price_kes} · 70-day posts</div>
+          </div>
+          <button type="button" onclick="openPlanPayment('${p.id}')" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-lg">Pay M-Pesa</button>
+        </div>
+      `).join("");
+
+      try {
+        const fresh = await apiFetch(`/api/sellers/lookup?seller_id=${encodeURIComponent(seller.id)}`);
+        seller = fresh.user;
+        localStorage.setItem("wariara_seller", JSON.stringify(seller));
+        updateSellerPill();
+      } catch {}
+
+      document.getElementById("active-seller-name").textContent = seller.name || "Seller Profile";
+      document.getElementById("active-seller-meta").textContent = `${seller.email} · ${seller.town} · WA: ${seller.whatsapp_phone}`;
+
+      document.getElementById("q-free").textContent = Math.max(0, 6 - seller.free_posts_used);
+      document.getElementById("q-paid").textContent = seller.paid_post_credits;
+
+      const suspBox = document.getElementById("seller-suspended-box");
+      suspBox.classList.toggle("hidden", !seller.is_suspended);
+      if (seller.is_suspended) {
+        document.getElementById("seller-susp-reason").textContent = `Reason: ${seller.suspension_reason || "Account suspended"}`;
+      }
+
+      const notifRes = await apiFetch(`/api/sellers/${seller.id}/notifications`);
+      document.getElementById("seller-notifications-list").innerHTML =
+        (notifRes.notifications || []).length === 0
+          ? `<div class="text-slate-400">No notifications yet.</div>`
+          : notifRes.notifications.map((n) => `
+              <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                <div>${n.message}</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">${n.created_at || ""}</div>
+              </div>
+            `).join("");
+
+      const { listings = [] } = await apiFetch(`/api/sellers/${seller.id}/listings`);
+      document.getElementById("my-posts-list").innerHTML = listings.map((l) => {
+        const daysText = l.days_remaining !== null
+          ? `<span class="ml-2 text-[11px] font-bold ${l.days_remaining === 0 ? "text-red-600" : "text-emerald-700"}">${l.days_remaining}d left (70d)</span>`
+          : `<span class="ml-2 text-[11px] text-slate-400">Free post (no 70d expiry)</span>`;
+        return `
+          <div class="border rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <div>
+              <strong class="text-sm">${l.title}</strong>
+              <span class="ml-2 px-2 py-0.5 rounded bg-slate-100 font-bold uppercase">${l.status.replace("_", " ")}</span>
+              ${daysText}
+              <div class="text-slate-500">KES ${Number(l.price_kes).toLocaleString()} · ${l.town}</div>
+              ${l.rejection_reason ? `<div class="mt-1 text-red-700">Rejection reason: ${escapeHtml(l.rejection_reason)}</div>` : ""}
+            </div>
+            <div class="flex flex-wrap gap-1.5 font-bold">
+              <button type="button" onclick="openEditPost('${l.id}')" class="border px-2.5 py-1 rounded-lg">Edit</button>
+              ${l.status === "active" ? `<button type="button" onclick="togglePause('${l.id}','paused', this)" class="border px-2.5 py-1 rounded-lg">Pause</button>` : ""}
+              ${l.status === "paused" ? `<button type="button" onclick="togglePause('${l.id}','active', this)" class="bg-emerald-600 text-white px-2.5 py-1 rounded-lg">Resume</button>` : ""}
+              ${["active", "paused"].includes(l.status) ? `<button type="button" onclick="togglePause('${l.id}','sold', this)" class="bg-amber-500 text-white px-2.5 py-1 rounded-lg">Mark Sold</button>` : ""}
+              ${l.status === "active" ? `<button type="button" onclick="openPrio('${l.id}')" class="bg-amber-400 text-slate-950 px-2.5 py-1 rounded-lg">Prioritize</button>` : ""}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      const [motorPosts, partPosts] = await Promise.all([
+        apiFetch(`/api/listings?category=motor&sort=newest&limit=4&exclude_seller_id=${encodeURIComponent(seller.id)}`),
+        apiFetch(`/api/listings?category=part&sort=newest&limit=4&exclude_seller_id=${encodeURIComponent(seller.id)}`),
+      ]);
+      const otherPosts = [...motorPosts.listings, ...partPosts.listings];
+      document.getElementById("seller-market-posts").innerHTML = otherPosts.length
+        ? otherPosts.map((item) => `
+            <button type="button" onclick="openDetail('${item.id}')" class="overflow-hidden rounded-xl border text-left hover:border-emerald-500">
+              <img src="${item.cover_photo || ""}" alt="${item.title}" loading="lazy" class="aspect-[16/10] w-full bg-slate-100 object-cover" />
+              <span class="block p-3">
+                <strong class="block text-sm">${item.title}</strong>
+                <span class="text-xs text-slate-500">${item.town} · KES ${Number(item.price_kes).toLocaleString()}</span>
+              </span>
+            </button>
+          `).join("")
+        : `<p class="col-span-full rounded-lg bg-slate-50 p-4 text-sm text-slate-500">No other active marketplace posts are available yet.</p>`;
+    }
+
+    function openPlanPayment(planId) {
+      if (!seller) {
+        switchPage("account-gate");
+        return;
+      }
+      const plan = meta.plans.find((p) => p.id === planId);
+      if (!plan) return;
+      payHeroContext = {
+        type: "plan",
+        planId: plan.id,
+        amount: Number(plan.price_kes),
+        label: `Post Plan: ${plan.name} (${plan.post_count} posts)`,
+      };
+      showPayHeroModal(plan.price_kes, payHeroContext.label);
+    }
+
+    function openPrioritizePayment() {
+      if (!seller) {
+        switchPage("account-gate");
+        return;
+      }
+      const listingId = document.getElementById("prio-id").value;
+      const amount = Number(document.getElementById("prio-bid").value);
+      if (!amount || amount < 1) {
+        return alert("Enter a valid priority amount in KES.");
+      }
+      payHeroContext = {
+        type: "prioritize",
+        listingId,
+        amount,
+        label: `Prioritise Post (24h Sponsored)`,
+      };
+      closeM("modal-prio");
+      showPayHeroModal(amount, payHeroContext.label);
+    }
+
+    function showPayHeroModal(amount, purposeLabel) {
+      if (pollTimer) clearInterval(pollTimer);
+      document.getElementById("ph-title").textContent = "Pay with M-Pesa (PayHero)";
+      document.getElementById("ph-purpose-label").textContent = purposeLabel;
+      document.getElementById("ph-amount").value = String(amount);
+      document.getElementById("ph-phone").value = seller?.whatsapp_phone || seller?.call_phone || "";
+      const payBtn = document.getElementById("phPayBtn");
+      payBtn.disabled = false;
+      payBtn.textContent = "Pay with M-Pesa";
+      const st = document.getElementById("ph-status");
+      st.className = "text-xs rounded-lg p-3 hidden";
+      st.innerHTML = "";
+      document.getElementById("modal-payhero").classList.remove("hidden");
+    }
+
+    function closePayHeroModal() {
+      if (pollTimer) clearInterval(pollTimer);
+      payHeroContext = null;
+      closeM("modal-payhero");
+    }
+
+    function setPayHeroStatus(message, kind = "info") {
+      const div = document.getElementById("ph-status");
+      div.classList.remove("hidden");
+      if (kind === "success") {
+        div.className = "text-xs rounded-lg p-3 bg-emerald-50 border border-emerald-300 text-emerald-900 font-semibold";
+      } else if (kind === "error") {
+        div.className = "text-xs rounded-lg p-3 bg-red-50 border border-red-300 text-red-800 font-semibold";
+      } else {
+        div.className = "text-xs rounded-lg p-3 bg-sky-50 border border-sky-200 text-sky-900 font-medium";
+      }
+      div.innerHTML = message;
+    }
+
+    function resetPayHeroButton() {
+      const btn = document.getElementById("phPayBtn");
+      btn.disabled = false;
+      btn.textContent = "Pay with M-Pesa";
+    }
+
+    async function startPayHeroPayment(btn) {
+      const phone = document.getElementById("ph-phone").value.trim();
+      const amount = parseFloat(document.getElementById("ph-amount").value);
+      if (!phone || phone.length < 9) {
+        return setPayHeroStatus("❌ Please enter a valid phone number", "error");
+      }
+      if (!amount || amount < 1) {
+        return setPayHeroStatus("❌ Please enter a valid amount", "error");
+      }
+      if (!payHeroContext) {
+        return setPayHeroStatus("❌ Missing payment context", "error");
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Processing...";
+      setPayHeroStatus("STK Push sent.<br>Check your phone and enter M-Pesa PIN.", "info");
+
+      try {
+        const res = await fetch(`${PAYHERO_BACKEND_URL}/api/stk-push`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true",
+          },
+          body: JSON.stringify({ amount, phone_number: phone }),
         });
-        alert("Plan updated.");
-      });
+        const data = await res.json();
+        if (data.success) {
+          startPayHeroPolling(phone);
+        } else {
+          setPayHeroStatus("❌ Failed to start payment", "error");
+          resetPayHeroButton();
+        }
+      } catch {
+        setPayHeroStatus("❌ Connection error starting M-Pesa payment.", "error");
+        resetPayHeroButton();
+      }
     }
 
-    async function addPlan(btn = null) {
-      await runWithButtonLock(btn, async () => {
-        await adminFetch("/api/admin/plans", {
+    async function applyConfirmedPayment(payerPhone) {
+      if (!payHeroContext || !seller) return;
+      const ctx = { ...payHeroContext };
+      const payRef = `PAYHERO-${Date.now()}`;
+
+      if (ctx.type === "plan") {
+        const d = await apiFetch("/api/plans/purchase", {
           method: "POST",
           body: JSON.stringify({
-            name: document.getElementById("np-name").value,
-            post_count: Number(document.getElementById("np-cnt").value),
-            price_kes: Number(document.getElementById("np-prc").value),
+            seller_id: seller.id,
+            plan_id: ctx.planId,
+            payment_ref: payRef,
+            payer_phone: payerPhone,
           }),
         });
-        await loadAdmin();
-      });
-    }
-
-    async function addCat(btn = null) {
-      await runWithButtonLock(btn, async () => {
-        await adminFetch("/api/admin/catalog", {
+        seller = d.user;
+        localStorage.setItem("wariara_seller", JSON.stringify(seller));
+        setPayHeroStatus(`<strong>✅ Payment Successful!</strong><br>${d.message}`, "success");
+        setTimeout(() => {
+          closePayHeroModal();
+          renderSellerPage();
+        }, 1200);
+      } else if (ctx.type === "prioritize") {
+        const d = await apiFetch(`/api/listings/${ctx.listingId}/prioritize`, {
           method: "POST",
           body: JSON.stringify({
-            vehicle_type: document.getElementById("c-vt").value,
-            brand: document.getElementById("c-br").value,
-            model: document.getElementById("c-mo").value,
-            body_type: document.getElementById("c-bo").value,
+            amount_kes: ctx.amount,
+            payment_ref: payRef,
+            payer_phone: payerPhone,
           }),
         });
-        alert("Added.");
+        setPayHeroStatus(`<strong>✅ Payment Successful!</strong><br>${d.message}`, "success");
+        setTimeout(() => {
+          closePayHeroModal();
+          renderSellerPage();
+          loadListings();
+        }, 1200);
+      }
+    }
+
+    function startPayHeroPolling(payerPhone) {
+      let attempts = 0;
+      const maxAttempts = 50;
+      if (pollTimer) clearInterval(pollTimer);
+
+      pollTimer = setInterval(async () => {
+        attempts++;
+        try {
+          const res = await fetch(`${PAYHERO_BACKEND_URL}/api/status`, {
+            headers: { "ngrok-skip-browser-warning": "true" },
+          });
+          const data = await res.json();
+
+          if (data.status === true && data.response) {
+            const code = data.response.ResultCode;
+            if (code === 0) {
+              clearInterval(pollTimer);
+              await applyConfirmedPayment(payerPhone);
+              return;
+            }
+            if (code === 1032) {
+              clearInterval(pollTimer);
+              setPayHeroStatus("❌ Payment was cancelled.<br>Please try again.", "error");
+              resetPayHeroButton();
+              return;
+            }
+            clearInterval(pollTimer);
+            let msg = data.response.ResultDesc || "Payment failed";
+            if (code === 2001) msg = "Wrong M-Pesa PIN entered.";
+            setPayHeroStatus(`❌ ${msg}`, "error");
+            resetPayHeroButton();
+            return;
+          }
+
+          if (attempts >= maxAttempts) {
+            clearInterval(pollTimer);
+            setPayHeroStatus("⏰ Request timed out.<br>Check your M-Pesa or try again.", "error");
+            resetPayHeroButton();
+          }
+        } catch (err) {
+          console.error("Polling error:", err);
+        }
+      }, 3000);
+    }
+
+    async function togglePause(id, status, btn = null) {
+      await runWithButtonLock(btn, async () => {
+        try {
+          await apiFetch(`/api/listings/${id}/status`, {
+            method: "PATCH",
+            body: JSON.stringify({ status, seller_id: seller.id }),
+          });
+          await renderSellerPage();
+        } catch (err) {
+          alert(err.message);
+        }
       });
     }
 
-    if (key) loadAdmin();
+    async function sendAppeal(btn = null) {
+      const appeal_text = document.getElementById("appeal-msg").value;
+      await runWithButtonLock(btn, async () => {
+        try {
+          const d = await apiFetch(`/api/sellers/${seller.id}/appeal`, {
+            method: "POST",
+            body: JSON.stringify({ appeal_text }),
+          });
+          alert(d.message);
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    }
+
+    async function openPrio(id) {
+      document.getElementById("prio-id").value = id;
+      const d = await apiFetch("/api/priority/leaderboard");
+      document.getElementById("prio-summary").innerHTML = `
+        <div class="bg-slate-100 p-2 rounded">Base Fee: <strong>KES ${d.baseFee}</strong></div>
+        <div class="bg-amber-50 p-2 rounded">Slots: <strong>${d.usedSlots}/${d.maxSlots}</strong></div>
+        <div class="bg-emerald-50 p-2 rounded">Top #1 Bid: <strong>KES ${d.recommendedForTop1}</strong></div>
+      `;
+      document.getElementById("prio-bid").value = d.recommendedForTop1;
+      document.getElementById("prio-list").innerHTML = d.leaderboard.length === 0
+        ? `<div class="p-3 text-slate-500">No prioritized posts yet. Pay KES ${d.baseFee} for #1.</div>`
+        : d.leaderboard.map((x, i) => `<div class="p-2 flex justify-between"><span><strong>#${i + 1}</strong> ${x.title} (${x.seller_name})</span><strong class="text-emerald-700">KES ${x.priority_amount_kes}</strong></div>`).join("");
+      document.getElementById("modal-prio").classList.remove("hidden");
+    }
+
+    function closeM(id) {
+      document.getElementById(id).classList.add("hidden");
+      if (id === "modal-detail") {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.delete("post");
+        history.replaceState(null, "", currentUrl);
+      }
+    }
+
+    function toggleMobileFilters() {
+      const filters = document.getElementById("mobile-market-filters");
+      const button = filters.querySelector("button");
+      const isOpen = filters.classList.toggle("is-open");
+      button.setAttribute("aria-expanded", String(isOpen));
+      document.getElementById("mobile-filter-label").textContent = isOpen ? "Hide filters" : "Search & filters";
+    }
+
+    function dismissCookieNotice() {
+      localStorage.setItem("wariara_cookie_notice", "dismissed");
+      document.getElementById("cookie-notice").classList.add("hidden");
+    }
+
+    boot();
   </script>
 </body>
 </html>
