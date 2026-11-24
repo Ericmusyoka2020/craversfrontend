@@ -1,167 +1,252 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sub-admin Portal | Wariara Cars Central Rift</title>
+  <title>Admin Portal | Wariara Cars Central Rift</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>button:disabled { opacity: .65; cursor: not-allowed; }</style>
+  <style>
+    button:disabled { opacity: 0.65; cursor: not-allowed; }
+  </style>
 </head>
-<body class="min-h-screen bg-slate-100 text-slate-900">
-  <header class="flex min-h-16 items-center justify-between bg-slate-950 px-5 py-2 text-white">
-    <strong>Wariara Sub-admin Portal</strong>
-    <button id="logout-button" type="button" onclick="logoutSub()" class="hidden text-xs underline">Sign out</button>
+<body class="bg-slate-100 text-slate-900 min-h-screen">
+  <header class="bg-slate-900 text-white px-4 sm:px-6 min-h-16 py-2 flex flex-wrap items-center justify-between gap-2">
+    <div class="flex items-center gap-2.5 font-extrabold">
+      <img src="logo.png" alt="Wariara Cars Central Rift Logo" class="w-9 h-9 rounded-lg object-contain bg-white p-0.5" />
+      <span>Wariara Cars Central Rift — <span class="text-amber-400">Admin Portal</span></span>
+    </div>
+
+    <span class="text-xs text-slate-400">Support: 0710911645</span>
   </header>
 
-  <main class="mx-auto max-w-7xl p-4 sm:p-6">
-    <section id="gate" class="mx-auto max-w-md rounded-xl border bg-white p-5 shadow-sm">
-      <h1 class="text-xl font-extrabold">Sub-admin sign in</h1>
-      <p class="mt-1 text-xs text-slate-500">Enter your six-digit PIN.</p>
-      <label for="pin" class="mt-4 block text-xs font-bold">PIN</label>
-      <input id="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="6-digit PIN" class="mt-1 w-full rounded-lg border px-3 py-2 text-sm" />
-      <button id="pin-button" type="button" onclick="loginSub(this)" class="mt-3 w-full rounded-lg bg-emerald-600 py-2.5 font-bold text-white">Continue</button>
-      <div id="code-box" class="hidden mt-4 border-t pt-4">
-        <p id="code-hint" class="mb-2 text-xs text-slate-600"></p>
-        <label for="code" class="block text-xs font-bold">Email verification code</label>
-        <input id="code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="6-digit code" class="mt-1 w-full rounded-lg border px-3 py-2 text-sm" />
-        <button id="verify-button" type="button" onclick="verifySub(this)" class="mt-2 w-full rounded-lg bg-slate-900 py-2.5 font-bold text-white">Verify code</button>
+  <main class="max-w-7xl mx-auto p-4 sm:p-6">
+    <div id="admin-gate" class="bg-white max-w-md mx-auto rounded-2xl border p-6 shadow-sm">
+      <h1 class="text-xl font-extrabold mb-2">Admin Access</h1>
+      <p class="text-xs text-slate-500 mb-4">Enter your <code class="bg-slate-100 px-1 py-0.5 rounded">ADMIN_SECRET</code> configured on your Render API server.</p>
+      <input id="admin-key-input" type="password" placeholder="Admin Secret Key" class="w-full border rounded-lg px-3 py-2 text-sm mb-3" />
+      <button type="button" onclick="unlockAdmin(this)" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg text-sm">Open Admin Portal</button>
+    </div>
+
+    <div id="admin-panel" class="hidden space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap gap-2 text-xs sm:text-sm font-bold">
+          <button type="button" onclick="tab('posts')" id="t-posts" class="px-3.5 py-2 rounded-lg bg-emerald-600 text-white">Posts & Expiry</button>
+          <button type="button" onclick="tab('payments')" id="t-payments" class="px-3.5 py-2 rounded-lg bg-white border">Payment Notifications <span id="payment-notifs-count" class="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-800">0</span></button>
+          <button type="button" onclick="tab('dealers')" id="t-dealers" class="px-3.5 py-2 rounded-lg bg-white border">Dealers (Add / Remove)</button>
+          <button type="button" onclick="tab('users')" id="t-users" class="px-3.5 py-2 rounded-lg bg-white border">Accounts & Suspensions</button>
+          <button type="button" onclick="tab('config')" id="t-config" class="px-3.5 py-2 rounded-lg bg-white border">Priority Price, Plans & Catalog</button>
+          <button type="button" onclick="tab('subadmins')" id="t-subadmins" class="hidden px-3.5 py-2 rounded-lg bg-white border">Sub-admin PIN Logins</button>
+        </div>
+        <button type="button" onclick="lockAdmin()" class="text-xs text-slate-500 hover:text-red-600 font-semibold">Lock Portal</button>
       </div>
-      <p id="gate-status" role="status" class="mt-3 text-xs text-red-700"></p>
-    </section>
 
-    <section id="portal" class="hidden space-y-5">
-      <nav class="flex flex-wrap gap-2 rounded-xl border bg-white p-3 text-xs font-bold sm:text-sm">
-        <button type="button" onclick="tab('posts')" id="tab-posts" class="rounded-lg bg-emerald-600 px-3 py-2 text-white">Posts & Reviews</button>
-        <button type="button" onclick="tab('payments')" id="tab-payments" class="rounded-lg border px-3 py-2">Payments</button>
-        <button type="button" onclick="tab('dealers')" id="tab-dealers" class="rounded-lg border px-3 py-2">Dealers</button>
-        <button type="button" onclick="tab('users')" id="tab-users" class="rounded-lg border px-3 py-2">Accounts</button>
-        <button type="button" onclick="tab('config')" id="tab-config" class="rounded-lg border px-3 py-2">Plans & Catalog</button>
-        <button type="button" onclick="loadOverview(true)" class="ml-auto rounded-lg bg-slate-900 px-3 py-2 text-white">Refresh</button>
-      </nav>
-
-      <section id="section-posts" class="space-y-3">
-        <div class="flex flex-wrap gap-2 rounded-xl border bg-white p-3 text-xs font-bold">
-          <button type="button" onclick="setPostFilter('all')" data-post-filter="all" class="rounded-lg bg-slate-900 px-3 py-1.5 text-white">All</button>
-          <button type="button" onclick="setPostFilter('pending_approval')" data-post-filter="pending_approval" class="rounded-lg border px-3 py-1.5">Pending approval</button>
-          <button type="button" onclick="setPostFilter('active')" data-post-filter="active" class="rounded-lg border px-3 py-1.5">Active</button>
-          <button type="button" onclick="setPostFilter('paused')" data-post-filter="paused" class="rounded-lg border px-3 py-1.5">Paused</button>
-          <button type="button" onclick="setPostFilter('sold')" data-post-filter="sold" class="rounded-lg border px-3 py-1.5">Sold</button>
-          <button type="button" onclick="setPostFilter('rejected')" data-post-filter="rejected" class="rounded-lg border px-3 py-1.5">Rejected</button>
-          <button type="button" onclick="setPostFilter('expired')" data-post-filter="expired" class="rounded-lg border px-3 py-1.5">Expired</button>
-          <button type="button" onclick="setPostFilter('reported_suspended')" data-post-filter="reported_suspended" class="rounded-lg border px-3 py-1.5">Reported</button>
+      <div id="sec-posts" class="space-y-3">
+        <div class="flex flex-wrap gap-2 text-xs font-bold bg-white p-3 rounded-xl border">
+          <button type="button" onclick="setPostFilter('all')" id="pf-all" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white">All Posts</button>
+          <button type="button" onclick="setPostFilter('expired')" id="pf-expired" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200">Expired Posts (70d)</button>
+          <button type="button" onclick="setPostFilter('pending_approval')" id="pf-pending_approval" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">Pending Approval</button>
+          <button type="button" onclick="setPostFilter('active')" id="pf-active" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">Active</button>
+          <button type="button" onclick="setPostFilter('paused')" id="pf-paused" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 border">Paused</button>
+          <button type="button" onclick="setPostFilter('sold')" id="pf-sold" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">Sold</button>
+          <button type="button" onclick="setPostFilter('rejected')" id="pf-rejected" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200">Rejected</button>
         </div>
-        <div id="posts" class="space-y-3"></div>
-      </section>
+        <div id="admin-posts-list" class="space-y-3"></div>
+      </div>
 
-      <section id="section-payments" class="hidden rounded-xl border bg-white p-5">
-        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 class="font-extrabold">Payment Notifications</h2>
-          <button type="button" onclick="loadOverview(true)" class="rounded-lg border px-3 py-1.5 text-xs font-bold">Refresh</button>
+      <div id="sec-payments" class="hidden bg-white rounded-xl border p-5 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h3 class="font-extrabold text-base">Payment Notifications (Who Paid & What For)</h3>
+          <button type="button" onclick="loadAdmin()" class="rounded-lg border px-3 py-1.5 text-xs font-bold">Refresh</button>
         </div>
-        <div id="payments" class="divide-y text-sm"></div>
-      </section>
+        <div id="payment-notifs-list" class="divide-y text-sm"></div>
+      </div>
 
-      <section id="section-dealers" class="hidden space-y-4">
-        <form onsubmit="addDealer(event,this.querySelector('button[type=submit]'))" class="grid grid-cols-1 gap-2 rounded-xl border bg-white p-4 text-sm sm:grid-cols-2 lg:grid-cols-6">
-          <input id="dealer-name" required placeholder="Business name" class="rounded-lg border px-3 py-2" />
-          <input id="dealer-email" required type="email" placeholder="Email" class="rounded-lg border px-3 py-2" />
-          <input id="dealer-wa" required placeholder="WhatsApp number" class="rounded-lg border px-3 py-2" />
-          <input id="dealer-call" required placeholder="Call number" class="rounded-lg border px-3 py-2" />
-          <input id="dealer-town" required placeholder="Town" class="rounded-lg border px-3 py-2" />
-          <button type="submit" class="rounded-lg bg-emerald-600 px-3 py-2 font-bold text-white">Add Dealer</button>
-        </form>
-        <div id="dealers" class="rounded-xl border bg-white p-4"></div>
-      </section>
+      <!-- ADMIN DEALER MANAGEMENT (ADD & REMOVE DEALER) -->
+      <div id="sec-dealers" class="hidden space-y-5">
+        <div class="bg-white rounded-xl border p-5">
+          <h3 class="font-extrabold text-base mb-3">Add or Mark Dealer</h3>
+          <form onsubmit="addDealerSubmit(event, this.querySelector('button[type=submit]'))" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 text-xs">
+            <input id="dl-name" type="text" required placeholder="Dealer / Business Name *" class="border rounded-lg px-3 py-2" />
+            <input id="dl-email" type="email" required placeholder="Email *" class="border rounded-lg px-3 py-2" />
+            <input id="dl-wa" type="text" required placeholder="WhatsApp (2547...) *" class="border rounded-lg px-3 py-2" />
+            <input id="dl-call" type="text" required placeholder="Call Phone (07...) *" class="border rounded-lg px-3 py-2" />
+            <div class="flex gap-2">
+              <input id="dl-town" type="text" required value="Nakuru" placeholder="Town *" class="border rounded-lg px-3 py-2 w-full" />
+              <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg whitespace-nowrap">Add Dealer</button>
+            </div>
+          </form>
+        </div>
 
-      <section id="section-users" class="hidden overflow-x-auto rounded-xl border bg-white p-4">
-        <table class="w-full min-w-[760px] text-left text-xs">
-          <thead class="border-b uppercase text-slate-500">
-            <tr><th class="py-2 pr-3">Account</th><th class="py-2 pr-3">Contact</th><th class="py-2 pr-3">Posts / Credits</th><th class="py-2 pr-3">Status / Appeal</th><th class="py-2">Actions</th></tr>
+        <div class="bg-white rounded-xl border p-5">
+          <h3 class="font-extrabold text-base mb-3">Current Dealers (Remove Dealer Status)</h3>
+          <div id="admin-dealers-list" class="divide-y text-xs"></div>
+        </div>
+      </div>
+
+      <div id="sec-users" class="hidden bg-white rounded-xl border p-5 overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="border-b uppercase text-slate-400">
+            <tr>
+              <th class="py-2 pr-3">Account</th>
+              <th class="py-2 pr-3">WhatsApp / Call / Email</th>
+              <th class="py-2 pr-3">Free / Credits</th>
+              <th class="py-2 pr-3">Purchased</th>
+              <th class="py-2 pr-3">Status & Appeal</th>
+              <th class="py-2">Actions</th>
+            </tr>
           </thead>
-          <tbody id="users" class="divide-y"></tbody>
+          <tbody id="users-rows" class="divide-y"></tbody>
         </table>
-      </section>
+      </div>
 
-      <section id="section-config" class="hidden grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div class="rounded-xl border bg-white p-4">
-          <h2 class="mb-2 font-bold">Sponsored Priority Price</h2>
-          <input id="priority-price" type="number" min="1" class="w-full rounded-lg border px-3 py-2" />
-          <button type="button" onclick="savePriorityPrice(this)" class="mt-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white">Save Price</button>
+      <div id="sec-config" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div class="bg-white rounded-xl border p-5">
+          <h3 class="font-bold mb-2">Priority Price (Max 20/Day)</h3>
+          <p class="text-xs text-slate-500 mb-3">Minimum daily fee to enter the 20 sponsored slots; higher payments appear higher on top.</p>
+          <input id="cfg-prio" type="number" class="w-full border rounded-lg px-3 py-2 text-sm mb-2" />
+          <button type="button" onclick="savePrio(this)" class="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-lg">Save Priority Fee</button>
         </div>
-        <div class="rounded-xl border bg-white p-4">
-          <h2 class="mb-2 font-bold">Post Plans</h2>
-          <div id="plans" class="space-y-2"></div>
-          <div class="mt-3 grid grid-cols-3 gap-1">
-            <input id="new-plan-name" placeholder="Name" class="min-w-0 rounded border px-2 py-1 text-xs" />
-            <input id="new-plan-count" type="number" min="1" placeholder="Posts" class="min-w-0 rounded border px-2 py-1 text-xs" />
-            <input id="new-plan-price" type="number" min="1" placeholder="KES" class="min-w-0 rounded border px-2 py-1 text-xs" />
+
+        <div class="bg-white rounded-xl border p-5">
+          <h3 class="font-bold mb-2">Post Plans (e.g. 10 = 200, 25 = 500)</h3>
+          <div id="plans-edit" class="space-y-2 mb-3"></div>
+          <div class="grid grid-cols-3 gap-1.5 text-xs">
+            <input id="np-name" placeholder="Name" class="border rounded px-2 py-1" />
+            <input id="np-cnt" type="number" placeholder="Posts" class="border rounded px-2 py-1" />
+            <input id="np-prc" type="number" placeholder="KES" class="border rounded px-2 py-1" />
           </div>
-          <button type="button" onclick="addPlan(this)" class="mt-2 rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white">Add Plan</button>
+          <button type="button" onclick="addPlan(this)" class="mt-2 bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg">+ Add Plan</button>
         </div>
-        <div class="rounded-xl border bg-white p-4">
-          <h2 class="mb-2 font-bold">Vehicle Catalog</h2>
-          <div class="space-y-2">
-            <input id="catalog-type" placeholder="Vehicle type" class="w-full rounded-lg border px-3 py-2 text-sm" />
-            <input id="catalog-brand" placeholder="Brand" class="w-full rounded-lg border px-3 py-2 text-sm" />
-            <input id="catalog-model" placeholder="Model" class="w-full rounded-lg border px-3 py-2 text-sm" />
-            <input id="catalog-body" placeholder="Body type" class="w-full rounded-lg border px-3 py-2 text-sm" />
-            <button type="button" onclick="addCatalog(this)" class="w-full rounded-lg bg-emerald-600 py-2 font-bold text-white">Add Catalog Item</button>
+
+        <div class="bg-white rounded-xl border p-5">
+          <h3 class="font-bold mb-2">Add Brand, Model & Body Type</h3>
+          <div class="space-y-2 text-xs">
+            <select id="c-vt" class="w-full border rounded px-2 py-1.5 bg-white">
+              <option>Car</option><option>Truck</option><option>Bike</option>
+            </select>
+            <input id="c-br" placeholder="Brand (e.g. Toyota, Audi)" class="w-full border rounded px-2 py-1.5" />
+            <input id="c-mo" placeholder="Model (e.g. Harrier, A4)" class="w-full border rounded px-2 py-1.5" />
+            <input id="c-bo" placeholder="Body Type (e.g. SUV, Saloon)" class="w-full border rounded px-2 py-1.5" />
+            <button type="button" onclick="addCat(this)" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg">Add Brand/Model/Body</button>
           </div>
         </div>
-      </section>
-    </section>
+      </div>
+      <div id="sec-subadmins" class="hidden bg-white rounded-xl border p-5 space-y-4">
+        <div>
+          <h3 class="font-extrabold text-base">Sub-admin PIN Logins (maximum 4)</h3>
+          <p class="mt-1 text-xs text-slate-500">A six-digit PIN is the only required login detail. Email is optional unless email verification is enabled. In the EmailJS template, set the recipient to <code>{{to_email}}</code> and include <code>{{message}}</code> (or <code>{{passcode}}</code>) in the email body so the code appears in the message. Leave an existing PIN blank to keep it.</p>
+        </div>
+        <div id="subadmin-slots" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <p id="subadmin-emailjs-status" class="text-xs text-slate-600"></p>
+            <p id="subadmin-status" class="text-xs text-slate-600"></p>
+          </div>
+          <button type="button" onclick="saveSubAdmins(this)" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white">Save Sub-admin Logins</button>
+        </div>
+      </div>
+    </div>
   </main>
 
-  <div id="edit-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4">
-    <div class="my-auto max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white p-5">
-      <div class="mb-3 flex items-center justify-between">
-        <h2 class="text-lg font-extrabold">Edit Listing</h2>
-        <button type="button" onclick="closeEdit()" class="rounded border px-3 py-1">Close</button>
-      </div>
-      <form onsubmit="saveListing(event,this.querySelector('button[type=submit]'))" class="space-y-3">
-        <input id="edit-id" type="hidden" />
-        <div id="edit-fields" class="grid grid-cols-1 gap-2 sm:grid-cols-2"></div>
-        <div id="edit-photos" class="grid grid-cols-4 gap-2"></div>
-        <label class="block text-xs font-bold">Replace photos (leave empty to keep current photos)
-          <input id="edit-files" type="file" accept="image/*" multiple class="mt-1 w-full rounded-lg border px-3 py-2" />
+  <div id="admin-edit-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4">
+    <div class="relative my-auto max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
+      <button type="button" onclick="closeAdminEdit()" class="absolute right-4 top-4 rounded-full bg-slate-100 px-3 py-1 font-bold">Close</button>
+      <h2 class="mb-1 pr-20 text-xl font-extrabold">Edit Listing</h2>
+      <p class="mb-4 text-xs text-slate-500">Update listing details, contacts, and replace photos (up to 6).</p>
+      <form id="admin-edit-form" onsubmit="saveAdminListing(event, this.querySelector('button[type=submit]'))" class="space-y-4">
+        <input id="admin-edit-id" type="hidden" />
+        <div id="admin-edit-fields" class="grid grid-cols-1 gap-3 sm:grid-cols-2"></div>
+        <div id="admin-edit-photos" class="grid grid-cols-4 gap-2"></div>
+        <label class="block text-xs font-bold">Replace photos
+          <input id="admin-edit-files" type="file" accept="image/*" multiple class="mt-1 w-full rounded-lg border px-3 py-2" />
         </label>
         <div class="flex justify-end gap-2">
-          <button type="button" onclick="closeEdit()" class="rounded-lg border px-4 py-2 font-bold">Cancel</button>
-          <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-2 font-bold text-white">Save Listing</button>
+          <button type="button" onclick="closeAdminEdit()" class="rounded-lg border px-4 py-2 text-sm font-bold">Cancel</button>
+          <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white">Save Listing</button>
         </div>
       </form>
     </div>
   </div>
 
   <script>
-    const API_BASE = "https://carscrawers.onrender.com";
-    let session = localStorage.getItem("wariara_sub_session") || "";
-    let overview = null;
+    const API_BASE = window.WARIARA_API_BASE || "https://carscrawers.onrender.com";
+    const apiUrl = (path) => `${API_BASE}${path}`;
+    const subAdminSession = localStorage.getItem("wariara_sub_session") || "";
+    const isPrimaryAdmin = !subAdminSession;
+    let key = subAdminSession || localStorage.getItem("wariara_admin_key") || "";
+    let cachedOverview = null;
     let postFilter = "all";
-    let replacementPhotos = null;
+    let adminReplacementPhotos = null;
 
-    async function api(path, options = {}) {
-      const response = await fetch(API_BASE + path, {
-        ...options,
-        headers: {
-          ...(options.headers || {}),
-          ...(session ? { "x-admin-key": session } : {}),
-          ...(options.body ? { "Content-Type": "application/json" } : {}),
-        },
-        cache: "no-store",
-        signal: AbortSignal.timeout(20000),
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || `Request failed (${response.status}).`);
-      return result;
+    async function runWithButtonLock(btn, fn) {
+      const prevText = btn ? btn.textContent : "";
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Processing...";
+      }
+      try {
+        return await fn();
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = prevText;
+        }
+      }
     }
 
-    async function withLock(button, action) {
-      const label = button?.textContent;
-      if (button) { button.disabled = true; button.textContent = "Working..."; }
-      try { return await action(); }
-      finally { if (button) { button.disabled = false; button.textContent = label; } }
+    async function adminFetch(path, options = {}) {
+      const headers = {
+        ...(options.headers || {}),
+        "x-admin-key": key,
+      };
+      if (options.body && !headers["Content-Type"]) {
+        headers["Content-Type"] = "application/json";
+      }
+      const res = await fetch(apiUrl(path), { ...options, headers });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err = new Error(data.error || `Admin request failed (${res.status})`);
+        err.status = res.status;
+        throw err;
+      }
+      return data;
+    }
+
+    async function unlockAdmin(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        key = document.getElementById("admin-key-input").value.trim();
+        localStorage.setItem("wariara_admin_key", key);
+        await loadAdmin();
+      });
+    }
+
+    function lockAdmin() {
+      if (subAdminSession) {
+        fetch(apiUrl("/api/admin/sub/logout"), {
+          method: "POST",
+          headers: { "x-admin-key": subAdminSession },
+          keepalive: true,
+        }).catch((error) => console.error("Could not revoke sub-admin session:", error));
+      }
+      key = "";
+      localStorage.removeItem("wariara_admin_key");
+      localStorage.removeItem("wariara_sub_session");
+      document.getElementById("admin-panel").classList.add("hidden");
+      document.getElementById("admin-gate").classList.remove("hidden");
+    }
+
+    function tab(t) {
+      ["posts", "payments", "dealers", "users", "config", "subadmins"].forEach((x) => {
+        document.getElementById(`sec-${x}`).classList.toggle("hidden", x !== t);
+        document.getElementById(`t-${x}`).className = x === t
+          ? "px-3.5 py-2 rounded-lg bg-emerald-600 text-white"
+          : "px-3.5 py-2 rounded-lg bg-white border";
+      });
+    }
+
+    function setPostFilter(f) {
+      postFilter = f;
+      renderAdminPosts();
     }
 
     function escapeHtml(value) {
@@ -170,255 +255,398 @@
       })[char]);
     }
 
-    async function loginSub(button) {
-      document.getElementById("gate-status").textContent = "";
-      await withLock(button, async () => {
-        try {
-          const result = await api("/api/admin/sub/login", {
-            method: "POST",
-            body: JSON.stringify({ pin: document.getElementById("pin").value }),
-          });
-          if (result.requires_code) {
-            document.getElementById("code-box").classList.remove("hidden");
-            document.getElementById("code-hint").textContent = `A verification code was sent to ${result.email_hint}. It expires in 10 minutes.`;
-            document.getElementById("code").focus();
-          } else {
-            await openPortal(result.session_token);
-          }
-        } catch (error) {
-          document.getElementById("gate-status").textContent = error.message;
-        }
-      });
-    }
-
-    async function verifySub(button) {
-      document.getElementById("gate-status").textContent = "";
-      await withLock(button, async () => {
-        try {
-          const result = await api("/api/admin/sub/verify", {
-            method: "POST",
-            body: JSON.stringify({ pin: document.getElementById("pin").value, code: document.getElementById("code").value }),
-          });
-          await openPortal(result.session_token);
-        } catch (error) {
-          document.getElementById("gate-status").textContent = error.message;
-        }
-      });
-    }
-
-    async function openPortal(token = session) {
-      session = token;
-      localStorage.setItem("wariara_sub_session", session);
-      try {
-        await api("/api/admin/overview");
-        document.getElementById("gate").classList.add("hidden");
-        document.getElementById("portal").classList.remove("hidden");
-        document.getElementById("logout-button").classList.remove("hidden");
-        await loadOverview(true);
-      } catch (error) {
-        session = "";
-        localStorage.removeItem("wariara_sub_session");
-        document.getElementById("gate-status").textContent = error.message;
+    function formatAdminPostDetails(l) {
+      if (l.category === "motor") {
+        const parts = [
+          l.vehicle_type ? `Type: ${l.vehicle_type}` : "",
+          l.condition_type ? `Condition: ${l.condition_type}` : "",
+          l.body_type ? `Body: ${l.body_type}` : "",
+          l.year ? `Year: ${l.year}` : "",
+          l.reg_number ? `Reg: ${l.reg_number}` : "",
+          l.fuel_type ? `Fuel: ${l.fuel_type}` : "",
+          l.transmission ? `Trans: ${l.transmission}` : "",
+          l.drive_type ? `Drive: ${l.drive_type}-Hand` : "",
+          l.air_con ? `A/C: ${l.air_con}` : "",
+          l.engine_cc ? `Engine: ${l.engine_cc}cc` : "",
+          l.mileage_km ? `Mileage: ${Number(l.mileage_km).toLocaleString()} km` : "",
+          l.negotiable ? `Price: ${l.negotiable === "Yes" ? "Negotiable" : "Fixed"}` : "",
+        ].filter(Boolean);
+        return parts.join(" · ");
       }
+      const partSpecs = [
+        l.part_name ? `Part: ${l.part_name}` : "",
+        l.part_make ? `Make: ${l.part_make}` : "",
+        l.part_model ? `Model: ${l.part_model}` : "",
+        l.year_from && l.year_to ? `Years: ${l.year_from}-${l.year_to}` : "",
+        l.part_condition ? `Condition: ${l.part_condition}` : "",
+        l.part_authenticity ? `Type: ${l.part_authenticity}` : "",
+        l.negotiable ? `Price: ${l.negotiable === "Yes" ? "Negotiable" : "Fixed"}` : "",
+      ].filter(Boolean);
+      return partSpecs.join(" · ");
     }
 
-    async function logoutSub() {
-      try { await api("/api/admin/sub/logout", { method: "POST" }); }
-      catch (error) { console.error("Could not revoke sub-admin session:", error); }
-      finally {
-        session = "";
-        localStorage.removeItem("wariara_sub_session");
-        location.reload();
-      }
-    }
+    function renderAdminPosts() {
+      if (!cachedOverview) return;
+      const list = postFilter === "all"
+        ? cachedOverview.listings
+        : cachedOverview.listings.filter((l) => l.status === postFilter);
 
-    function tab(name) {
-      for (const section of ["posts", "payments", "dealers", "users", "config"]) {
-        document.getElementById(`section-${section}`).classList.toggle("hidden", section !== name);
-        document.getElementById(`tab-${section}`).className = section === name
-          ? "rounded-lg bg-emerald-600 px-3 py-2 text-white"
-          : "rounded-lg border px-3 py-2";
-      }
-    }
+      document.getElementById("admin-posts-list").innerHTML = list.map((l) => {
+        const remainingBadge = l.days_remaining !== null
+          ? `<span class="text-xs font-bold px-2 py-0.5 rounded ${l.days_remaining === 0 ? "bg-red-100 text-red-800" : "bg-emerald-50 text-emerald-800"}">${l.days_remaining} days remaining (70d)</span>`
+          : `<span class="text-xs text-slate-400">Free post</span>`;
 
-    function setPostFilter(filter) {
-      postFilter = filter;
-      for (const button of document.querySelectorAll("[data-post-filter]")) {
-        button.className = button.dataset.postFilter === filter
-          ? "rounded-lg bg-slate-900 px-3 py-1.5 text-white"
-          : "rounded-lg border px-3 py-1.5";
-      }
-      renderPosts();
-    }
-
-    function renderPosts() {
-      if (!overview) return;
-      const listings = postFilter === "all" ? overview.listings : overview.listings.filter((item) => item.status === postFilter);
-      document.getElementById("posts").innerHTML = listings.length ? listings.map((item) => `
-        <article class="flex flex-col gap-3 rounded-xl border bg-white p-4 md:flex-row md:items-start md:justify-between">
-          <div class="flex min-w-0 gap-3">
-            <img src="${escapeHtml(item.cover_photo || "")}" loading="lazy" alt="" class="h-20 w-24 rounded-lg bg-slate-100 object-cover" />
-            <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-2"><strong>${escapeHtml(item.title)}</strong><span class="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase">${escapeHtml(item.status)}</span></div>
-              <p class="mt-1 text-xs text-slate-600">${escapeHtml(item.seller_name)} · ${escapeHtml(item.town)} · KES ${Number(item.price_kes).toLocaleString()}</p>
-              <p class="mt-1 whitespace-pre-line text-xs text-slate-600">${escapeHtml(item.description)}</p>
-              ${item.rejection_reason ? `<p class="mt-1 text-xs font-bold text-red-700">Rejection reason: ${escapeHtml(item.rejection_reason)}</p>` : ""}
-              ${item.report_reason ? `<p class="mt-1 text-xs font-bold text-red-700">Report: ${escapeHtml(item.report_reason)}</p>` : ""}
+        return `
+          <div class="bg-white rounded-xl border ${l.status === "reported_suspended" || l.status === "rejected" ? "border-red-400" : l.status === "expired" ? "border-amber-300" : ""} p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="flex items-start gap-3">
+              <img src="${l.cover_photo || ""}" loading="lazy" class="w-20 h-16 object-cover rounded-lg bg-slate-100 shrink-0" />
+              <div>
+                <div class="font-bold flex flex-wrap items-center gap-1.5">
+                  <span>${l.title}</span>
+                  <span class="text-xs px-2 py-0.5 rounded bg-slate-100 uppercase">${l.status}</span>
+                  ${remainingBadge}
+                </div>
+                <div class="text-xs text-slate-700 font-semibold mt-0.5">KES ${Number(l.price_kes).toLocaleString()} · Location: ${l.town} · Seller: <strong>${l.seller_name}</strong> (WA: ${l.whatsapp_phone} | Call: ${l.call_phone})</div>
+                <div class="text-xs text-slate-600 mt-1">${formatAdminPostDetails(l)}</div>
+                ${l.description ? `<div class="text-xs text-slate-500 mt-1">Notes: ${l.description}</div>` : ""}
+                ${l.rejection_reason ? `<div class="text-xs text-red-700 font-bold mt-1">Rejection reason: ${escapeHtml(l.rejection_reason)}</div>` : ""}
+                ${l.report_reason ? `<div class="text-xs text-red-700 font-bold mt-0.5">Report Reason: ${l.report_reason}</div>` : ""}
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-1.5 text-xs font-bold shrink-0">
+              ${l.status === "pending_approval" ? `
+                <button type="button" onclick="modPost('${l.id}','approve', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Accept</button>
+                <button type="button" onclick="modPost('${l.id}','reject', this)" class="bg-red-600 text-white px-3 py-1.5 rounded-lg">Reject</button>
+              ` : ""}
+              ${l.status === "reported_suspended" ? `
+                <button type="button" onclick="modPost('${l.id}','mark_safe', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Mark Safe (Restore)</button>
+                <button type="button" onclick="modPost('${l.id}','mark_unsafe', this)" class="bg-red-600 text-white px-3 py-1.5 rounded-lg">Mark Unsafe</button>
+              ` : ""}
+              ${l.status === "active" ? `<button type="button" onclick="modPost('${l.id}','pause', this)" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg">Pause Post</button>` : ""}
+              ${l.status === "paused" ? `<button type="button" onclick="modPost('${l.id}','unpause', this)" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg">Unpause</button>` : ""}
+              ${["active", "paused"].includes(l.status) ? `<button type="button" onclick="modPost('${l.id}','sold', this)" class="bg-amber-500 text-white px-3 py-1.5 rounded-lg">Mark Sold</button>` : ""}
+              ${l.status !== "pending_approval" ? `<button type="button" onclick="editAdminListing('${l.id}')" class="rounded-lg border border-slate-300 px-3 py-1.5">Edit All</button>` : ""}
             </div>
           </div>
-          <div class="flex shrink-0 flex-wrap gap-1.5 text-xs font-bold">
-            ${item.status === "pending_approval" ? `<button type="button" onclick="moderate('${item.id}','approve',this)" class="rounded bg-emerald-600 px-3 py-1.5 text-white">Accept</button><button type="button" onclick="moderate('${item.id}','reject',this)" class="rounded bg-red-600 px-3 py-1.5 text-white">Reject</button>` : ""}
-            ${item.status === "active" ? `<button type="button" onclick="moderate('${item.id}','pause',this)" class="rounded bg-slate-900 px-3 py-1.5 text-white">Pause</button>` : ""}
-            ${item.status === "paused" ? `<button type="button" onclick="moderate('${item.id}','unpause',this)" class="rounded bg-emerald-600 px-3 py-1.5 text-white">Resume</button>` : ""}
-            ${["active","paused"].includes(item.status) ? `<button type="button" onclick="moderate('${item.id}','sold',this)" class="rounded bg-amber-500 px-3 py-1.5 text-white">Mark Sold</button>` : ""}
-            ${item.status === "reported_suspended" ? `<button type="button" onclick="moderate('${item.id}','mark_safe',this)" class="rounded bg-emerald-600 px-3 py-1.5 text-white">Restore</button><button type="button" onclick="moderate('${item.id}','mark_unsafe',this)" class="rounded bg-red-600 px-3 py-1.5 text-white">Keep Paused</button>` : ""}
-            <button type="button" onclick="editListing('${item.id}')" class="rounded border px-3 py-1.5">Edit All</button>
-          </div>
-        </article>`).join("") : `<div class="rounded-xl border bg-white p-6 text-center text-sm text-slate-500">No posts match this filter.</div>`;
+        `;
+      }).join("");
     }
 
-    async function loadOverview(force = false) {
+    function renderDealersTab() {
+      if (!cachedOverview) return;
+      const dealers = (cachedOverview.users || []).filter((u) => u.role === "dealer");
+      document.getElementById("admin-dealers-list").innerHTML =
+        dealers.length === 0
+          ? `<div class="py-4 text-slate-500">No dealers marked yet.</div>`
+          : dealers.map((d) => `
+              <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <strong class="text-sm text-slate-900">${d.name}</strong>
+                  <span class="ml-2 text-xs text-slate-500">${d.town} · ${d.email || ""} · WA: ${d.whatsapp_phone}</span>
+                </div>
+                <button type="button" onclick="removeDealer('${d.id}', this)" class="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg self-start sm:self-auto">
+                  Remove Dealer
+                </button>
+              </div>
+            `).join("");
+    }
+
+    async function loadAdmin() {
+      if (!key) return;
       try {
-        overview = await api("/api/admin/overview");
-        renderPosts();
-        renderPayments();
-        renderDealers();
-        renderUsers();
-        renderPlans();
-        document.getElementById("priority-price").value = overview.settings.base_priority_price_kes || 300;
-      } catch (error) {
-        if (error.message.includes("session expired") || error.message.includes("Unauthorized")) {
-          session = "";
-          localStorage.removeItem("wariara_sub_session");
-          document.getElementById("portal").classList.add("hidden");
-          document.getElementById("logout-button").classList.add("hidden");
-          document.getElementById("gate").classList.remove("hidden");
+        const d = await adminFetch("/api/admin/overview");
+        cachedOverview = d;
+        document.getElementById("admin-gate").classList.add("hidden");
+        document.getElementById("admin-panel").classList.remove("hidden");
+
+        renderAdminPosts();
+        renderDealersTab();
+        if (isPrimaryAdmin) {
+          document.getElementById("t-subadmins").classList.remove("hidden");
+          await loadSubAdmins();
+        } else {
+          document.getElementById("t-subadmins").classList.add("hidden");
         }
+
+        document.getElementById("payment-notifs-list").innerHTML =
+          (d.paymentNotifications || []).length === 0
+            ? `<div class="py-4 text-slate-500 text-xs">No confirmed payments yet.</div>`
+            : d.paymentNotifications.map((n) => `
+                <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <div class="font-bold text-slate-900">${n.payer_name} <span class="text-xs font-normal text-slate-500">(${n.payer_phone || n.payer_email || ""})</span></div>
+                    <div class="text-xs text-slate-600">Paid for: <strong>${n.purpose}</strong> · Ref: ${n.payment_ref || "-"}</div>
+                  </div>
+                  <div class="text-right">
+                    <span class="font-black text-emerald-700">KES ${Number(n.amount_kes).toLocaleString()}</span>
+                    <div class="text-[11px] text-slate-400">${n.created_at || ""}</div>
+                  </div>
+                </div>
+              `).join("");
+        document.getElementById("payment-notifs-count").textContent = String((d.paymentNotifications || []).length);
+
+        document.getElementById("users-rows").innerHTML = d.users.map((u) => `
+          <tr>
+            <td class="py-2.5 pr-3"><strong>${u.name}</strong><div class="text-slate-400">${u.role} · ${u.town}</div></td>
+            <td class="py-2.5 pr-3">${u.email}<div>WA: ${u.whatsapp_phone} | Call: ${u.call_phone}</div></td>
+            <td class="py-2.5 pr-3">Free: <strong>${u.free_posts_used}/6</strong><div>Credits: <strong>${u.paid_post_credits}</strong></div></td>
+            <td class="py-2.5 pr-3"><strong>${u.total_purchased_posts}</strong> posts (KES ${Number(u.total_spent_kes).toLocaleString()})</td>
+            <td class="py-2.5 pr-3">
+              ${u.is_suspended ? `<span class="text-red-700 font-bold">SUSPENDED</span> (${u.suspension_reason || ""})` : `<span class="text-emerald-700 font-bold">Active</span>`}
+              ${u.appeal_status === "pending" ? `<div class="bg-amber-50 border p-1.5 rounded mt-1">Appeal: ${u.appeal_text}</div>` : ""}
+            </td>
+            <td class="py-2.5 space-y-1">
+              <button type="button" onclick="gift('${u.id}','${u.name}', this)" class="block w-full bg-emerald-600 text-white font-bold px-2 py-1 rounded">Gift Posts</button>
+              ${u.role !== "dealer"
+                ? `<button type="button" onclick="markExistingDealer('${u.id}', this)" class="block w-full bg-amber-500 text-slate-950 font-bold px-2 py-1 rounded">Make Dealer</button>`
+                : `<button type="button" onclick="removeDealer('${u.id}', this)" class="block w-full bg-slate-600 text-white font-bold px-2 py-1 rounded">Remove Dealer</button>`}
+              ${u.is_suspended
+                ? `<button type="button" onclick="susp('${u.id}',false, this)" class="block w-full bg-slate-900 text-white font-bold px-2 py-1 rounded">Restore</button>`
+                : `<button type="button" onclick="susp('${u.id}',true, this)" class="block w-full bg-red-600 text-white font-bold px-2 py-1 rounded">Suspend</button>`}
+            </td>
+          </tr>
+        `).join("");
+
+        document.getElementById("cfg-prio").value = d.settings.base_priority_price_kes || 300;
+        document.getElementById("plans-edit").innerHTML = d.plans.map((p) => `
+          <div class="grid grid-cols-4 gap-1.5 text-xs">
+            <input id="pn-${p.id}" value="${p.name}" class="border rounded px-2 py-1" />
+            <input id="pc-${p.id}" type="number" value="${p.post_count}" class="border rounded px-2 py-1" />
+            <input id="pp-${p.id}" type="number" value="${p.price_kes}" class="border rounded px-2 py-1" />
+            <button type="button" onclick="updPlan('${p.id}', this)" class="bg-emerald-600 text-white font-bold rounded">Save</button>
+          </div>
+        `).join("");
+      } catch {
+        lockAdmin();
+      }
+    }
+
+    async function addDealerSubmit(e, btn = null) {
+      e.preventDefault();
+      await runWithButtonLock(btn, async () => {
+        const d = await adminFetch("/api/admin/dealers", {
+          method: "POST",
+          body: JSON.stringify({
+            name: document.getElementById("dl-name").value,
+            email: document.getElementById("dl-email").value,
+            whatsapp_phone: document.getElementById("dl-wa").value,
+            call_phone: document.getElementById("dl-call").value,
+            town: document.getElementById("dl-town").value,
+          }),
+        });
+        alert(d.message);
+        e.target.reset();
+        document.getElementById("dl-town").value = "Nakuru";
+        await loadAdmin();
+      });
+    }
+
+    async function markExistingDealer(userId, btn = null) {
+      await runWithButtonLock(btn, async () => {
+        const d = await adminFetch("/api/admin/dealers", {
+          method: "POST",
+          body: JSON.stringify({ user_id: userId }),
+        });
+        alert(d.message);
+        await loadAdmin();
+      });
+    }
+
+    async function removeDealer(userId, btn = null) {
+      await runWithButtonLock(btn, async () => {
+        const d = await adminFetch(`/api/admin/dealers/${userId}`, {
+          method: "DELETE",
+        });
+        alert(d.message);
+        await loadAdmin();
+      });
+    }
+
+    async function modPost(id, action, btn = null) {
+      await runWithButtonLock(btn, async () => {
+        try {
+          const payload = { action };
+          if (action === "reject") {
+            const reason = prompt("Enter the reason for rejecting this post:");
+            if (reason === null) return;
+            payload.reason = reason.trim();
+            if (!payload.reason) return alert("A rejection reason is required.");
+          }
+          const result = await adminFetch(`/api/admin/listings/${id}/moderate`, {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+          alert(result.message || (action === "reject" ? "Post rejected." : "Post accepted."));
+          await loadAdmin();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+    }
+
+    async function loadSubAdmins() {
+      const { accounts, emailjs_configured } = await adminFetch("/api/admin/sub-accounts");
+      document.getElementById("subadmin-emailjs-status").textContent = emailjs_configured
+        ? "EmailJS is configured for verification codes."
+        : "EmailJS is not fully configured on the API server. PIN-only logins still work.";
+      const container = document.getElementById("subadmin-slots");
+      container.replaceChildren();
+      for (const account of accounts) {
+        const card = document.createElement("section");
+        card.className = "rounded-xl border border-slate-200 p-4 space-y-2";
+        const heading = document.createElement("h4");
+        heading.className = "font-bold text-sm";
+        heading.textContent = `Sub-admin ${account.slot}`;
+        card.append(heading);
+
+        const activeLabel = document.createElement("label");
+        activeLabel.className = "flex items-center gap-2 text-xs font-semibold";
+        const active = document.createElement("input");
+        active.type = "checkbox";
+        active.dataset.subadminActive = "";
+        active.checked = account.active;
+        const activeText = document.createElement("span");
+        activeText.textContent = "Enable this login";
+        activeLabel.append(active, activeText);
+        card.append(activeLabel);
+
+        const pin = document.createElement("input");
+        pin.type = "password";
+        pin.inputMode = "numeric";
+        pin.pattern = "[0-9]{6}";
+        pin.maxLength = 6;
+        pin.placeholder = account.active ? "New 6-digit PIN (blank keeps current)" : "New 6-digit PIN";
+        pin.dataset.subadminPin = "";
+        pin.className = "w-full rounded-lg border px-3 py-2 text-sm";
+        card.append(pin);
+
+        const email = document.createElement("input");
+        email.type = "email";
+        email.value = account.email;
+        email.placeholder = "Email for optional sign-in code";
+        email.dataset.subadminEmail = "";
+        email.className = "w-full rounded-lg border px-3 py-2 text-sm";
+        card.append(email);
+
+        const codeLabel = document.createElement("label");
+        codeLabel.className = "flex items-center gap-2 text-xs";
+        const code = document.createElement("input");
+        code.type = "checkbox";
+        code.checked = account.email_code_enabled;
+        code.dataset.subadminEmailCode = "";
+        const codeText = document.createElement("span");
+        codeText.textContent = "Require a one-time email code at login";
+        codeLabel.append(code, codeText);
+        card.append(codeLabel);
+
+        const slot = document.createElement("input");
+        slot.type = "hidden";
+        slot.value = String(account.slot);
+        slot.dataset.subadminSlot = "";
+        card.append(slot);
+        container.append(card);
+      }
+    }
+
+    async function saveSubAdmins(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        const accounts = [...document.querySelectorAll("#subadmin-slots [data-subadmin-slot]")].map((slot) => {
+          const card = slot.closest("section");
+          return {
+            slot: Number(slot.value),
+            active: card.querySelector("[data-subadmin-active]").checked,
+            pin: card.querySelector("[data-subadmin-pin]").value,
+            email: card.querySelector("[data-subadmin-email]").value.trim(),
+            email_code_enabled: card.querySelector("[data-subadmin-email-code]").checked,
+          };
+        });
+        const status = document.getElementById("subadmin-status");
+        status.textContent = "";
+        try {
+          const result = await adminFetch("/api/admin/sub-accounts", {
+            method: "PUT",
+            body: JSON.stringify({ accounts }),
+          });
+          status.textContent = result.message;
+          await loadSubAdmins();
+        } catch (error) {
+          status.textContent = error.message;
+        }
+      });
+    }
+
+    async function editAdminListing(id) {
+      try {
+        const { listing } = await adminFetch(`/api/listings/${encodeURIComponent(id)}`);
+        const fields = [
+          ["title", "Title", "text"], ["seller_name", "Seller name", "text"],
+          ["seller_slug", "Seller profile slug", "text"], ["whatsapp_phone", "WhatsApp contact", "text"],
+          ["call_phone", "Phone contact", "text"], ["town", "Town", "text"],
+          ["price_kes", "Price (KES)", "number"], ["negotiable", "Negotiable", "text"],
+        ];
+        if (listing.category === "motor") {
+          fields.push(
+            ["vehicle_type", "Vehicle type", "text"], ["condition_type", "Condition", "text"],
+            ["brand", "Brand", "text"], ["model", "Model", "text"], ["body_type", "Body type", "text"],
+            ["year", "Year", "number"], ["reg_number", "Registration number", "text"],
+            ["fuel_type", "Fuel", "text"], ["transmission", "Transmission", "text"],
+            ["drive_type", "Drive type", "text"], ["air_con", "Air conditioning", "text"],
+            ["engine_cc", "Engine size (cc)", "number"], ["mileage_km", "Mileage (km)", "number"],
+          );
+        } else {
+          fields.push(
+            ["part_name", "Part name", "text"], ["part_make", "Vehicle make", "text"],
+            ["part_model", "Vehicle model", "text"], ["year_from", "Year from", "number"],
+            ["year_to", "Year to", "number"], ["part_condition", "Condition", "text"],
+            ["part_authenticity", "Authenticity", "text"],
+          );
+        }
+
+        const container = document.getElementById("admin-edit-fields");
+        container.replaceChildren();
+        for (const [name, label, type] of fields) {
+          const wrap = document.createElement("label");
+          wrap.className = "text-xs font-bold";
+          wrap.textContent = label;
+          const input = document.createElement("input");
+          input.type = type;
+          input.id = `admin-edit-${name}`;
+          input.value = listing[name] ?? "";
+          input.className = "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal";
+          wrap.append(input);
+          container.append(wrap);
+        }
+        const descriptionWrap = document.createElement("label");
+        descriptionWrap.className = "text-xs font-bold sm:col-span-2";
+        descriptionWrap.textContent = "Description";
+        const description = document.createElement("textarea");
+        description.id = "admin-edit-description";
+        description.rows = 4;
+        description.value = listing.description || "";
+        description.className = "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal";
+        descriptionWrap.append(description);
+        container.append(descriptionWrap);
+
+        const photoContainer = document.getElementById("admin-edit-photos");
+        photoContainer.replaceChildren();
+        for (const photo of listing.photos || []) {
+          const image = document.createElement("img");
+          image.src = photo.photo_data;
+          image.alt = "Current listing photo";
+          image.loading = "lazy";
+          image.className = "aspect-square w-full rounded-lg border object-cover";
+          photoContainer.append(image);
+        }
+        adminReplacementPhotos = null;
+        document.getElementById("admin-edit-id").value = id;
+        document.getElementById("admin-edit-files").value = "";
+        document.getElementById("admin-edit-modal").classList.remove("hidden");
+      } catch (error) {
         alert(error.message);
       }
     }
 
-    function renderPayments() {
-      const items = overview.paymentNotifications || [];
-      document.getElementById("payments").innerHTML = items.length ? items.map((item) => `
-        <div class="flex flex-wrap justify-between gap-2 py-3">
-          <div><strong>${escapeHtml(item.payer_name || "Seller")}</strong><div class="text-xs text-slate-600">${escapeHtml(item.payer_phone || item.payer_email || "")} · ${escapeHtml(item.purpose)}</div><div class="text-xs text-slate-400">Ref: ${escapeHtml(item.payment_ref || "-")} · ${escapeHtml(item.created_at || "")}</div></div>
-          <strong class="text-emerald-700">KES ${Number(item.amount_kes).toLocaleString()}</strong>
-        </div>`).join("") : `<p class="py-3 text-sm text-slate-500">No confirmed payments.</p>`;
-    }
-
-    function renderDealers() {
-      const dealers = (overview.users || []).filter((user) => user.role === "dealer");
-      document.getElementById("dealers").innerHTML = dealers.length ? dealers.map((dealer) => `
-        <div class="flex flex-wrap items-center justify-between gap-2 border-b py-3 text-sm">
-          <span><strong>${escapeHtml(dealer.name)}</strong> · ${escapeHtml(dealer.town)} · ${escapeHtml(dealer.email)}</span>
-          <button type="button" onclick="removeDealer('${dealer.id}',this)" class="rounded bg-red-600 px-3 py-1.5 text-xs font-bold text-white">Remove Dealer</button>
-        </div>`).join("") : `<p class="text-sm text-slate-500">No dealers registered.</p>`;
-    }
-
-    function renderUsers() {
-      document.getElementById("users").innerHTML = overview.users.map((user) => `
-        <tr>
-          <td class="py-3 pr-3"><strong>${escapeHtml(user.name)}</strong><div>${escapeHtml(user.role)} · ${escapeHtml(user.town)}</div></td>
-          <td class="py-3 pr-3">${escapeHtml(user.email)}<div>WA: ${escapeHtml(user.whatsapp_phone)} · Call: ${escapeHtml(user.call_phone)}</div></td>
-          <td class="py-3 pr-3">Free ${Number(user.free_posts_used || 0)}/6 · Credits ${Number(user.paid_post_credits || 0)}<div>Purchases: ${Number(user.total_purchased_posts || 0)}</div></td>
-          <td class="py-3 pr-3">${user.is_suspended ? `<strong class="text-red-700">Suspended</strong>: ${escapeHtml(user.suspension_reason)}` : "Active"}${user.appeal_status === "pending" ? `<div class="mt-1 text-amber-800">Appeal: ${escapeHtml(user.appeal_text)}</div>` : ""}</td>
-          <td class="py-3"><div class="flex flex-wrap gap-1">
-            <button type="button" onclick="giftPosts('${user.id}',this)" class="rounded bg-emerald-600 px-2 py-1 text-white">Gift</button>
-            ${user.role === "dealer" ? `<button type="button" onclick="removeDealer('${user.id}',this)" class="rounded border px-2 py-1">Remove Dealer</button>` : `<button type="button" onclick="makeDealer('${user.id}',this)" class="rounded bg-amber-400 px-2 py-1">Make Dealer</button>`}
-            <button type="button" onclick="suspendUser('${user.id}',${!user.is_suspended},this)" class="rounded ${user.is_suspended ? "bg-slate-800" : "bg-red-600"} px-2 py-1 text-white">${user.is_suspended ? "Restore" : "Suspend"}</button>
-          </div></td>
-        </tr>`).join("");
-    }
-
-    function renderPlans() {
-      document.getElementById("plans").innerHTML = overview.plans.map((plan) => `
-        <div class="grid grid-cols-4 gap-1">
-          <input id="plan-name-${plan.id}" value="${escapeHtml(plan.name)}" aria-label="Plan name" class="min-w-0 rounded border px-1 py-1 text-xs" />
-          <input id="plan-count-${plan.id}" type="number" value="${Number(plan.post_count)}" aria-label="Post count" class="min-w-0 rounded border px-1 py-1 text-xs" />
-          <input id="plan-price-${plan.id}" type="number" value="${Number(plan.price_kes)}" aria-label="Plan price" class="min-w-0 rounded border px-1 py-1 text-xs" />
-          <button type="button" onclick="savePlan('${plan.id}',this)" class="rounded bg-emerald-600 text-xs font-bold text-white">Save</button>
-        </div>`).join("");
-    }
-
-    async function moderate(id, action, button) {
-      await withLock(button, async () => {
-        try {
-          const body = { action };
-          if (action === "reject") {
-            const reason = prompt("Enter the reason for rejecting this post:");
-            if (reason === null) return;
-            body.reason = reason.trim();
-            if (!body.reason) { alert("A rejection reason is required."); return; }
-          }
-          const result = await api(`/api/admin/listings/${encodeURIComponent(id)}/moderate`, { method: "POST", body: JSON.stringify(body) });
-          alert(result.message || "Post updated.");
-          await loadOverview(true);
-        } catch (error) { alert(error.message); }
-      });
-    }
-
-    async function editListing(id) {
-      try {
-        const { listing } = await api(`/api/listings/${encodeURIComponent(id)}`);
-        const fields = [
-          ["title","Title","text"],["seller_name","Seller name","text"],["seller_slug","Seller slug","text"],
-          ["whatsapp_phone","WhatsApp","text"],["call_phone","Call phone","text"],["town","Town","text"],
-          ["price_kes","Price (KES)","number"],["negotiable","Negotiable","text"],
-          ...(listing.category === "motor" ? [
-            ["vehicle_type","Vehicle type","text"],["condition_type","Condition","text"],["brand","Brand","text"],
-            ["model","Model","text"],["body_type","Body type","text"],["year","Year","number"],
-            ["reg_number","Registration","text"],["fuel_type","Fuel","text"],["transmission","Transmission","text"],
-            ["drive_type","Drive type","text"],["air_con","Air conditioning","text"],["engine_cc","Engine cc","number"],
-            ["mileage_km","Mileage km","number"],
-          ] : [
-            ["part_name","Part name","text"],["part_make","Vehicle make","text"],["part_model","Vehicle model","text"],
-            ["year_from","Year from","number"],["year_to","Year to","number"],["part_condition","Condition","text"],
-            ["part_authenticity","Authenticity","text"],
-          ]),
-        ];
-        const container = document.getElementById("edit-fields");
-        container.replaceChildren();
-        for (const [name,label,type] of fields) {
-          const wrapper = document.createElement("label");
-          wrapper.className = "text-xs font-bold";
-          wrapper.textContent = label;
-          const input = document.createElement("input");
-          input.type = type;
-          input.dataset.field = name;
-          input.value = listing[name] ?? "";
-          input.className = "mt-1 w-full rounded-lg border px-3 py-2 text-sm font-normal";
-          wrapper.append(input);
-          container.append(wrapper);
-        }
-        const descriptionWrapper = document.createElement("label");
-        descriptionWrapper.className = "text-xs font-bold sm:col-span-2";
-        descriptionWrapper.textContent = "Description";
-        const description = document.createElement("textarea");
-        description.id = "edit-description";
-        description.rows = 4;
-        description.value = listing.description || "";
-        description.className = "mt-1 w-full rounded-lg border px-3 py-2 text-sm font-normal";
-        descriptionWrapper.append(description);
-        container.append(descriptionWrapper);
-        const photos = document.getElementById("edit-photos");
-        photos.replaceChildren();
-        for (const item of listing.photos || []) {
-          const image = document.createElement("img");
-          image.src = item.photo_data;
-          image.alt = "Current post photo";
-          image.loading = "lazy";
-          image.className = "aspect-square w-full rounded border object-cover";
-          photos.append(image);
-        }
-        replacementPhotos = null;
-        document.getElementById("edit-id").value = id;
-        document.getElementById("edit-files").value = "";
-        document.getElementById("edit-modal").classList.remove("hidden");
-      } catch (error) { alert(error.message); }
-    }
-
-    function compressPhoto(file) {
+    async function compressAdminPhoto(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onerror = () => reject(new Error("Could not read the selected photo."));
@@ -439,165 +667,114 @@
       });
     }
 
-    document.getElementById("edit-files").addEventListener("change", async (event) => {
-      const files = Array.from(event.target.files || []);
-      if (files.length > 6) {
-        event.target.value = "";
-        replacementPhotos = null;
-        alert("Select no more than six photos.");
-        return;
-      }
-      try { replacementPhotos = await Promise.all(files.map(compressPhoto)); }
-      catch (error) { replacementPhotos = null; alert(error.message); }
-    });
-
-    async function saveListing(event, button) {
+    async function saveAdminListing(event, btn = null) {
       event.preventDefault();
-      await withLock(button, async () => {
+      await runWithButtonLock(btn, async () => {
         try {
-          const payload = { description: document.getElementById("edit-description").value };
-          for (const input of document.querySelectorAll("#edit-fields [data-field]")) payload[input.dataset.field] = input.value;
-          if (replacementPhotos !== null) payload.photos = replacementPhotos;
-          const result = await api(`/api/admin/listings/${encodeURIComponent(document.getElementById("edit-id").value)}`, {
+          const id = document.getElementById("admin-edit-id").value;
+          const payload = { description: document.getElementById("admin-edit-description").value };
+          for (const input of document.querySelectorAll("#admin-edit-fields input")) {
+            payload[input.id.replace("admin-edit-", "")] = input.value;
+          }
+          if (adminReplacementPhotos !== null) payload.photos = adminReplacementPhotos;
+          await adminFetch(`/api/admin/listings/${encodeURIComponent(id)}`, {
             method: "PUT",
             body: JSON.stringify(payload),
           });
-          closeEdit();
-          alert(result.message || "Listing saved.");
-          await loadOverview(true);
-        } catch (error) { alert(error.message); }
+          closeAdminEdit();
+          await loadAdmin();
+        } catch (error) {
+          alert(error.message);
+        }
       });
     }
 
-    function closeEdit() { document.getElementById("edit-modal").classList.add("hidden"); }
-
-    async function addDealer(event, button) {
-      event.preventDefault();
-      await withLock(button, async () => {
-        try {
-          const result = await api("/api/admin/dealers", {
-            method: "POST",
-            body: JSON.stringify({
-              name: document.getElementById("dealer-name").value,
-              email: document.getElementById("dealer-email").value,
-              whatsapp_phone: document.getElementById("dealer-wa").value,
-              call_phone: document.getElementById("dealer-call").value,
-              town: document.getElementById("dealer-town").value,
-            }),
-          });
-          event.target.reset();
-          alert(result.message);
-          await loadOverview(true);
-        } catch (error) { alert(error.message); }
-      });
+    function closeAdminEdit() {
+      document.getElementById("admin-edit-modal").classList.add("hidden");
     }
 
-    async function makeDealer(id, button) {
-      await withLock(button, async () => {
-        try {
-          const result = await api("/api/admin/dealers", { method: "POST", body: JSON.stringify({ user_id: id }) });
-          alert(result.message);
-          await loadOverview(true);
-        } catch (error) { alert(error.message); }
-      });
-    }
+    document.getElementById("admin-edit-files").addEventListener("change", async (event) => {
+      try {
+        const files = Array.from(event.target.files || []);
+        if (files.length > 6) {
+          event.target.value = "";
+          throw new Error("Please choose no more than 6 photos.");
+        }
+        adminReplacementPhotos = await Promise.all(files.map(compressAdminPhoto));
+      } catch (error) {
+        alert(error.message);
+      }
+    });
 
-    async function removeDealer(id, button) {
-      await withLock(button, async () => {
-        try {
-          const result = await api(`/api/admin/dealers/${encodeURIComponent(id)}`, { method: "DELETE" });
-          alert(result.message);
-          await loadOverview(true);
-        } catch (error) { alert(error.message); }
-      });
-    }
-
-    async function giftPosts(id, button) {
-      const posts_count = Number(prompt("How many post credits should be added?", "5"));
+    async function gift(id, name, btn = null) {
+      const posts_count = Number(prompt(`Gift how many posts to ${name}?`, "5"));
       if (!posts_count) return;
-      await withLock(button, async () => {
-        try {
-          const result = await api(`/api/admin/users/${encodeURIComponent(id)}/gift-posts`, { method: "POST", body: JSON.stringify({ posts_count }) });
-          alert(result.message);
-          await loadOverview(true);
-        } catch (error) { alert(error.message); }
+      await runWithButtonLock(btn, async () => {
+        await adminFetch(`/api/admin/users/${id}/gift-posts`, { method: "POST", body: JSON.stringify({ posts_count }) });
+        await loadAdmin();
       });
     }
 
-    async function suspendUser(id, suspend, button) {
-      const reason = suspend ? prompt("Reason for suspending this account:") : null;
+    async function susp(id, suspend, btn = null) {
+      const reason = suspend ? prompt("Reason (e.g. Scamming / irregular activity):", "Scamming / irregular activity") : null;
       if (suspend && !reason) return;
-      await withLock(button, async () => {
-        try {
-          const result = await api(`/api/admin/users/${encodeURIComponent(id)}/suspension`, { method: "POST", body: JSON.stringify({ suspend, reason }) });
-          alert(result.message);
-          await loadOverview(true);
-        } catch (error) { alert(error.message); }
+      await runWithButtonLock(btn, async () => {
+        await adminFetch(`/api/admin/users/${id}/suspension`, { method: "POST", body: JSON.stringify({ suspend, reason }) });
+        await loadAdmin();
       });
     }
 
-    async function savePriorityPrice(button) {
-      await withLock(button, async () => {
-        try {
-          const result = await api("/api/admin/settings", { method: "POST", body: JSON.stringify({ base_priority_price_kes: Number(document.getElementById("priority-price").value) }) });
-          alert(result.message || "Priority price saved.");
-          await loadOverview(true);
-        } catch (error) { alert(error.message); }
+    async function savePrio(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        await adminFetch("/api/admin/settings", { method: "POST", body: JSON.stringify({ base_priority_price_kes: Number(document.getElementById("cfg-prio").value) }) });
+        alert("Saved.");
       });
     }
 
-    async function savePlan(id, button) {
-      await withLock(button, async () => {
-        try {
-          await api(`/api/admin/plans/${encodeURIComponent(id)}`, {
-            method: "PUT",
-            body: JSON.stringify({
-              name: document.getElementById(`plan-name-${id}`).value,
-              post_count: Number(document.getElementById(`plan-count-${id}`).value),
-              price_kes: Number(document.getElementById(`plan-price-${id}`).value),
-            }),
-          });
-          alert("Plan updated.");
-          await loadOverview(true);
-        } catch (error) { alert(error.message); }
+    async function updPlan(id, btn = null) {
+      await runWithButtonLock(btn, async () => {
+        await adminFetch(`/api/admin/plans/${id}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            name: document.getElementById(`pn-${id}`).value,
+            post_count: Number(document.getElementById(`pc-${id}`).value),
+            price_kes: Number(document.getElementById(`pp-${id}`).value),
+          }),
+        });
+        alert("Plan updated.");
       });
     }
 
-    async function addPlan(button) {
-      await withLock(button, async () => {
-        try {
-          const result = await api("/api/admin/plans", {
-            method: "POST",
-            body: JSON.stringify({
-              name: document.getElementById("new-plan-name").value,
-              post_count: Number(document.getElementById("new-plan-count").value),
-              price_kes: Number(document.getElementById("new-plan-price").value),
-            }),
-          });
-          alert(result.message || "Plan added.");
-          await loadOverview(true);
-        } catch (error) { alert(error.message); }
+    async function addPlan(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        await adminFetch("/api/admin/plans", {
+          method: "POST",
+          body: JSON.stringify({
+            name: document.getElementById("np-name").value,
+            post_count: Number(document.getElementById("np-cnt").value),
+            price_kes: Number(document.getElementById("np-prc").value),
+          }),
+        });
+        await loadAdmin();
       });
     }
 
-    async function addCatalog(button) {
-      await withLock(button, async () => {
-        try {
-          const result = await api("/api/admin/catalog", {
-            method: "POST",
-            body: JSON.stringify({
-              vehicle_type: document.getElementById("catalog-type").value,
-              brand: document.getElementById("catalog-brand").value,
-              model: document.getElementById("catalog-model").value,
-              body_type: document.getElementById("catalog-body").value,
-            }),
-          });
-          alert(result.message || "Catalog item added.");
-        } catch (error) { alert(error.message); }
+    async function addCat(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        await adminFetch("/api/admin/catalog", {
+          method: "POST",
+          body: JSON.stringify({
+            vehicle_type: document.getElementById("c-vt").value,
+            brand: document.getElementById("c-br").value,
+            model: document.getElementById("c-mo").value,
+            body_type: document.getElementById("c-bo").value,
+          }),
+        });
+        alert("Added.");
       });
     }
 
-    if (session) openPortal();
+    if (key) loadAdmin();
   </script>
 </body>
 </html>
