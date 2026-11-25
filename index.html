@@ -16,6 +16,13 @@
     button:disabled { opacity: 0.65; cursor: not-allowed; }
     @media (max-width: 639px) {
       #mobile-market-filters:not(.is-open) #market-filter-controls { display: none; }
+      header { min-height: auto; }
+      header .min-h-16 { min-height: 0; padding-top: 0.5rem; padding-bottom: 0.5rem; }
+      header .border-t { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+      #mobile-menu-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 85%; max-width: 300px; background: white; z-index: 60; transform: translateX(100%); transition: transform 0.25s ease; box-shadow: -4px 0 20px rgba(0,0,0,0.1); }
+      #mobile-menu-panel.is-open { transform: translateX(0); }
+      #mobile-menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 50; opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0.2s; }
+      #mobile-menu-overlay.is-open { opacity: 1; visibility: visible; }
     }
   </style>
 </head>
@@ -49,6 +56,12 @@
         <button type="button" onclick="openSellerWorkspace()" id="seller-pill-btn" class="border border-slate-300 hover:bg-slate-50 font-semibold px-3 py-2 rounded-lg">
           Seller Account
         </button>
+        <!-- Mobile hamburger menu button -->
+        <button type="button" onclick="toggleMobileMenu()" class="lg:hidden p-2 rounded-lg hover:bg-slate-100" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu-panel">
+          <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -80,12 +93,46 @@
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full">
+  <!-- Mobile menu overlay -->
+  <div id="mobile-menu-overlay" class="hidden lg:hidden" onclick="closeMobileMenu()" aria-hidden="true"></div>
+
+  <!-- Mobile menu panel -->
+  <div id="mobile-menu-panel" class="hidden lg:hidden flex flex-col" role="dialog" aria-modal="true" aria-label="Navigation menu">
+    <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+      <span class="font-bold text-slate-900">Menu</span>
+      <button type="button" onclick="closeMobileMenu()" class="p-2 rounded-lg hover:bg-slate-100" aria-label="Close menu">
+        <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <nav class="flex-1 overflow-y-auto p-4 space-y-3">
+      <button type="button" onclick="switchPage('market', 'motor'); closeMobileMenu()" class="w-full text-left px-4 py-3 rounded-lg bg-slate-50 text-slate-900 font-semibold border border-slate-200">Motors</button>
+      <button type="button" onclick="switchPage('market', 'part'); closeMobileMenu()" class="w-full text-left px-4 py-3 rounded-lg bg-slate-50 text-slate-900 font-semibold border border-slate-200">Spare Parts</button>
+      <button type="button" onclick="switchPage('dealers'); closeMobileMenu()" class="w-full text-left px-4 py-3 rounded-lg bg-slate-50 text-slate-900 font-semibold border border-slate-200">Dealer</button>
+      <button type="button" onclick="openSellerWorkspace(); closeMobileMenu()" class="w-full text-left px-4 py-3 rounded-lg bg-slate-50 text-slate-900 font-semibold border border-slate-200">My Posts</button>
+      <a href="terms.html" class="w-full text-left px-4 py-3 rounded-lg bg-slate-50 text-slate-900 font-semibold border border-slate-200 block">Terms & Conditions</a>
+      <hr class="border-slate-200 my-2" />
+      <button type="button" onclick="openSellerOnboardingModal(this); closeMobileMenu()" class="w-full text-left px-4 py-3 rounded-lg bg-emerald-600 text-white font-bold border border-emerald-700">Sell With Us</button>
+      <button type="button" onclick="startSellingForCategory('motor', this); closeMobileMenu()" class="w-full text-left px-4 py-3 rounded-lg bg-white border border-slate-300 text-slate-800 font-semibold">Sell Your Car</button>
+      <button type="button" onclick="startSellingForCategory('part', this); closeMobileMenu()" class="w-full text-left px-4 py-3 rounded-lg bg-white border border-slate-300 text-slate-800 font-semibold">Spare Parts Sell</button>
+      <button type="button" onclick="switchPage('dealers'); closeMobileMenu()" class="w-full text-left px-4 py-3 rounded-lg bg-white border border-slate-300 text-slate-800 font-semibold">Dealer</button>
+      <button type="button" onclick="startSellingForCategory('motor', this); closeMobileMenu()" class="w-full text-left px-4 py-3 rounded-lg bg-white border border-slate-300 text-slate-800 font-semibold">Advertise With Us</button>
+      <a href="faq.html" class="w-full text-left px-4 py-3 rounded-lg bg-white border border-slate-300 text-slate-800 font-semibold block">FAQ</a>
+      <button type="button" onclick="openInfoModal('contact'); closeMobileMenu()" class="w-full text-left px-4 py-3 rounded-lg bg-white border border-slate-300 text-slate-800 font-semibold">Contact Us (0184966000)</button>
+      <a href="terms.html" class="w-full text-left px-4 py-3 rounded-lg bg-white border border-slate-300 text-slate-800 font-semibold block">Terms & Conditions</a>
+    </nav>
+    <div class="p-4 border-t border-slate-200 text-center text-xs text-slate-500">
+      Wariara Cars Central Rift · Call / WhatsApp: 0184966000
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex-1 w-full">
 
     <!-- PAGE 1: PUBLIC MARKETPLACE -->
     <section id="page-market">
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 mb-6 shadow-sm">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 sm:mb-4">
           <div>
             <h1 class="text-xl sm:text-3xl font-extrabold text-slate-900">Wariara Cars Central Rift</h1>
             <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -1774,6 +1821,30 @@
       const isOpen = filters.classList.toggle("is-open");
       button.setAttribute("aria-expanded", String(isOpen));
       document.getElementById("mobile-filter-label").textContent = isOpen ? "Hide filters" : "Search & filters";
+    }
+
+    function toggleMobileMenu() {
+      const panel = document.getElementById("mobile-menu-panel");
+      const overlay = document.getElementById("mobile-menu-overlay");
+      const button = document.querySelector('[onclick="toggleMobileMenu()"]');
+      const isOpen = panel.classList.toggle("is-open");
+      overlay.classList.toggle("is-open", isOpen);
+      panel.classList.toggle("hidden", !isOpen);
+      overlay.classList.toggle("hidden", !isOpen);
+      button.setAttribute("aria-expanded", String(isOpen));
+      document.body.style.overflow = isOpen ? "hidden" : "";
+    }
+
+    function closeMobileMenu() {
+      const panel = document.getElementById("mobile-menu-panel");
+      const overlay = document.getElementById("mobile-menu-overlay");
+      const button = document.querySelector('[onclick="toggleMobileMenu()"]');
+      panel.classList.remove("is-open");
+      overlay.classList.remove("is-open");
+      panel.classList.add("hidden");
+      overlay.classList.add("hidden");
+      button.setAttribute("aria-expanded", "false");
+      document.body.style.overflow = "";
     }
 
     function dismissCookieNotice() {
