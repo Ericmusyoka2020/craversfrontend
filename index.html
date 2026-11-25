@@ -184,7 +184,7 @@
           <div class="flex items-center gap-2 text-sm">
             <label for="f-sort" class="text-slate-500">Sort:</label>
             <select id="f-sort" onchange="loadListings()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white font-medium">
-              <option value="featured">Sponsored Top 20 & Fair Feed</option>
+              <option value="featured">Sponsored & Fair Feed</option>
               <option value="newest">Newest</option>
               <option value="price_asc">Price: Low to High</option>
               <option value="price_desc">Price: High to Low</option>
@@ -199,7 +199,7 @@
 
       <div class="flex flex-wrap items-center justify-between gap-2 mb-3 text-xs text-slate-500">
         <span><strong id="count-label" class="text-slate-800">Loading...</strong> active approved posts</span>
-        <span>Max 20 Sponsored posts per day · Paid posts run for 70 days</span>
+        <span>Unlimited sponsored posts · Free posts run for 14 days</span>
       </div>
 
       <div id="market-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"></div>
@@ -355,7 +355,7 @@
             <div id="seller-quota-box" class="grid grid-cols-2 gap-2 text-center pt-3 border-t border-slate-100">
               <div class="bg-emerald-50 p-2.5 rounded-lg">
                 <div id="q-free" class="text-xl font-black text-emerald-700">6</div>
-                <div class="text-[11px] text-emerald-800">Free Posts Left (of 6)</div>
+                <div class="text-[11px] text-emerald-800">Free Posts Left (of 5)</div>
               </div>
               <div class="bg-slate-100 p-2.5 rounded-lg">
                 <div id="q-paid" class="text-xl font-black text-slate-800">0</div>
@@ -370,7 +370,7 @@
           <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
             <div>
               <h3 class="font-extrabold text-lg">Post Plans (M-Pesa via PayHero)</h3>
-              <p class="text-xs text-slate-500">First 6 posts are free. Paid post credits run for <strong>70 days</strong> once published.</p>
+              <p class="text-xs text-slate-500">Your first 5 posts are free and each runs for 14 days after approval. Paid plan duration is set by the plan.</p>
             </div>
             <button type="button" onclick="startSellingFlow(this)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-lg">
               + Create Post
@@ -406,7 +406,7 @@
         <h2 class="text-xl font-extrabold text-slate-900">Sell With Wariara Cars Central Rift</h2>
       </div>
       <p class="text-xs sm:text-sm text-slate-600 mb-4">
-        Start with <strong>6 free posts</strong>, or buy post credits that run for <strong>70 days</strong>. Choose what you are posting:
+        Start with <strong>5 free posts</strong>, each running for <strong>14 days after approval</strong>, or buy a post plan with a duration set by the plan. Choose what you are posting:
       </p>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button type="button" onclick="closeM('modal-sell-with-us'); startSellingForCategory('motor', this)" class="p-4 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-left hover:bg-emerald-100">
@@ -600,7 +600,7 @@
       <button type="button" onclick="closeM('modal-prio')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 font-bold">✕</button>
       <h2 class="text-xl font-extrabold">Prioritize Post (Sponsored)</h2>
       <p class="text-xs bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-lg mt-2">
-        Only <strong>20 posts/day</strong> can be prioritized. <strong>Whoever pays more is shown higher on top!</strong>
+        There is no daily limit on sponsored posts. <strong>Higher sponsorship amounts appear higher in the sponsored listings.</strong>
       </p>
       <input type="hidden" id="prio-id" />
       <div id="prio-summary" class="grid grid-cols-3 gap-2 my-3 text-center text-xs"></div>
@@ -1401,7 +1401,7 @@
         <div class="border rounded-xl p-4 flex items-center justify-between gap-2">
           <div>
             <div class="font-bold">${p.name} — ${p.post_count} Posts</div>
-            <div class="text-xs text-emerald-700 font-extrabold">KES ${p.price_kes} · 70-day posts</div>
+            <div class="text-xs text-emerald-700 font-extrabold">KES ${Number(p.price_kes).toLocaleString()} · posts expire after ${Number(p.duration_days || 70)} days</div>
           </div>
           <button type="button" onclick="openPlanPayment('${p.id}')" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-lg">Pay M-Pesa</button>
         </div>
@@ -1417,7 +1417,7 @@
       document.getElementById("active-seller-name").textContent = seller.name || "Seller Profile";
       document.getElementById("active-seller-meta").textContent = `${seller.email} · ${seller.town} · WA: ${seller.whatsapp_phone}`;
 
-      document.getElementById("q-free").textContent = Math.max(0, 6 - seller.free_posts_used);
+      document.getElementById("q-free").textContent = Math.max(0, 5 - seller.free_posts_used);
       document.getElementById("q-paid").textContent = seller.paid_post_credits;
 
       const suspBox = document.getElementById("seller-suspended-box");
@@ -1440,9 +1440,8 @@
 
       const { listings = [] } = await apiFetch(`/api/sellers/${seller.id}/listings`);
       document.getElementById("my-posts-list").innerHTML = listings.map((l) => {
-        const daysText = l.days_remaining !== null
-          ? `<span class="ml-2 text-[11px] font-bold ${l.days_remaining === 0 ? "text-red-600" : "text-emerald-700"}">${l.days_remaining}d left (70d)</span>`
-          : `<span class="ml-2 text-[11px] text-slate-400">Free post (no 70d expiry)</span>`;
+        const durationDays = Number(l.expiry_days || (l.is_paid_post ? 70 : 14));
+        const daysText = `<span class="ml-2 text-[11px] font-bold ${Number(l.days_remaining) === 0 ? "text-red-600" : "text-emerald-700"}">${Number(l.days_remaining ?? durationDays)}d remaining of ${durationDays}d</span>`;
         return `
           <div class="border rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
             <div>
@@ -1458,6 +1457,7 @@
               ${l.status === "paused" ? `<button type="button" onclick="togglePause('${l.id}','active', this)" class="bg-emerald-600 text-white px-2.5 py-1 rounded-lg">Resume</button>` : ""}
               ${["active", "paused"].includes(l.status) ? `<button type="button" onclick="togglePause('${l.id}','sold', this)" class="bg-amber-500 text-white px-2.5 py-1 rounded-lg">Mark Sold</button>` : ""}
               ${l.status === "active" ? `<button type="button" onclick="openPrio('${l.id}')" class="bg-amber-400 text-slate-950 px-2.5 py-1 rounded-lg">Prioritize</button>` : ""}
+              ${l.can_repost ? `<button type="button" onclick="repostListing('${l.id}', this)" class="rounded-lg bg-emerald-600 px-2.5 py-1 text-white">Repost (use 1 credit)</button>` : ""}
             </div>
           </div>
         `;
@@ -1492,7 +1492,7 @@
         type: "plan",
         planId: plan.id,
         amount: Number(plan.price_kes),
-        label: `Post Plan: ${plan.name} (${plan.post_count} posts)`,
+        label: `Post Plan: ${plan.name} (${plan.post_count} posts, ${Number(plan.duration_days || 70)} days each)`,
       };
       showPayHeroModal(plan.price_kes, payHeroContext.label);
     }
@@ -1698,6 +1698,22 @@
       });
     }
 
+    async function repostListing(id, btn = null) {
+      if (!confirm("Repost this expired post using one purchased post credit? It will be reviewed by Admin before appearing again.")) return;
+      await runWithButtonLock(btn, async () => {
+        try {
+          const result = await apiFetch(`/api/listings/${encodeURIComponent(id)}/repost`, {
+            method: "POST",
+            body: JSON.stringify({ seller_id: seller.id }),
+          });
+          alert(result.message || "Post submitted for approval.");
+          await renderSellerPage();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+    }
+
     async function sendAppeal(btn = null) {
       const appeal_text = document.getElementById("appeal-msg").value;
       await runWithButtonLock(btn, async () => {
@@ -1718,7 +1734,7 @@
       const d = await apiFetch("/api/priority/leaderboard");
       document.getElementById("prio-summary").innerHTML = `
         <div class="bg-slate-100 p-2 rounded">Base Fee: <strong>KES ${d.baseFee}</strong></div>
-        <div class="bg-amber-50 p-2 rounded">Slots: <strong>${d.usedSlots}/${d.maxSlots}</strong></div>
+        <div class="bg-amber-50 p-2 rounded">Sponsored today: <strong>${d.sponsoredToday}</strong></div>
         <div class="bg-emerald-50 p-2 rounded">Top #1 Bid: <strong>KES ${d.recommendedForTop1}</strong></div>
       `;
       document.getElementById("prio-bid").value = d.recommendedForTop1;
@@ -1726,6 +1742,7 @@
       prioritySelect.innerHTML = `<option value="">Custom bid</option>${(meta.priorityPlans || []).map((plan) => `<option value="${escapeHtml(plan.id)}">${escapeHtml(plan.name)} — KES ${Number(plan.price_kes).toLocaleString()}</option>`).join("")}`;
       const suggestedPlan = (meta.priorityPlans || []).find((plan) => Number(plan.price_kes) === Number(d.recommendedForTop1));
       prioritySelect.value = suggestedPlan?.id || "";
+      selectPriorityPlan();
       document.getElementById("prio-list").innerHTML = d.leaderboard.length === 0
         ? `<div class="p-3 text-slate-500">No prioritized posts yet. Pay KES ${d.baseFee} for #1.</div>`
         : d.leaderboard.map((x, i) => `<div class="p-2 flex justify-between"><span><strong>#${i + 1}</strong> ${x.title} (${x.seller_name})</span><strong class="text-emerald-700">KES ${x.priority_amount_kes}</strong></div>`).join("");
@@ -1733,8 +1750,13 @@
     }
 
     function selectPriorityPlan() {
-      const plan = (meta.priorityPlans || []).find((item) => item.id === document.getElementById("prio-plan-select").value);
-      if (plan) document.getElementById("prio-bid").value = Number(plan.price_kes);
+      const selectedId = document.getElementById("prio-plan-select").value;
+      const plan = (meta.priorityPlans || []).find((item) => item.id === selectedId);
+      const amountInput = document.getElementById("prio-bid");
+      amountInput.disabled = Boolean(plan);
+      amountInput.classList.toggle("bg-slate-100", Boolean(plan));
+      amountInput.classList.toggle("cursor-not-allowed", Boolean(plan));
+      if (plan) amountInput.value = Number(plan.price_kes);
     }
 
     function closeM(id) {
