@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,7 +17,7 @@
       <span>Wariara Cars Central Rift — <span class="text-amber-400">Admin Portal</span></span>
     </div>
 
-    <span class="text-xs text-slate-400">Support: 0710911645</span>
+    <span class="text-xs text-slate-400">Support: 0184966000 · <a href="mailto:Wariaracars@gmail.com" class="underline">Wariaracars@gmail.com</a></span>
   </header>
 
   <main class="max-w-7xl mx-auto p-4 sm:p-6">
@@ -31,7 +32,7 @@
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="flex flex-wrap gap-2 text-xs sm:text-sm font-bold">
           <button type="button" onclick="tab('posts')" id="t-posts" class="px-3.5 py-2 rounded-lg bg-emerald-600 text-white">Posts & Expiry</button>
-          <button type="button" onclick="tab('payments')" id="t-payments" class="px-3.5 py-2 rounded-lg bg-white border">Payment Notifications <span id="payment-notifs-count" class="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-800">0</span></button>
+          <button type="button" onclick="tab('payments')" id="t-payments" class="px-3.5 py-2 rounded-lg bg-white border">Account Notifications <span id="payment-notifs-count" class="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-800">0</span></button>
           <button type="button" onclick="tab('dealers')" id="t-dealers" class="px-3.5 py-2 rounded-lg bg-white border">Dealers (Add / Remove)</button>
           <button type="button" onclick="tab('users')" id="t-users" class="px-3.5 py-2 rounded-lg bg-white border">Accounts & Suspensions</button>
           <button type="button" onclick="tab('config')" id="t-config" class="px-3.5 py-2 rounded-lg bg-white border">Priority Price, Plans & Catalog</button>
@@ -55,10 +56,10 @@
 
       <div id="sec-payments" class="hidden bg-white rounded-xl border p-5 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <h3 class="font-extrabold text-base">Payment Notifications (Who Paid & What For)</h3>
+          <h3 class="font-extrabold text-base">Account Notifications</h3>
           <button type="button" onclick="loadAdmin()" class="rounded-lg border px-3 py-1.5 text-xs font-bold">Refresh</button>
         </div>
-        <div id="payment-notifs-list" class="divide-y text-sm"></div>
+        <div id="account-notifs-list" class="divide-y text-sm"></div>
       </div>
 
       <!-- ADMIN DEALER MANAGEMENT (ADD & REMOVE DEALER) -->
@@ -99,12 +100,22 @@
         </table>
       </div>
 
-      <div id="sec-config" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div id="sec-config" class="hidden grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-5">
         <div class="bg-white rounded-xl border p-5">
           <h3 class="font-bold mb-2">Priority Price (Max 20/Day)</h3>
           <p class="text-xs text-slate-500 mb-3">Minimum daily fee to enter the 20 sponsored slots; higher payments appear higher on top.</p>
           <input id="cfg-prio" type="number" class="w-full border rounded-lg px-3 py-2 text-sm mb-2" />
           <button type="button" onclick="savePrio(this)" class="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-lg">Save Priority Fee</button>
+        </div>
+
+        <div class="bg-white rounded-xl border p-5">
+          <h3 class="font-bold mb-2">Priority Plans (24-hour sponsorship)</h3>
+          <div id="priority-plans-edit" class="space-y-2 mb-3"></div>
+          <div class="grid grid-cols-2 gap-1.5 text-xs">
+            <input id="npp-name" placeholder="Plan name" class="min-w-0 border rounded px-2 py-1" />
+            <input id="npp-price" type="number" min="1" placeholder="KES" class="min-w-0 border rounded px-2 py-1" />
+          </div>
+          <button type="button" onclick="addPriorityPlan(this)" class="mt-2 bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg">+ Add Priority Plan</button>
         </div>
 
         <div class="bg-white rounded-xl border p-5">
@@ -134,9 +145,10 @@
       <div id="sec-subadmins" class="hidden bg-white rounded-xl border p-5 space-y-4">
         <div>
           <h3 class="font-extrabold text-base">Sub-admin PIN Logins (maximum 4)</h3>
-          <p class="mt-1 text-xs text-slate-500">A six-digit PIN is the only required login detail. Email is optional unless email verification is enabled. In the EmailJS template, set the recipient to <code>{{to_email}}</code> and include <code>{{message}}</code> (or <code>{{passcode}}</code>) in the email body so the code appears in the message. Leave an existing PIN blank to keep it.</p>
+          <p class="mt-1 text-xs leading-5 text-slate-600">Each login needs a six-digit PIN. Email is only needed when email verification is enabled. Leave an existing PIN blank to keep it.</p>
+          <p class="mt-1 break-words text-xs leading-5 text-slate-500">EmailJS template: recipient <code class="rounded bg-slate-100 px-1">{{to_email}}</code>; email body <code class="rounded bg-slate-100 px-1">{{message}}</code> or <code class="rounded bg-slate-100 px-1">{{passcode}}</code>.</p>
         </div>
-        <div id="subadmin-slots" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+        <div id="subadmin-slots" class="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2"></div>
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <p id="subadmin-emailjs-status" class="text-xs text-slate-600"></p>
@@ -169,7 +181,7 @@
   </div>
 
   <script>
-    const API_BASE = window.WARIARA_API_BASE || "https://carscrawers.onrender.com";
+    const API_BASE = window.WARIARA_API_BASE || "https://0carscrawers.vercel.app";
     const apiUrl = (path) => `${API_BASE}${path}`;
     const subAdminSession = localStorage.getItem("wariara_sub_session") || "";
     const isPrimaryAdmin = !subAdminSession;
@@ -368,22 +380,22 @@
           document.getElementById("t-subadmins").classList.add("hidden");
         }
 
-        document.getElementById("payment-notifs-list").innerHTML =
-          (d.paymentNotifications || []).length === 0
-            ? `<div class="py-4 text-slate-500 text-xs">No confirmed payments yet.</div>`
-            : d.paymentNotifications.map((n) => `
+        document.getElementById("account-notifs-list").innerHTML =
+          (d.accountNotifications || []).length === 0
+            ? `<div class="py-4 text-slate-500 text-xs">No account notifications yet.</div>`
+            : d.accountNotifications.map((n) => `
                 <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <div class="font-bold text-slate-900">${n.payer_name} <span class="text-xs font-normal text-slate-500">(${n.payer_phone || n.payer_email || ""})</span></div>
-                    <div class="text-xs text-slate-600">Paid for: <strong>${n.purpose}</strong> · Ref: ${n.payment_ref || "-"}</div>
+                    <div class="font-bold text-slate-900">${escapeHtml(n.seller_name || "Seller")} <span class="text-xs font-normal text-slate-500">(${n.type === "payment" ? "Payment" : "Account"})</span></div>
+                    <div class="text-xs text-slate-600">${escapeHtml(n.message || "")}</div>
                   </div>
                   <div class="text-right">
-                    <span class="font-black text-emerald-700">KES ${Number(n.amount_kes).toLocaleString()}</span>
-                    <div class="text-[11px] text-slate-400">${n.created_at || ""}</div>
+                    ${n.type === "payment" ? `<span class="font-black text-emerald-700">KES ${Number(n.amount_kes).toLocaleString()}</span>` : ""}
+                    <div class="text-[11px] text-slate-400">${escapeHtml(n.created_at || "")}</div>
                   </div>
                 </div>
               `).join("");
-        document.getElementById("payment-notifs-count").textContent = String((d.paymentNotifications || []).length);
+        document.getElementById("payment-notifs-count").textContent = String((d.accountNotifications || []).length);
 
         document.getElementById("users-rows").innerHTML = d.users.map((u) => `
           <tr>
@@ -408,6 +420,16 @@
         `).join("");
 
         document.getElementById("cfg-prio").value = d.settings.base_priority_price_kes || 300;
+        document.getElementById("priority-plans-edit").innerHTML = (d.priorityPlans || []).map((p) => `
+          <div class="space-y-1 rounded border p-2 text-xs">
+            <input id="pnp-${p.id}" value="${escapeHtml(p.name)}" class="w-full border rounded px-2 py-1" />
+            <div class="flex gap-1">
+              <input id="pnp-price-${p.id}" type="number" min="1" value="${Number(p.price_kes)}" class="min-w-0 flex-1 border rounded px-2 py-1" />
+              <button type="button" onclick="updatePriorityPlan('${p.id}', this)" class="bg-emerald-600 text-white font-bold rounded px-2">Save</button>
+              <button type="button" onclick="deletePriorityPlan('${p.id}', this)" class="bg-red-600 text-white font-bold rounded px-2">Delete</button>
+            </div>
+          </div>
+        `).join("") || `<div class="text-xs text-slate-500">No priority plans.</div>`;
         document.getElementById("plans-edit").innerHTML = d.plans.map((p) => `
           <div class="grid grid-cols-4 gap-1.5 text-xs">
             <input id="pn-${p.id}" value="${p.name}" class="border rounded px-2 py-1" />
@@ -493,23 +515,28 @@
       container.replaceChildren();
       for (const account of accounts) {
         const card = document.createElement("section");
-        card.className = "rounded-xl border border-slate-200 p-4 space-y-2";
+        card.className = "min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5";
+        const cardHeader = document.createElement("div");
+        cardHeader.className = "mb-4 flex flex-wrap items-center justify-between gap-3";
         const heading = document.createElement("h4");
         heading.className = "font-bold text-sm";
         heading.textContent = `Sub-admin ${account.slot}`;
-        card.append(heading);
 
         const activeLabel = document.createElement("label");
-        activeLabel.className = "flex items-center gap-2 text-xs font-semibold";
+        activeLabel.className = "inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold";
         const active = document.createElement("input");
         active.type = "checkbox";
         active.dataset.subadminActive = "";
+        active.className = "h-4 w-4 accent-emerald-600";
         active.checked = account.active;
         const activeText = document.createElement("span");
         activeText.textContent = "Enable this login";
         activeLabel.append(active, activeText);
-        card.append(activeLabel);
+        cardHeader.append(heading, activeLabel);
+        card.append(cardHeader);
 
+        const fields = document.createElement("div");
+        fields.className = "grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2";
         const pin = document.createElement("input");
         pin.type = "password";
         pin.inputMode = "numeric";
@@ -517,25 +544,38 @@
         pin.maxLength = 6;
         pin.placeholder = account.active ? "New 6-digit PIN (blank keeps current)" : "New 6-digit PIN";
         pin.dataset.subadminPin = "";
-        pin.className = "w-full rounded-lg border px-3 py-2 text-sm";
-        card.append(pin);
+        pin.autocomplete = "new-password";
+        pin.className = "block w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100";
+        const pinField = document.createElement("label");
+        pinField.className = "block min-w-0 space-y-1.5 text-xs font-semibold text-slate-700";
+        const pinLabel = document.createElement("span");
+        pinLabel.textContent = "Six-digit PIN";
+        pinField.append(pinLabel, pin);
 
         const email = document.createElement("input");
         email.type = "email";
         email.value = account.email;
-        email.placeholder = "Email for optional sign-in code";
+        email.placeholder = "name@example.com";
         email.dataset.subadminEmail = "";
-        email.className = "w-full rounded-lg border px-3 py-2 text-sm";
-        card.append(email);
+        email.autocomplete = "email";
+        email.className = "block w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100";
+        const emailField = document.createElement("label");
+        emailField.className = "block min-w-0 space-y-1.5 text-xs font-semibold text-slate-700";
+        const emailLabel = document.createElement("span");
+        emailLabel.textContent = "Email for verification (optional)";
+        emailField.append(emailLabel, email);
+        fields.append(pinField, emailField);
+        card.append(fields);
 
         const codeLabel = document.createElement("label");
-        codeLabel.className = "flex items-center gap-2 text-xs";
+        codeLabel.className = "mt-3 flex cursor-pointer items-start gap-2.5 rounded-lg border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-700";
         const code = document.createElement("input");
         code.type = "checkbox";
         code.checked = account.email_code_enabled;
         code.dataset.subadminEmailCode = "";
+        code.className = "mt-0.5 h-4 w-4 shrink-0 accent-emerald-600";
         const codeText = document.createElement("span");
-        codeText.textContent = "Require a one-time email code at login";
+        codeText.textContent = "Require a one-time email code when signing in";
         codeLabel.append(code, codeText);
         card.append(codeLabel);
 
@@ -728,6 +768,42 @@
       await runWithButtonLock(btn, async () => {
         await adminFetch("/api/admin/settings", { method: "POST", body: JSON.stringify({ base_priority_price_kes: Number(document.getElementById("cfg-prio").value) }) });
         alert("Saved.");
+      });
+    }
+
+    async function updatePriorityPlan(id, btn = null) {
+      await runWithButtonLock(btn, async () => {
+        await adminFetch(`/api/admin/priority-plans/${encodeURIComponent(id)}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            name: document.getElementById(`pnp-${id}`).value,
+            price_kes: Number(document.getElementById(`pnp-price-${id}`).value),
+          }),
+        });
+        await loadAdmin();
+      });
+    }
+
+    async function addPriorityPlan(btn = null) {
+      await runWithButtonLock(btn, async () => {
+        await adminFetch("/api/admin/priority-plans", {
+          method: "POST",
+          body: JSON.stringify({
+            name: document.getElementById("npp-name").value,
+            price_kes: Number(document.getElementById("npp-price").value),
+          }),
+        });
+        document.getElementById("npp-name").value = "";
+        document.getElementById("npp-price").value = "";
+        await loadAdmin();
+      });
+    }
+
+    async function deletePriorityPlan(id, btn = null) {
+      if (!confirm("Delete this priority plan?")) return;
+      await runWithButtonLock(btn, async () => {
+        await adminFetch(`/api/admin/priority-plans/${encodeURIComponent(id)}`, { method: "DELETE" });
+        await loadAdmin();
       });
     }
 
