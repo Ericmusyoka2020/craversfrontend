@@ -44,7 +44,7 @@
       <div id="sec-posts" class="space-y-3">
         <div class="flex flex-wrap gap-2 text-xs font-bold bg-white p-3 rounded-xl border">
           <button type="button" onclick="setPostFilter('all')" id="pf-all" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white">All Posts</button>
-          <button type="button" onclick="setPostFilter('expired')" id="pf-expired" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200">Expired Posts (70d)</button>
+          <button type="button" onclick="setPostFilter('expired')" id="pf-expired" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200">Expired Posts (14d retention)</button>
           <button type="button" onclick="setPostFilter('pending_approval')" id="pf-pending_approval" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">Pending Approval</button>
           <button type="button" onclick="setPostFilter('active')" id="pf-active" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">Active</button>
           <button type="button" onclick="setPostFilter('paused')" id="pf-paused" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 border">Paused</button>
@@ -102,8 +102,8 @@
 
       <div id="sec-config" class="hidden grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-5">
         <div class="bg-white rounded-xl border p-5">
-          <h3 class="font-bold mb-2">Priority Price (Max 20/Day)</h3>
-          <p class="text-xs text-slate-500 mb-3">Minimum daily fee to enter the 20 sponsored slots; higher payments appear higher on top.</p>
+          <h3 class="font-bold mb-2">Priority Price (Unlimited Sponsored Posts)</h3>
+          <p class="text-xs text-slate-500 mb-3">Set the minimum sponsorship fee. Sponsored posts are ranked by amount paid.</p>
           <input id="cfg-prio" type="number" class="w-full border rounded-lg px-3 py-2 text-sm mb-2" />
           <button type="button" onclick="savePrio(this)" class="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-lg">Save Priority Fee</button>
         </div>
@@ -119,12 +119,13 @@
         </div>
 
         <div class="bg-white rounded-xl border p-5">
-          <h3 class="font-bold mb-2">Post Plans (e.g. 10 = 200, 25 = 500)</h3>
+          <h3 class="font-bold mb-2">Post Plans (credits, price & expiry)</h3>
           <div id="plans-edit" class="space-y-2 mb-3"></div>
-          <div class="grid grid-cols-3 gap-1.5 text-xs">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
             <input id="np-name" placeholder="Name" class="border rounded px-2 py-1" />
             <input id="np-cnt" type="number" placeholder="Posts" class="border rounded px-2 py-1" />
             <input id="np-prc" type="number" placeholder="KES" class="border rounded px-2 py-1" />
+            <input id="np-days" type="number" min="1" placeholder="Expiry days" class="border rounded px-2 py-1" />
           </div>
           <button type="button" onclick="addPlan(this)" class="mt-2 bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg">+ Add Plan</button>
         </div>
@@ -181,7 +182,7 @@
   </div>
 
   <script>
-    const API_BASE = window.WARIARA_API_BASE || "https://carscrawers.onrender.com";
+    const API_BASE = window.WARIARA_API_BASE || "https://0carscrawers.vercel.app";
     const apiUrl = (path) => `${API_BASE}${path}`;
     const subAdminSession = localStorage.getItem("wariara_sub_session") || "";
     const isPrimaryAdmin = !subAdminSession;
@@ -305,7 +306,7 @@
 
       document.getElementById("admin-posts-list").innerHTML = list.map((l) => {
         const remainingBadge = l.days_remaining !== null
-          ? `<span class="text-xs font-bold px-2 py-0.5 rounded ${l.days_remaining === 0 ? "bg-red-100 text-red-800" : "bg-emerald-50 text-emerald-800"}">${l.days_remaining} days remaining (70d)</span>`
+          ? `<span class="text-xs font-bold px-2 py-0.5 rounded ${l.days_remaining === 0 ? "bg-red-100 text-red-800" : "bg-emerald-50 text-emerald-800"}">${l.days_remaining} days remaining of ${Number(l.expiry_days || (l.is_paid_post ? 70 : 14))} days</span>`
           : `<span class="text-xs text-slate-400">Free post</span>`;
 
         return `
@@ -401,7 +402,7 @@
           <tr>
             <td class="py-2.5 pr-3"><strong>${u.name}</strong><div class="text-slate-400">${u.role} · ${u.town}</div></td>
             <td class="py-2.5 pr-3">${u.email}<div>WA: ${u.whatsapp_phone} | Call: ${u.call_phone}</div></td>
-            <td class="py-2.5 pr-3">Free: <strong>${u.free_posts_used}/6</strong><div>Credits: <strong>${u.paid_post_credits}</strong></div></td>
+            <td class="py-2.5 pr-3">Free: <strong>${u.free_posts_used}/5</strong><div>Credits: <strong>${u.paid_post_credits}</strong></div></td>
             <td class="py-2.5 pr-3"><strong>${u.total_purchased_posts}</strong> posts (KES ${Number(u.total_spent_kes).toLocaleString()})</td>
             <td class="py-2.5 pr-3">
               ${u.is_suspended ? `<span class="text-red-700 font-bold">SUSPENDED</span> (${u.suspension_reason || ""})` : `<span class="text-emerald-700 font-bold">Active</span>`}
@@ -431,10 +432,11 @@
           </div>
         `).join("") || `<div class="text-xs text-slate-500">No priority plans.</div>`;
         document.getElementById("plans-edit").innerHTML = d.plans.map((p) => `
-          <div class="grid grid-cols-4 gap-1.5 text-xs">
+          <div class="grid grid-cols-5 gap-1.5 text-xs">
             <input id="pn-${p.id}" value="${p.name}" class="border rounded px-2 py-1" />
             <input id="pc-${p.id}" type="number" value="${p.post_count}" class="border rounded px-2 py-1" />
             <input id="pp-${p.id}" type="number" value="${p.price_kes}" class="border rounded px-2 py-1" />
+            <input id="pd-${p.id}" type="number" min="1" value="${p.duration_days || 70}" class="border rounded px-2 py-1" aria-label="Post expiry days" />
             <button type="button" onclick="updPlan('${p.id}', this)" class="bg-emerald-600 text-white font-bold rounded">Save</button>
           </div>
         `).join("");
@@ -815,6 +817,7 @@
             name: document.getElementById(`pn-${id}`).value,
             post_count: Number(document.getElementById(`pc-${id}`).value),
             price_kes: Number(document.getElementById(`pp-${id}`).value),
+            duration_days: Number(document.getElementById(`pd-${id}`).value),
           }),
         });
         alert("Plan updated.");
@@ -829,6 +832,7 @@
             name: document.getElementById("np-name").value,
             post_count: Number(document.getElementById("np-cnt").value),
             price_kes: Number(document.getElementById("np-prc").value),
+            duration_days: Number(document.getElementById("np-days").value),
           }),
         });
         await loadAdmin();
