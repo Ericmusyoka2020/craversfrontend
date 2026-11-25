@@ -4,19 +4,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>admin Portal | Wariara Cars Central Rift</title>
+  <title>Sub-admin Portal | Wariara Cars Central Rift</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>button:disabled { opacity: .65; cursor: not-allowed; }</style>
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
   <header class="flex min-h-16 items-center justify-between bg-slate-950 px-5 py-2 text-white">
-    <strong>Wariara admin Portal</strong>
+    <strong>Wariara Sub-admin Portal <span class="ml-2 text-xs font-normal text-slate-300">0184966000 · <a href="mailto:Wariaracars@gmail.com" class="underline">Wariaracars@gmail.com</a></span></strong>
     <button id="logout-button" type="button" onclick="logoutSub()" class="hidden text-xs underline">Sign out</button>
   </header>
 
   <main class="mx-auto max-w-7xl p-4 sm:p-6">
     <section id="gate" class="mx-auto max-w-md rounded-xl border bg-white p-5 shadow-sm">
-      <h1 class="text-xl font-extrabold">admin sign in</h1>
+      <h1 class="text-xl font-extrabold">Sub-admin sign in</h1>
       <p class="mt-1 text-xs text-slate-500">Enter your six-digit PIN.</p>
       <label for="pin" class="mt-4 block text-xs font-bold">PIN</label>
       <input id="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="6-digit PIN" class="mt-1 w-full rounded-lg border px-3 py-2 text-sm" />
@@ -33,7 +33,7 @@
     <section id="portal" class="hidden space-y-5">
       <nav class="flex flex-wrap gap-2 rounded-xl border bg-white p-3 text-xs font-bold sm:text-sm">
         <button type="button" onclick="tab('posts')" id="tab-posts" class="rounded-lg bg-emerald-600 px-3 py-2 text-white">Posts & Reviews</button>
-        <button type="button" onclick="tab('payments')" id="tab-payments" class="rounded-lg border px-3 py-2">Payments <span id="payment-count" class="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-800">0</span></button>
+        <button type="button" onclick="tab('payments')" id="tab-payments" class="rounded-lg border px-3 py-2">Account Notifications <span id="payment-count" class="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-800">0</span></button>
         <button type="button" onclick="tab('dealers')" id="tab-dealers" class="rounded-lg border px-3 py-2">Dealers</button>
         <button type="button" onclick="tab('users')" id="tab-users" class="rounded-lg border px-3 py-2">Accounts</button>
         <button type="button" onclick="tab('config')" id="tab-config" class="rounded-lg border px-3 py-2">Plans & Catalog</button>
@@ -56,7 +56,7 @@
 
       <section id="section-payments" class="hidden rounded-xl border bg-white p-5">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 class="font-extrabold">Payment Notifications</h2>
+          <h2 class="font-extrabold">Account Notifications</h2>
           <button type="button" onclick="loadOverview(true)" class="rounded-lg border px-3 py-1.5 text-xs font-bold">Refresh</button>
         </div>
         <div id="payments" class="divide-y text-sm"></div>
@@ -83,7 +83,16 @@
         </table>
       </section>
 
-      <section id="section-config" class="hidden grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <section id="section-config" class="hidden grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-4">
+        <div class="rounded-xl border bg-white p-4">
+          <h2 class="mb-2 font-bold">Priority Plans (24-hour sponsorship)</h2>
+          <div id="priority-plans" class="space-y-2"></div>
+          <div class="mt-3 grid grid-cols-2 gap-1">
+            <input id="new-priority-name" placeholder="Plan name" class="min-w-0 rounded border px-2 py-1 text-xs" />
+            <input id="new-priority-price" type="number" min="1" placeholder="KES" class="min-w-0 rounded border px-2 py-1 text-xs" />
+          </div>
+          <button type="button" onclick="addPriorityPlan(this)" class="mt-2 rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white">Add Priority Plan</button>
+        </div>
         <div class="rounded-xl border bg-white p-4">
           <h2 class="mb-2 font-bold">Sponsored Priority Price</h2>
           <input id="priority-price" type="number" min="1" class="w-full rounded-lg border px-3 py-2" />
@@ -135,7 +144,7 @@
   </div>
 
   <script>
-    const API_BASE = "https://carscrawers.onrender.com";
+    const API_BASE = window.WARIARA_API_BASE || "https://0carscrawers.vercel.app";
     let session = localStorage.getItem("wariara_sub_session") || "";
     let overview = null;
     let postFilter = "all";
@@ -285,6 +294,7 @@
         renderDealers();
         renderUsers();
         renderPlans();
+        renderPriorityPlans();
         document.getElementById("priority-price").value = overview.settings.base_priority_price_kes || 300;
       } catch (error) {
         if (error.message.includes("session expired") || error.message.includes("Unauthorized")) {
@@ -299,13 +309,25 @@
     }
 
     function renderPayments() {
-      const items = overview.paymentNotifications || [];
+      const items = overview.accountNotifications || [];
       document.getElementById("payment-count").textContent = String(items.length);
       document.getElementById("payments").innerHTML = items.length ? items.map((item) => `
         <div class="flex flex-wrap justify-between gap-2 py-3">
-          <div><strong>${escapeHtml(item.payer_name || "Seller")}</strong><div class="text-xs text-slate-600">${escapeHtml(item.payer_phone || item.payer_email || "")} · ${escapeHtml(item.purpose)}</div><div class="text-xs text-slate-400">Ref: ${escapeHtml(item.payment_ref || "-")} · ${escapeHtml(item.created_at || "")}</div></div>
-          <strong class="text-emerald-700">KES ${Number(item.amount_kes).toLocaleString()}</strong>
-        </div>`).join("") : `<p class="py-3 text-sm text-slate-500">No confirmed payments.</p>`;
+          <div><strong>${escapeHtml(item.seller_name || "Seller")}</strong><div class="text-xs font-bold uppercase text-slate-500">${item.type === "payment" ? "Payment" : "Account update"}</div><div class="text-xs text-slate-600">${escapeHtml(item.message)}</div><div class="text-xs text-slate-400">${escapeHtml(item.created_at || "")}</div></div>
+          ${item.type === "payment" ? `<strong class="text-emerald-700">KES ${Number(item.amount_kes).toLocaleString()}</strong>` : ""}
+        </div>`).join("") : `<p class="py-3 text-sm text-slate-500">No account notifications.</p>`;
+    }
+
+    function renderPriorityPlans() {
+      document.getElementById("priority-plans").innerHTML = (overview.priorityPlans || []).map((plan) => `
+        <div class="space-y-1 rounded border p-2 text-xs">
+          <input id="priority-name-${plan.id}" value="${escapeHtml(plan.name)}" class="w-full rounded border px-2 py-1" />
+          <div class="flex gap-1">
+            <input id="priority-price-${plan.id}" type="number" min="1" value="${Number(plan.price_kes)}" class="min-w-0 flex-1 rounded border px-2 py-1" />
+            <button type="button" onclick="savePriorityPlan('${plan.id}',this)" class="rounded bg-emerald-600 px-2 font-bold text-white">Save</button>
+            <button type="button" onclick="deletePriorityPlan('${plan.id}',this)" class="rounded bg-red-600 px-2 font-bold text-white">Delete</button>
+          </div>
+        </div>`).join("") || `<p class="text-xs text-slate-500">No priority plans.</p>`;
     }
 
     function renderDealers() {
@@ -542,6 +564,48 @@
         try {
           const result = await api("/api/admin/settings", { method: "POST", body: JSON.stringify({ base_priority_price_kes: Number(document.getElementById("priority-price").value) }) });
           alert(result.message || "Priority price saved.");
+          await loadOverview(true);
+        } catch (error) { alert(error.message); }
+      });
+    }
+
+    async function savePriorityPlan(id, button) {
+      await withLock(button, async () => {
+        try {
+          await api(`/api/admin/priority-plans/${encodeURIComponent(id)}`, {
+            method: "PUT",
+            body: JSON.stringify({
+              name: document.getElementById(`priority-name-${id}`).value,
+              price_kes: Number(document.getElementById(`priority-price-${id}`).value),
+            }),
+          });
+          await loadOverview(true);
+        } catch (error) { alert(error.message); }
+      });
+    }
+
+    async function addPriorityPlan(button) {
+      await withLock(button, async () => {
+        try {
+          await api("/api/admin/priority-plans", {
+            method: "POST",
+            body: JSON.stringify({
+              name: document.getElementById("new-priority-name").value,
+              price_kes: Number(document.getElementById("new-priority-price").value),
+            }),
+          });
+          document.getElementById("new-priority-name").value = "";
+          document.getElementById("new-priority-price").value = "";
+          await loadOverview(true);
+        } catch (error) { alert(error.message); }
+      });
+    }
+
+    async function deletePriorityPlan(id, button) {
+      if (!confirm("Delete this priority plan?")) return;
+      await withLock(button, async () => {
+        try {
+          await api(`/api/admin/priority-plans/${encodeURIComponent(id)}`, { method: "DELETE" });
           await loadOverview(true);
         } catch (error) { alert(error.message); }
       });
