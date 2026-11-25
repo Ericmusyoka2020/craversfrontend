@@ -101,10 +101,11 @@
         <div class="rounded-xl border bg-white p-4">
           <h2 class="mb-2 font-bold">Post Plans</h2>
           <div id="plans" class="space-y-2"></div>
-          <div class="mt-3 grid grid-cols-3 gap-1">
+          <div class="mt-3 grid grid-cols-2 gap-1 sm:grid-cols-4">
             <input id="new-plan-name" placeholder="Name" class="min-w-0 rounded border px-2 py-1 text-xs" />
             <input id="new-plan-count" type="number" min="1" placeholder="Posts" class="min-w-0 rounded border px-2 py-1 text-xs" />
             <input id="new-plan-price" type="number" min="1" placeholder="KES" class="min-w-0 rounded border px-2 py-1 text-xs" />
+            <input id="new-plan-duration" type="number" min="1" placeholder="Expiry days" class="min-w-0 rounded border px-2 py-1 text-xs" />
           </div>
           <button type="button" onclick="addPlan(this)" class="mt-2 rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white">Add Plan</button>
         </div>
@@ -144,7 +145,7 @@
   </div>
 
   <script>
-    const API_BASE = window.WARIARA_API_BASE || "https://carscrawers.onrender.com";
+    const API_BASE = window.WARIARA_API_BASE || "https://0carscrawers.vercel.app";
     let session = localStorage.getItem("wariara_sub_session") || "";
     let overview = null;
     let postFilter = "all";
@@ -269,6 +270,7 @@
             <img src="${escapeHtml(item.cover_photo || "")}" loading="lazy" alt="" class="h-20 w-24 rounded-lg bg-slate-100 object-cover" />
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2"><strong>${escapeHtml(item.title)}</strong><span class="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase">${escapeHtml(item.status)}</span></div>
+              <p class="mt-1 text-xs font-semibold ${Number(item.days_remaining) === 0 ? "text-red-700" : "text-emerald-700"}">${Number(item.days_remaining ?? item.expiry_days ?? 14)} days remaining of ${Number(item.expiry_days || (item.is_paid_post ? 70 : 14))} days</p>
               <p class="mt-1 text-xs text-slate-600">${escapeHtml(item.seller_name)} · ${escapeHtml(item.town)} · KES ${Number(item.price_kes).toLocaleString()}</p>
               <p class="mt-1 whitespace-pre-line text-xs text-slate-600">${escapeHtml(item.description)}</p>
               ${item.rejection_reason ? `<p class="mt-1 text-xs font-bold text-red-700">Rejection reason: ${escapeHtml(item.rejection_reason)}</p>` : ""}
@@ -344,7 +346,7 @@
         <tr>
           <td class="py-3 pr-3"><strong>${escapeHtml(user.name)}</strong><div>${escapeHtml(user.role)} · ${escapeHtml(user.town)}</div></td>
           <td class="py-3 pr-3">${escapeHtml(user.email)}<div>WA: ${escapeHtml(user.whatsapp_phone)} · Call: ${escapeHtml(user.call_phone)}</div></td>
-          <td class="py-3 pr-3">Free ${Number(user.free_posts_used || 0)}/6 · Credits ${Number(user.paid_post_credits || 0)}<div>Purchases: ${Number(user.total_purchased_posts || 0)}</div></td>
+          <td class="py-3 pr-3">Free ${Number(user.free_posts_used || 0)}/5 · Credits ${Number(user.paid_post_credits || 0)}<div>Purchases: ${Number(user.total_purchased_posts || 0)}</div></td>
           <td class="py-3 pr-3">${user.is_suspended ? `<strong class="text-red-700">Suspended</strong>: ${escapeHtml(user.suspension_reason)}` : "Active"}${user.appeal_status === "pending" ? `<div class="mt-1 text-amber-800">Appeal: ${escapeHtml(user.appeal_text)}</div>` : ""}</td>
           <td class="py-3"><div class="flex flex-wrap gap-1">
             <button type="button" onclick="giftPosts('${user.id}',this)" class="rounded bg-emerald-600 px-2 py-1 text-white">Gift</button>
@@ -356,10 +358,11 @@
 
     function renderPlans() {
       document.getElementById("plans").innerHTML = overview.plans.map((plan) => `
-        <div class="grid grid-cols-4 gap-1">
+        <div class="grid grid-cols-5 gap-1">
           <input id="plan-name-${plan.id}" value="${escapeHtml(plan.name)}" aria-label="Plan name" class="min-w-0 rounded border px-1 py-1 text-xs" />
           <input id="plan-count-${plan.id}" type="number" value="${Number(plan.post_count)}" aria-label="Post count" class="min-w-0 rounded border px-1 py-1 text-xs" />
           <input id="plan-price-${plan.id}" type="number" value="${Number(plan.price_kes)}" aria-label="Plan price" class="min-w-0 rounded border px-1 py-1 text-xs" />
+          <input id="plan-duration-${plan.id}" type="number" min="1" value="${Number(plan.duration_days || 70)}" aria-label="Expiry duration in days" class="min-w-0 rounded border px-1 py-1 text-xs" />
           <button type="button" onclick="savePlan('${plan.id}',this)" class="rounded bg-emerald-600 text-xs font-bold text-white">Save</button>
         </div>`).join("");
     }
@@ -620,6 +623,7 @@
               name: document.getElementById(`plan-name-${id}`).value,
               post_count: Number(document.getElementById(`plan-count-${id}`).value),
               price_kes: Number(document.getElementById(`plan-price-${id}`).value),
+              duration_days: Number(document.getElementById(`plan-duration-${id}`).value),
             }),
           });
           alert("Plan updated.");
@@ -637,6 +641,7 @@
               name: document.getElementById("new-plan-name").value,
               post_count: Number(document.getElementById("new-plan-count").value),
               price_kes: Number(document.getElementById("new-plan-price").value),
+              duration_days: Number(document.getElementById("new-plan-duration").value),
             }),
           });
           alert(result.message || "Plan added.");
