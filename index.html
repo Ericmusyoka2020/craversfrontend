@@ -6,7 +6,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wariara Cars Central Rift | Buy & Sell Cars, Trucks, Bikes & Spare Parts</title>
-  <link rel="preconnect" href="https://carscrawers.onrender.com" />
+  <link rel="preconnect" href="https://0carscrawers.vercel.app" />
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -71,7 +71,7 @@
           FAQ
         </a>
         <button type="button" onclick="openInfoModal('contact')" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
-          Contact Us (0710911645)
+          Contact Us (0184966000)
         </button>
         <a href="terms.html" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 whitespace-nowrap">
           Terms & Conditions
@@ -91,6 +91,12 @@
             <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
               Approved listings only — search by car, spare part, or seller name and contact directly.
             </p>
+            <div class="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+              <button type="button" onclick="setCat('motor')" class="rounded-lg bg-slate-900 px-3 py-2 text-white">Buy Motors</button>
+              <button type="button" onclick="setCat('part')" class="rounded-lg border border-slate-300 bg-white px-3 py-2">Buy Spare Parts</button>
+              <button type="button" onclick="openSellerOnboardingModal(this)" class="rounded-lg bg-emerald-600 px-3 py-2 text-white">Sell With Us</button>
+              <button type="button" onclick="startSellingForCategory('motor', this)" class="rounded-lg border border-emerald-700 px-3 py-2 text-emerald-800">Advertise With Us</button>
+            </div>
           </div>
           <div class="inline-flex rounded-xl bg-slate-100 p-1 self-start">
             <button type="button" onclick="setCat('motor')" id="btn-cat-motor" class="px-4 py-2 rounded-lg text-sm font-bold bg-white text-emerald-700 shadow-sm">Motors</button>
@@ -358,10 +364,6 @@
             </div>
           </div>
 
-          <div class="bg-white rounded-xl border border-slate-200 p-5">
-            <h4 class="font-bold text-sm mb-2">Account Notifications (Deductions & Payments)</h4>
-            <div id="seller-notifications-list" class="space-y-2 max-h-64 overflow-y-auto text-xs text-slate-600"></div>
-          </div>
         </div>
 
         <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
@@ -381,12 +383,15 @@
         </div>
       </div>
       <section class="bg-white rounded-xl border border-slate-200 p-5">
-        <h3 class="font-extrabold text-lg mb-3">More Marketplace Posts</h3>
-        <div id="seller-market-posts" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+        <h3 class="font-extrabold text-lg mb-3">Account Notifications</h3>
+        <div id="seller-notifications-list" class="space-y-2 max-h-80 overflow-y-auto text-sm text-slate-600"></div>
       </section>
       <section class="bg-white rounded-xl border border-slate-200 p-5">
-        <h3 class="font-extrabold text-lg mb-3">Payment Notifications</h3>
-        <div id="seller-payment-notifications" class="space-y-2 text-sm text-slate-600"></div>
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h3 class="font-extrabold text-lg">More Marketplace Posts</h3>
+          <button type="button" onclick="openSellerOnboardingModal(this)" class="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white">Sell With Us</button>
+        </div>
+        <div id="seller-market-posts" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
       </section>
     </section>
 
@@ -416,7 +421,7 @@
     </div>
   </div>
 
-  <!-- INFO MODAL (ADVERTISE WITH US, FAQ, CONTACT US 0710911645) -->
+  <!-- INFO MODAL (ADVERTISE WITH US, FAQ, CONTACT US) -->
   <div id="modal-info" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-lg w-full p-6 relative shadow-xl">
       <button type="button" onclick="closeM('modal-info')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 font-bold">✕</button>
@@ -600,6 +605,7 @@
       <input type="hidden" id="prio-id" />
       <div id="prio-summary" class="grid grid-cols-3 gap-2 my-3 text-center text-xs"></div>
       <div class="flex gap-2 mb-4">
+        <select id="prio-plan-select" onchange="selectPriorityPlan()" class="w-40 border rounded-lg px-2 py-2 text-xs"></select>
         <input id="prio-bid" type="number" class="flex-1 border rounded-lg px-3 py-2 font-bold" />
         <button type="button" onclick="openPrioritizePayment(this)" class="bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold px-4 py-2 rounded-lg">Pay & Sponsor</button>
       </div>
@@ -613,28 +619,28 @@
       <a href="terms.html" class="hover:text-emerald-700 underline">Terms & Conditions</a>
       <a href="faq.html" class="hover:text-emerald-700 underline">FAQ</a>
       <button type="button" onclick="startSellingForCategory('motor', this)" class="hover:text-emerald-700 underline">Advertise With Us</button>
-      <button type="button" onclick="openInfoModal('contact')" class="hover:text-emerald-700 underline">Contact: 0710911645</button>
+      <button type="button" onclick="openInfoModal('contact')" class="hover:text-emerald-700 underline">Contact: 0184966000</button>
     </div>
-    <div>Wariara Cars Central Rift · Call / WhatsApp: 0710911645</div>
+    <div>Wariara Cars Central Rift · Call / WhatsApp: 0184966000 · <a href="mailto:Wariaracars@gmail.com" class="underline">Wariaracars@gmail.com</a></div>
+    <div class="mt-1">© 2026 Wariara Cars Central Rift. All rights reserved. · <a href="https://stackcrafts.com" target="_blank" rel="noopener noreferrer" class="font-semibold text-slate-600 underline hover:text-emerald-700">Website by Stackcrafts Studio</a></div>
   </footer>
 
   <aside id="cookie-notice" class="hidden fixed bottom-3 left-3 right-3 z-40 mx-auto max-w-xl rounded-xl border border-slate-300 bg-white p-4 shadow-xl" role="dialog" aria-label="Cookie and storage notice">
     <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-      <p class="flex-1 text-sm text-slate-700">This site uses essential browser storage to keep you signed in and remember your preferences. No advertising cookies are used.</p>
+      <p class="flex-1 text-sm text-slate-700">We use essential browser storage to keep you signed in and remember your preferences, helping the marketplace work smoothly.</p>
       <div class="flex gap-2 text-xs font-bold">
-        <button type="button" onclick="dismissCookieNotice()" class="rounded-lg bg-emerald-600 px-3 py-2 text-white">Okay</button>
-        <button type="button" onclick="dismissCookieNotice()" class="rounded-lg border border-slate-300 px-3 py-2 text-slate-700">Dismiss</button>
+        <button type="button" onclick="dismissCookieNotice()" class="rounded-lg bg-emerald-600 px-3 py-2 text-white">Got it</button>
       </div>
     </div>
   </aside>
 
   <script>
-    const API_BASE = window.WARIARA_API_BASE || "https://carscrawers.onrender.com";
+    const API_BASE = window.WARIARA_API_BASE || "https://0carscrawers.vercel.app";
     const PAYHERO_BACKEND_URL = window.PAYHERO_BACKEND_URL || "https://parero.vercel.app";
     const apiUrl = (path) => `${API_BASE}${path}`;
 
     let seller = JSON.parse(localStorage.getItem("wariara_seller") || "null");
-    let meta = { catalog: [], plans: [], settings: {} };
+    let meta = { catalog: [], plans: [], priorityPlans: [], settings: {} };
     let cat = "motor";
     let postCat = "motor";
     let storeSlug = "";
@@ -875,11 +881,12 @@
           <h2 class="text-xl font-extrabold text-slate-900">Contact Us</h2>
           <p class="text-slate-600">Reach Wariara Cars Central Rift support, dealer desk, or advertising team:</p>
           <div class="p-3.5 rounded-xl bg-slate-50 border text-xs space-y-1">
-            <div><strong>Phone:</strong> 0710911645</div>
+            <div><strong>Phone / WhatsApp:</strong> 0184966000</div>
+            <div><strong>Email:</strong> <a href="mailto:Wariaracars@gmail.com" class="text-emerald-700 underline">Wariaracars@gmail.com</a></div>
             <div><strong>Terms & Conditions:</strong> <a href="terms.html" class="text-emerald-700 underline font-bold">View terms.html</a></div>
           </div>
           <div class="text-xs font-bold">
-            <a href="tel:0710911645" class="bg-slate-900 text-white text-center py-2.5 rounded-lg">Call 0710911645</a>
+            <a href="tel:0184966000" class="bg-slate-900 text-white text-center py-2.5 rounded-lg">Call 0184966000</a>
           </div>
         `;
       document.getElementById("modal-info").classList.remove("hidden");
@@ -1420,25 +1427,16 @@
       }
 
       const notifRes = await apiFetch(`/api/sellers/${seller.id}/notifications`);
-      document.getElementById("seller-notifications-list").innerHTML =
-        (notifRes.notifications || []).length === 0
-          ? `<div class="text-slate-400">No notifications yet.</div>`
-          : notifRes.notifications.map((n) => `
-              <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                <div>${n.message}</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">${n.created_at || ""}</div>
-              </div>
-            `).join("");
-      const paymentNotifications = notifRes.paymentNotifications || [];
-      document.getElementById("seller-payment-notifications").innerHTML = paymentNotifications.length
-        ? paymentNotifications.map((payment) => `
-            <div class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50 p-3">
-              <span>${escapeHtml(payment.purpose || "Payment confirmed")}</span>
-              <strong class="text-emerald-700">KES ${Number(payment.amount_kes || 0).toLocaleString()}</strong>
-              <span class="w-full text-xs text-slate-400">${escapeHtml(payment.created_at || "")}</span>
+      const accountNotifications = notifRes.accountNotifications || [];
+      document.getElementById("seller-notifications-list").innerHTML = accountNotifications.length
+        ? accountNotifications.map((notification) => `
+            <div class="rounded-lg border border-slate-100 bg-slate-50 p-3">
+              <div class="mb-1 text-[10px] font-extrabold uppercase tracking-wide ${notification.type === "payment" ? "text-emerald-700" : "text-slate-500"}">${notification.type === "payment" ? "Payment" : "Account update"}</div>
+              <div>${escapeHtml(notification.message)}</div>
+              <div class="mt-1 text-[10px] text-slate-400">${escapeHtml(notification.created_at || "")}</div>
             </div>
           `).join("")
-        : `<div class="text-slate-400">No payment notifications yet.</div>`;
+        : `<div class="text-slate-400">No account notifications yet.</div>`;
 
       const { listings = [] } = await apiFetch(`/api/sellers/${seller.id}/listings`);
       document.getElementById("my-posts-list").innerHTML = listings.map((l) => {
@@ -1513,6 +1511,7 @@
         type: "prioritize",
         listingId,
         amount,
+        priorityPlanId: document.getElementById("prio-plan-select").value,
         label: `Prioritise Post (24h Sponsored)`,
       };
       closeM("modal-prio");
@@ -1625,6 +1624,8 @@
           method: "POST",
           body: JSON.stringify({
             amount_kes: ctx.amount,
+            seller_id: seller.id,
+            priority_plan_id: ctx.priorityPlanId || undefined,
             payment_ref: payRef,
             payer_phone: payerPhone,
           }),
@@ -1721,10 +1722,19 @@
         <div class="bg-emerald-50 p-2 rounded">Top #1 Bid: <strong>KES ${d.recommendedForTop1}</strong></div>
       `;
       document.getElementById("prio-bid").value = d.recommendedForTop1;
+      const prioritySelect = document.getElementById("prio-plan-select");
+      prioritySelect.innerHTML = `<option value="">Custom bid</option>${(meta.priorityPlans || []).map((plan) => `<option value="${escapeHtml(plan.id)}">${escapeHtml(plan.name)} — KES ${Number(plan.price_kes).toLocaleString()}</option>`).join("")}`;
+      const suggestedPlan = (meta.priorityPlans || []).find((plan) => Number(plan.price_kes) === Number(d.recommendedForTop1));
+      prioritySelect.value = suggestedPlan?.id || "";
       document.getElementById("prio-list").innerHTML = d.leaderboard.length === 0
         ? `<div class="p-3 text-slate-500">No prioritized posts yet. Pay KES ${d.baseFee} for #1.</div>`
         : d.leaderboard.map((x, i) => `<div class="p-2 flex justify-between"><span><strong>#${i + 1}</strong> ${x.title} (${x.seller_name})</span><strong class="text-emerald-700">KES ${x.priority_amount_kes}</strong></div>`).join("");
       document.getElementById("modal-prio").classList.remove("hidden");
+    }
+
+    function selectPriorityPlan() {
+      const plan = (meta.priorityPlans || []).find((item) => item.id === document.getElementById("prio-plan-select").value);
+      if (plan) document.getElementById("prio-bid").value = Number(plan.price_kes);
     }
 
     function closeM(id) {
